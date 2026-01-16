@@ -17,9 +17,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom", "@supabase/supabase-js"],
   },
   optimizeDeps: {
-    // Força rebuild completo do cache de dependências
+    include: ["react", "react-dom", "@supabase/supabase-js"],
     force: true,
   },
 }));
