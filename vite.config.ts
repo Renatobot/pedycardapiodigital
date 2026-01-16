@@ -17,10 +17,25 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "@supabase/supabase-js"],
+    dedupe: [
+      "react", 
+      "react-dom", 
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-dialog",
+    ],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "@supabase/supabase-js"],
+    include: [
+      "react", 
+      "react-dom", 
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
+    ],
     force: true,
+    esbuildOptions: {
+      target: 'esnext',
+    },
   },
 }));
