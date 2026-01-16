@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,6 @@ import {
   Store, 
   Menu as MenuIcon, 
   ShoppingBag, 
-  Settings, 
   LogOut,
   Plus,
   Edit,
@@ -39,30 +38,53 @@ import {
   Clock,
   AlertTriangle,
   Crown,
-  X
+  X,
+  Upload,
+  Loader2
 } from 'lucide-react';
-import { mockEstablishment, mockCategories, mockProducts } from '@/lib/mockData';
 import { formatCurrency } from '@/lib/whatsapp';
-import { Category, Product, ProductAddition } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useEstablishment, ProductAddition } from '@/hooks/useEstablishment';
+import { ImageUpload } from '@/components/ImageUpload';
 
 export default function DashboardPage() {
   const { toast } = useToast();
-  const establishment = mockEstablishment;
+  const navigate = useNavigate();
+  const { user, signOut, loading: authLoading } = useAuth();
+  const { 
+    establishment, 
+    categories, 
+    products, 
+    loading: dataLoading,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    createAddition,
+    deleteAddition,
+    getProductAdditions,
+  } = useEstablishment();
 
-  // State for categories and products
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
-  const [products, setProducts] = useState<Product[]>(mockProducts);
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
 
   // Modal states
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Edit states
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+  const [editingProduct, setEditingProduct] = useState<{ id: string } | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<{ id: string; name: string } | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   // Form states
@@ -73,14 +95,16 @@ export default function DashboardPage() {
     price: '',
     image: '',
   });
-  const [productAdditions, setProductAdditions] = useState<ProductAddition[]>([]);
-  const [newAddition, setNewAddition] = useState({ name: '', price: '' });
+  const [productAdditions, setProductAdditions] = useState<{ id: string; name: string; price: number; image_url?: string }[]>([]);
+  const [newAddition, setNewAddition] = useState({ name: '', price: '', image: '' });
 
-  const daysLeft = Math.ceil(
-    (establishment.trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+  const daysLeft = establishment 
+    ? Math.ceil((new Date(establishment.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 7;
 
-  const menuUrl = `${window.location.origin}/cardapio/${establishment.id}`;
+  const menuUrl = establishment 
+    ? `${window.location.origin}/cardapio/${establishment.id}`
+    : '';
 
   const copyLink = () => {
     navigator.clipboard.writeText(menuUrl);
@@ -90,6 +114,11 @@ export default function DashboardPage() {
     });
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   // Category handlers
   const openAddCategory = () => {
     setEditingCategory(null);
@@ -97,13 +126,13 @@ export default function DashboardPage() {
     setCategoryModalOpen(true);
   };
 
-  const openEditCategory = (category: Category) => {
+  const openEditCategory = (category: { id: string; name: string }) => {
     setEditingCategory(category);
     setCategoryName(category.name);
     setCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     if (!categoryName.trim()) {
       toast({
         title: "Erro",
@@ -113,54 +142,62 @@ export default function DashboardPage() {
       return;
     }
 
-    if (editingCategory) {
-      setCategories(prev =>
-        prev.map(c =>
-          c.id === editingCategory.id ? { ...c, name: categoryName.trim() } : c
-        )
-      );
-      toast({
-        title: "Categoria atualizada!",
-        description: `A categoria "${categoryName}" foi atualizada.`,
-      });
-    } else {
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        establishmentId: establishment.id,
-        name: categoryName.trim(),
-        order: categories.length + 1,
-      };
-      setCategories(prev => [...prev, newCategory]);
-      toast({
-        title: "Categoria criada!",
-        description: `A categoria "${categoryName}" foi criada.`,
-      });
-    }
+    setIsSaving(true);
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, categoryName.trim());
+        toast({
+          title: "Categoria atualizada!",
+          description: `A categoria "${categoryName}" foi atualizada.`,
+        });
+      } else {
+        await createCategory(categoryName.trim());
+        toast({
+          title: "Categoria criada!",
+          description: `A categoria "${categoryName}" foi criada.`,
+        });
+      }
 
-    setCategoryModalOpen(false);
-    setCategoryName('');
-    setEditingCategory(null);
+      setCategoryModalOpen(false);
+      setCategoryName('');
+      setEditingCategory(null);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Ocorreu um erro ao salvar a categoria.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const openDeleteCategory = (category: Category) => {
+  const openDeleteCategory = (category: { id: string; name: string }) => {
     setDeletingCategory(category);
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!deletingCategory) return;
 
-    // Remove category and its products
-    setCategories(prev => prev.filter(c => c.id !== deletingCategory.id));
-    setProducts(prev => prev.filter(p => p.categoryId !== deletingCategory.id));
-    
-    toast({
-      title: "Categoria excluída!",
-      description: `A categoria "${deletingCategory.name}" e seus produtos foram removidos.`,
-    });
-
-    setDeleteDialogOpen(false);
-    setDeletingCategory(null);
+    setIsSaving(true);
+    try {
+      await deleteCategory(deletingCategory.id);
+      toast({
+        title: "Categoria excluída!",
+        description: `A categoria "${deletingCategory.name}" e seus produtos foram removidos.`,
+      });
+      setDeleteDialogOpen(false);
+      setDeletingCategory(null);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Ocorreu um erro ao excluir a categoria.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Product handlers
@@ -172,20 +209,21 @@ export default function DashboardPage() {
     setProductModalOpen(true);
   };
 
-  const openEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setSelectedCategoryId(product.categoryId);
+  const openEditProduct = (product: any) => {
+    setEditingProduct({ id: product.id });
+    setSelectedCategoryId(product.category_id);
     setProductForm({
       name: product.name,
-      description: product.description,
+      description: product.description || '',
       price: product.price.toString(),
-      image: product.image || '',
+      image: product.image_url || '',
     });
-    setProductAdditions([...product.additions]);
+    const additions = getProductAdditions(product.id);
+    setProductAdditions(additions);
     setProductModalOpen(true);
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!productForm.name.trim() || !productForm.price) {
       toast({
         title: "Erro",
@@ -205,84 +243,123 @@ export default function DashboardPage() {
       return;
     }
 
-    if (editingProduct) {
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === editingProduct.id
-            ? {
-                ...p,
-                name: productForm.name.trim(),
-                description: productForm.description.trim(),
-                price,
-                image: productForm.image.trim() || undefined,
-                additions: productAdditions,
-              }
-            : p
-        )
-      );
+    setIsSaving(true);
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, {
+          name: productForm.name.trim(),
+          description: productForm.description.trim() || null,
+          price,
+          image_url: productForm.image.trim() || null,
+        });
+        toast({
+          title: "Produto atualizado!",
+          description: `O produto "${productForm.name}" foi atualizado.`,
+        });
+      } else {
+        const newProduct = await createProduct({
+          category_id: selectedCategoryId,
+          name: productForm.name.trim(),
+          description: productForm.description.trim() || undefined,
+          price,
+          image_url: productForm.image.trim() || undefined,
+        });
+
+        // Create additions for new product
+        if (newProduct) {
+          for (const addition of productAdditions) {
+            await createAddition({
+              product_id: newProduct.id,
+              name: addition.name,
+              price: addition.price,
+              image_url: addition.image_url,
+            });
+          }
+        }
+
+        toast({
+          title: "Produto criado!",
+          description: `O produto "${productForm.name}" foi adicionado.`,
+        });
+      }
+
+      setProductModalOpen(false);
+      setProductForm({ name: '', description: '', price: '', image: '' });
+      setProductAdditions([]);
+      setEditingProduct(null);
+    } catch (error: any) {
       toast({
-        title: "Produto atualizado!",
-        description: `O produto "${productForm.name}" foi atualizado.`,
+        title: "Erro",
+        description: error.message || "Ocorreu um erro ao salvar o produto.",
+        variant: "destructive",
       });
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        categoryId: selectedCategoryId,
-        establishmentId: establishment.id,
-        name: productForm.name.trim(),
-        description: productForm.description.trim(),
-        price,
-        image: productForm.image.trim() || undefined,
-        additions: productAdditions,
-        available: true,
-      };
-      setProducts(prev => [...prev, newProduct]);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleProductAvailability = async (productId: string, currentAvailability: boolean) => {
+    try {
+      await updateProduct(productId, { available: !currentAvailability });
       toast({
-        title: "Produto criado!",
-        description: `O produto "${productForm.name}" foi adicionado.`,
+        title: !currentAvailability ? "Produto ativado!" : "Produto desativado!",
+        description: `O produto agora está ${!currentAvailability ? 'disponível' : 'indisponível'}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar a disponibilidade.",
+        variant: "destructive",
       });
     }
-
-    setProductModalOpen(false);
-    setProductForm({ name: '', description: '', price: '', image: '' });
-    setProductAdditions([]);
-    setEditingProduct(null);
   };
 
-  const toggleProductAvailability = (productId: string) => {
-    setProducts(prev =>
-      prev.map(p => {
-        if (p.id === productId) {
-          const newAvailability = !p.available;
-          toast({
-            title: newAvailability ? "Produto ativado!" : "Produto desativado!",
-            description: `O produto "${p.name}" agora está ${newAvailability ? 'disponível' : 'indisponível'}.`,
-          });
-          return { ...p, available: newAvailability };
-        }
-        return p;
-      })
-    );
-  };
-
-  // Addition handlers
-  const addAddition = () => {
+  // Addition handlers (local state for modal)
+  const addLocalAddition = () => {
     if (!newAddition.name.trim()) return;
     
     const price = parseFloat(newAddition.price.replace(',', '.')) || 0;
-    const addition: ProductAddition = {
-      id: Date.now().toString(),
+    const addition = {
+      id: `temp-${Date.now()}`,
       name: newAddition.name.trim(),
       price,
+      image_url: newAddition.image || undefined,
     };
     
     setProductAdditions(prev => [...prev, addition]);
-    setNewAddition({ name: '', price: '' });
+    setNewAddition({ name: '', price: '', image: '' });
   };
 
-  const removeAddition = (additionId: string) => {
+  const removeLocalAddition = (additionId: string) => {
     setProductAdditions(prev => prev.filter(a => a.id !== additionId));
   };
+
+  if (authLoading || dataLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!establishment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <Store className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Estabelecimento não encontrado</h2>
+            <p className="text-muted-foreground mb-4">
+              Parece que você ainda não possui um estabelecimento cadastrado.
+            </p>
+            <Link to="/cadastro">
+              <Button>Criar estabelecimento</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -291,7 +368,11 @@ export default function DashboardPage() {
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
-              <Store className="w-5 h-5 text-muted-foreground" />
+              {establishment.logo_url ? (
+                <img src={establishment.logo_url} alt={establishment.name} className="w-full h-full object-cover" />
+              ) : (
+                <Store className="w-5 h-5 text-muted-foreground" />
+              )}
             </div>
             <div>
               <h1 className="font-semibold text-foreground text-sm">{establishment.name}</h1>
@@ -306,11 +387,9 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -409,7 +488,7 @@ export default function DashboardPage() {
             </Card>
           ) : (
             categories.map((category) => {
-              const categoryProducts = products.filter(p => p.categoryId === category.id);
+              const categoryProducts = products.filter(p => p.category_id === category.id);
               
               return (
                 <Card key={category.id}>
@@ -451,8 +530,8 @@ export default function DashboardPage() {
                             }`}
                           >
                             <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              {product.image ? (
-                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                              {product.image_url ? (
+                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                               ) : (
                                 <ShoppingBag className="w-6 h-6 text-muted-foreground" />
                               )}
@@ -466,12 +545,12 @@ export default function DashboardPage() {
                                   </p>
                                 </div>
                                 <p className="font-semibold text-primary whitespace-nowrap">
-                                  {formatCurrency(product.price)}
+                                  {formatCurrency(Number(product.price))}
                                 </p>
                               </div>
-                              {product.additions.length > 0 && (
+                              {getProductAdditions(product.id).length > 0 && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {product.additions.length} adicionais
+                                  {getProductAdditions(product.id).length} adicionais
                                 </p>
                               )}
                             </div>
@@ -481,7 +560,7 @@ export default function DashboardPage() {
                                 size="icon" 
                                 className="h-8 w-8"
                                 title={product.available ? 'Desativar' : 'Ativar'}
-                                onClick={() => toggleProductAvailability(product.id)}
+                                onClick={() => toggleProductAvailability(product.id, product.available)}
                               >
                                 {product.available ? (
                                   <Eye className="w-4 h-4 text-secondary" />
@@ -536,15 +615,16 @@ export default function DashboardPage() {
                 placeholder="Ex: Lanches, Bebidas, Sobremesas..."
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveCategory()}
+                onKeyDown={(e) => e.key === 'Enter' && !isSaving && handleSaveCategory()}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCategoryModalOpen(false)}>
+            <Button variant="outline" onClick={() => setCategoryModalOpen(false)} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveCategory}>
+            <Button onClick={handleSaveCategory} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {editingCategory ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
@@ -560,6 +640,25 @@ export default function DashboardPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Product Image Upload */}
+            <div className="space-y-2">
+              <Label>Foto do produto (opcional)</Label>
+              <div className="w-full h-32">
+                <ImageUpload
+                  value={productForm.image}
+                  onChange={(url) => setProductForm(prev => ({ ...prev, image: url || '' }))}
+                  folder="products"
+                  className="w-full h-full"
+                  placeholder={
+                    <>
+                      <Upload className="w-6 h-6 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Enviar foto do produto</span>
+                    </>
+                  }
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="productName">Nome do produto *</Label>
               <Input
@@ -591,16 +690,6 @@ export default function DashboardPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="productImage">URL da imagem (opcional)</Label>
-              <Input
-                id="productImage"
-                placeholder="https://exemplo.com/imagem.jpg"
-                value={productForm.image}
-                onChange={(e) => setProductForm(prev => ({ ...prev, image: e.target.value }))}
-              />
-            </div>
-
             {/* Additions */}
             <div className="space-y-2">
               <Label>Adicionais (opcional)</Label>
@@ -611,7 +700,12 @@ export default function DashboardPage() {
                       key={addition.id} 
                       className="flex items-center justify-between p-2 bg-muted rounded-lg"
                     >
-                      <span className="text-sm">{addition.name}</span>
+                      <div className="flex items-center gap-2">
+                        {addition.image_url && (
+                          <img src={addition.image_url} alt={addition.name} className="w-8 h-8 rounded object-cover" />
+                        )}
+                        <span className="text-sm">{addition.name}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-primary font-medium">
                           +{formatCurrency(addition.price)}
@@ -620,7 +714,7 @@ export default function DashboardPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-6 w-6"
-                          onClick={() => removeAddition(addition.id)}
+                          onClick={() => removeLocalAddition(addition.id)}
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -629,36 +723,53 @@ export default function DashboardPage() {
                   ))}
                 </div>
               )}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nome do adicional"
-                  value={newAddition.name}
-                  onChange={(e) => setNewAddition(prev => ({ ...prev, name: e.target.value }))}
-                  className="flex-1"
-                />
-                <Input
-                  placeholder="Preço"
-                  value={newAddition.price}
-                  onChange={(e) => setNewAddition(prev => ({ ...prev, price: e.target.value }))}
-                  className="w-24"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={addAddition}
-                  disabled={!newAddition.name.trim()}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+              
+              {/* New Addition Form */}
+              <div className="space-y-2 p-3 border border-dashed border-border rounded-lg">
+                <div className="flex gap-2">
+                  <div className="w-16 h-16">
+                    <ImageUpload
+                      value={newAddition.image}
+                      onChange={(url) => setNewAddition(prev => ({ ...prev, image: url || '' }))}
+                      folder="additions"
+                      className="w-full h-full"
+                      placeholder={<Upload className="w-4 h-4 text-muted-foreground" />}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="Nome do adicional"
+                      value={newAddition.name}
+                      onChange={(e) => setNewAddition(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Preço"
+                        value={newAddition.price}
+                        onChange={(e) => setNewAddition(prev => ({ ...prev, price: e.target.value }))}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={addLocalAddition}
+                        disabled={!newAddition.name.trim()}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProductModalOpen(false)}>
+            <Button variant="outline" onClick={() => setProductModalOpen(false)} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveProduct}>
+            <Button onClick={handleSaveProduct} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {editingProduct ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
@@ -676,11 +787,13 @@ export default function DashboardPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSaving}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteCategory}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSaving}
             >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

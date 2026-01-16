@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -41,6 +42,29 @@ export default function RegisterPage() {
     }
   };
 
+  const uploadLogo = async (userId: string): Promise<string | null> => {
+    if (!logo) return null;
+
+    const fileExt = logo.name.split('.').pop();
+    const fileName = `${userId}-logo.${fileExt}`;
+    const filePath = `logos/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(filePath, logo);
+
+    if (uploadError) {
+      console.error('Logo upload error:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -64,15 +88,63 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    // Simulating registration - in production this would connect to backend
-    setTimeout(() => {
+    try {
+      // 1. Create auth user
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (signUpError) throw signUpError;
+
+      if (!authData.user) {
+        throw new Error('Não foi possível criar a conta.');
+      }
+
+      // 2. Upload logo if provided
+      const logoUrl = await uploadLogo(authData.user.id);
+
+      // 3. Create establishment record
+      const { error: establishmentError } = await supabase
+        .from('establishments')
+        .insert({
+          user_id: authData.user.id,
+          name: formData.establishmentName,
+          logo_url: logoUrl,
+          cpf_cnpj: formData.cpfCnpj,
+          whatsapp: formData.whatsapp,
+          email: formData.email,
+        });
+
+      if (establishmentError) throw establishmentError;
+
       toast({
         title: 'Conta criada com sucesso!',
         description: 'Seu teste grátis de 7 dias começou. Boas vendas!',
       });
+      
       navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      let errorMessage = 'Ocorreu um erro ao criar sua conta.';
+      if (error.message?.includes('already registered')) {
+        errorMessage = 'Este e-mail já está cadastrado. Faça login ou use outro e-mail.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Erro no cadastro',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -248,7 +320,14 @@ export default function RegisterPage() {
                   className="w-full"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Criando conta...' : 'Criar minha conta grátis'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Criando conta...
+                    </>
+                  ) : (
+                    'Criar minha conta grátis'
+                  )}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">

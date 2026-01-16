@@ -4,9 +4,10 @@ import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Eye, EyeOff, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,25 +19,49 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha todos os campos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulating login - in production this would connect to backend
-    setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: 'Bem-vindo de volta!',
-          description: 'Login realizado com sucesso.',
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: 'Erro no login',
-          description: 'Por favor, preencha todos os campos.',
-          variant: 'destructive',
-        });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Bem-vindo de volta!',
+        description: 'Login realizado com sucesso.',
+      });
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      let errorMessage = 'Ocorreu um erro ao fazer login.';
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'E-mail ou senha incorretos.';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      toast({
+        title: 'Erro no login',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -63,12 +88,12 @@ export default function LoginPage() {
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail ou telefone</Label>
+                  <Label htmlFor="email">E-mail</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       id="email"
-                      type="text"
+                      type="email"
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -116,7 +141,14 @@ export default function LoginPage() {
                   className="w-full"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Entrando...' : 'Entrar'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
                 </Button>
               </form>
 
