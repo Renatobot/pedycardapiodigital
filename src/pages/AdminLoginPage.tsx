@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Eye, EyeOff } from 'lucide-react';
+import { Shield, Eye, EyeOff, Loader2, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,13 +15,81 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAdmins, setIsCheckingAdmins] = useState(true);
+  const [hasAdmins, setHasAdmins] = useState(true);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
+
+  useEffect(() => {
+    checkForAdmins();
+  }, []);
+
+  const checkForAdmins = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('bootstrap-admin', {
+        body: { action: 'check' }
+      });
+
+      if (error) {
+        console.error('Error checking admins:', error);
+        setHasAdmins(true); // Assume has admins on error
+      } else {
+        setHasAdmins(data?.hasAdmins ?? true);
+      }
+    } catch (error) {
+      console.error('Error checking admins:', error);
+      setHasAdmins(true);
+    } finally {
+      setIsCheckingAdmins(false);
+    }
+  };
+
+  const handleBootstrap = async () => {
+    setIsBootstrapping(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('bootstrap-admin', {
+        body: { action: 'bootstrap' }
+      });
+
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível inicializar o sistema.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: 'Sistema inicializado!',
+          description: `Admin master criado: ${data.email}`,
+        });
+        setHasAdmins(true);
+        setEmail(data.email);
+      } else {
+        toast({
+          title: 'Erro',
+          description: data?.error || 'Erro desconhecido',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Bootstrap error:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao inicializar o sistema.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBootstrapping(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Autenticar via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -47,7 +115,6 @@ const AdminLoginPage = () => {
         return;
       }
 
-      // Verificar se o usuário tem role de admin usando RPC
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -56,7 +123,6 @@ const AdminLoginPage = () => {
         .maybeSingle();
 
       if (roleError || !roleData) {
-        // Usuário não é admin, fazer logout
         await supabase.auth.signOut();
         toast({
           title: 'Acesso não autorizado',
@@ -84,6 +150,17 @@ const AdminLoginPage = () => {
     setIsLoading(false);
   };
 
+  if (isCheckingAdmins) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-red-500 animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Verificando sistema...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700">
@@ -93,59 +170,110 @@ const AdminLoginPage = () => {
           </div>
           <CardTitle className="text-2xl text-white">Painel Master</CardTitle>
           <CardDescription className="text-slate-400">
-            Acesso restrito para administradores do sistema
+            {hasAdmins 
+              ? 'Acesso restrito para administradores do sistema'
+              : 'Sistema não inicializado - Clique abaixo para criar o admin master'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Senha</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {!hasAdmins ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <p className="text-amber-400 text-sm text-center">
+                  ⚠️ Nenhum administrador encontrado no sistema.
+                </p>
+                <p className="text-slate-400 text-xs text-center mt-2">
+                  Clique no botão abaixo para criar o admin master inicial.
+                </p>
+              </div>
+              
+              <Button
+                onClick={handleBootstrap}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={isBootstrapping}
+              >
+                {isBootstrapping ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Inicializando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Inicializar Sistema
+                  </>
+                )}
+              </Button>
+
+              <div className="p-3 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-slate-400 text-center">
+                  Será criado um admin com:<br />
+                  <span className="text-slate-300">Email: renatodg2006@admin</span><br />
+                  <span className="text-slate-300">Senha: 749672</span>
+                </p>
               </div>
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-          
-          <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-            <p className="text-xs text-slate-400 text-center">
-              ⚠️ Acesso restrito a administradores autorizados.<br />
-              Entre em contato com o suporte para obter acesso.
-            </p>
-          </div>
+          ) : (
+            <>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-slate-300">Email</Label>
+                  <Input
+                    id="email"
+                    type="text"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-slate-300">Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
+                </Button>
+              </form>
+              
+              <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-slate-400 text-center">
+                  ⚠️ Acesso restrito a administradores autorizados.<br />
+                  Entre em contato com o suporte para obter acesso.
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
