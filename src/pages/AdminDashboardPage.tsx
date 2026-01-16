@@ -32,7 +32,6 @@ import {
   Shield,
   LogOut,
   Search,
-  Users,
   Clock,
   CheckCircle,
   XCircle,
@@ -41,54 +40,107 @@ import {
   Pause,
   Calendar,
   Building2,
-  UserPlus,
-  UserCog,
-  Trash2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { mockEstablishments, mockAdmins } from '@/lib/mockData';
-import { Establishment, Admin } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+interface Establishment {
+  id: string;
+  name: string;
+  email: string;
+  whatsapp: string;
+  cpf_cnpj: string;
+  pix_key: string | null;
+  logo_url: string | null;
+  plan_status: string;
+  plan_expires_at: string | null;
+  trial_start_date: string;
+  trial_end_date: string;
+  created_at: string;
+}
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [establishments, setEstablishments] = useState<Establishment[]>(mockEstablishments);
-  const [admins, setAdmins] = useState<Admin[]>(mockAdmins);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment | null>(null);
-  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [adminActionModalOpen, setAdminActionModalOpen] = useState(false);
-  const [adminAction, setAdminAction] = useState<'activate' | 'deactivate' | 'remove'>('activate');
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | 'extend'>('activate');
-  const [activeTab, setActiveTab] = useState('establishments');
-  const [adminSearchTerm, setAdminSearchTerm] = useState('');
 
-  // Verificar autenticação (simulação - em produção usar Lovable Cloud)
+  // Verificar autenticação admin via Supabase
   useEffect(() => {
-    const isAdmin = sessionStorage.getItem('adminAuth');
-    if (!isAdmin) {
-      navigate('/admin/login');
-    }
+    const checkAdminAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          navigate('/admin/login');
+          return;
+        }
+
+        // Verificar se tem role de admin
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (roleError || !roleData) {
+          await supabase.auth.signOut();
+          navigate('/admin/login');
+          return;
+        }
+
+        // Se é admin, buscar estabelecimentos
+        await fetchEstablishments();
+      } catch (error) {
+        console.error('Erro ao verificar acesso:', error);
+        navigate('/admin/login');
+      }
+    };
+
+    checkAdminAccess();
   }, [navigate]);
 
-  const currentAdminName = sessionStorage.getItem('adminName') || 'Administrador';
+  const fetchEstablishments = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('establishments')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('adminAuth');
+      if (error) throw error;
+      setEstablishments(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar estabelecimentos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os estabelecimentos.',
+        variant: 'destructive',
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/admin/login');
   };
 
   // Estatísticas
   const stats = {
     total: establishments.length,
-    trial: establishments.filter(e => e.planStatus === 'trial').length,
-    active: establishments.filter(e => e.planStatus === 'active').length,
-    expired: establishments.filter(e => e.planStatus === 'expired').length,
+    trial: establishments.filter(e => e.plan_status === 'trial').length,
+    active: establishments.filter(e => e.plan_status === 'active').length,
+    expired: establishments.filter(e => e.plan_status === 'expired').length,
   };
 
   // Filtrar estabelecimentos
@@ -96,68 +148,105 @@ const AdminDashboardPage = () => {
     const matchesSearch = 
       est.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       est.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      est.cpfCnpj.includes(searchTerm);
+      est.cpf_cnpj.includes(searchTerm);
     
-    const matchesStatus = statusFilter === 'all' || est.planStatus === statusFilter;
+    const matchesStatus = statusFilter === 'all' || est.plan_status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
   // Ações do admin
-  const handleActivatePro = (establishment: Establishment) => {
-    setEstablishments(prev => prev.map(e => {
-      if (e.id === establishment.id) {
-        const now = new Date();
-        return {
-          ...e,
-          planStatus: 'active' as const,
-          planExpiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // +30 dias
-        };
-      }
-      return e;
-    }));
-    toast({
-      title: 'Plano ativado!',
-      description: `${establishment.name} agora tem plano Pro por 30 dias.`,
-    });
+  const handleActivatePro = async (establishment: Establishment) => {
+    try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      const { error } = await supabase
+        .from('establishments')
+        .update({
+          plan_status: 'active',
+          plan_expires_at: expiresAt.toISOString(),
+        })
+        .eq('id', establishment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Plano ativado!',
+        description: `${establishment.name} agora tem plano Pro por 30 dias.`,
+      });
+      
+      await fetchEstablishments();
+    } catch (error) {
+      console.error('Erro ao ativar plano:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível ativar o plano.',
+        variant: 'destructive',
+      });
+    }
     setActionModalOpen(false);
   };
 
-  const handleDeactivate = (establishment: Establishment) => {
-    setEstablishments(prev => prev.map(e => {
-      if (e.id === establishment.id) {
-        return {
-          ...e,
-          planStatus: 'expired' as const,
-          planExpiresAt: new Date(),
-        };
-      }
-      return e;
-    }));
-    toast({
-      title: 'Plano desativado',
-      description: `${establishment.name} teve o plano expirado.`,
-      variant: 'destructive',
-    });
+  const handleDeactivate = async (establishment: Establishment) => {
+    try {
+      const { error } = await supabase
+        .from('establishments')
+        .update({
+          plan_status: 'expired',
+          plan_expires_at: new Date().toISOString(),
+        })
+        .eq('id', establishment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Plano desativado',
+        description: `${establishment.name} teve o plano expirado.`,
+        variant: 'destructive',
+      });
+      
+      await fetchEstablishments();
+    } catch (error) {
+      console.error('Erro ao desativar plano:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível desativar o plano.',
+        variant: 'destructive',
+      });
+    }
     setActionModalOpen(false);
   };
 
-  const handleExtendTrial = (establishment: Establishment) => {
-    setEstablishments(prev => prev.map(e => {
-      if (e.id === establishment.id) {
-        const currentEnd = new Date(e.trialEndDate);
-        return {
-          ...e,
-          planStatus: 'trial' as const,
-          trialEndDate: new Date(currentEnd.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 dias
-        };
-      }
-      return e;
-    }));
-    toast({
-      title: 'Trial estendido!',
-      description: `${establishment.name} ganhou +7 dias de trial.`,
-    });
+  const handleExtendTrial = async (establishment: Establishment) => {
+    try {
+      const currentEnd = new Date(establishment.trial_end_date);
+      const newEnd = new Date(currentEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      const { error } = await supabase
+        .from('establishments')
+        .update({
+          plan_status: 'trial',
+          trial_end_date: newEnd.toISOString(),
+        })
+        .eq('id', establishment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Trial estendido!',
+        description: `${establishment.name} ganhou +7 dias de trial.`,
+      });
+      
+      await fetchEstablishments();
+    } catch (error) {
+      console.error('Erro ao estender trial:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível estender o trial.',
+        variant: 'destructive',
+      });
+    }
     setActionModalOpen(false);
   };
 
@@ -166,53 +255,6 @@ const AdminDashboardPage = () => {
     setActionType(action);
     setActionModalOpen(true);
   };
-
-  // Ações para administradores
-  const handleToggleAdminStatus = (admin: Admin) => {
-    const newStatus = !admin.isActive;
-    setAdmins(prev => prev.map(a => {
-      if (a.id === admin.id) {
-        return { ...a, isActive: newStatus };
-      }
-      return a;
-    }));
-    // Atualizar mockAdmins também
-    const idx = mockAdmins.findIndex(a => a.id === admin.id);
-    if (idx !== -1) {
-      mockAdmins[idx].isActive = newStatus;
-    }
-    toast({
-      title: newStatus ? 'Admin ativado!' : 'Admin desativado!',
-      description: `${admin.name} foi ${newStatus ? 'ativado' : 'desativado'}.`,
-    });
-    setAdminActionModalOpen(false);
-  };
-
-  const handleRemoveAdmin = (admin: Admin) => {
-    setAdmins(prev => prev.filter(a => a.id !== admin.id));
-    // Remover do mockAdmins também
-    const idx = mockAdmins.findIndex(a => a.id === admin.id);
-    if (idx !== -1) {
-      mockAdmins.splice(idx, 1);
-    }
-    toast({
-      title: 'Admin removido!',
-      description: `${admin.name} foi removido do sistema.`,
-      variant: 'destructive',
-    });
-    setAdminActionModalOpen(false);
-  };
-
-  const openAdminActionModal = (admin: Admin, action: 'activate' | 'deactivate' | 'remove') => {
-    setSelectedAdmin(admin);
-    setAdminAction(action);
-    setAdminActionModalOpen(true);
-  };
-
-  const filteredAdmins = admins.filter(admin =>
-    admin.name.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-    admin.email.toLowerCase().includes(adminSearchTerm.toLowerCase())
-  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -228,16 +270,24 @@ const AdminDashboardPage = () => {
   };
 
   const getExpirationInfo = (establishment: Establishment) => {
-    if (establishment.planStatus === 'trial') {
-      const daysLeft = differenceInDays(new Date(establishment.trialEndDate), new Date());
+    if (establishment.plan_status === 'trial') {
+      const daysLeft = differenceInDays(new Date(establishment.trial_end_date), new Date());
       return daysLeft > 0 ? `${daysLeft} dias restantes` : 'Expirado';
     }
-    if (establishment.planStatus === 'active' && establishment.planExpiresAt) {
-      const daysLeft = differenceInDays(new Date(establishment.planExpiresAt), new Date());
+    if (establishment.plan_status === 'active' && establishment.plan_expires_at) {
+      const daysLeft = differenceInDays(new Date(establishment.plan_expires_at), new Date());
       return daysLeft > 0 ? `${daysLeft} dias restantes` : 'Expirado';
     }
     return '-';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -324,257 +374,125 @@ const AdminDashboardPage = () => {
           </Card>
         </div>
 
-        {/* Tabs para Estabelecimentos e Administradores */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-slate-800 border border-slate-700">
-            <TabsTrigger value="establishments" className="data-[state=active]:bg-slate-700">
-              <Building2 className="w-4 h-4 mr-2" />
-              Estabelecimentos
-            </TabsTrigger>
-            <TabsTrigger value="admins" className="data-[state=active]:bg-slate-700">
-              <UserCog className="w-4 h-4 mr-2" />
-              Administradores
-            </TabsTrigger>
-          </TabsList>
+        {/* Lista de Estabelecimentos */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Estabelecimentos</CardTitle>
+            <CardDescription className="text-slate-400">
+              Gerencie todos os estabelecimentos cadastrados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Filtros */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  placeholder="Buscar por nome, email ou CPF/CNPJ..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectItem value="all" className="text-white hover:bg-slate-600">Todos</SelectItem>
+                  <SelectItem value="trial" className="text-white hover:bg-slate-600">Trial</SelectItem>
+                  <SelectItem value="active" className="text-white hover:bg-slate-600">Ativos</SelectItem>
+                  <SelectItem value="expired" className="text-white hover:bg-slate-600">Expirados</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Tab Estabelecimentos */}
-          <TabsContent value="establishments">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Estabelecimentos</CardTitle>
-                <CardDescription className="text-slate-400">
-                  Gerencie todos os estabelecimentos cadastrados
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Filtros */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input
-                      placeholder="Buscar por nome, email ou CPF/CNPJ..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-48 bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Filtrar por status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
-                      <SelectItem value="all" className="text-white hover:bg-slate-600">Todos</SelectItem>
-                      <SelectItem value="trial" className="text-white hover:bg-slate-600">Trial</SelectItem>
-                      <SelectItem value="active" className="text-white hover:bg-slate-600">Ativos</SelectItem>
-                      <SelectItem value="expired" className="text-white hover:bg-slate-600">Expirados</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Tabela */}
-                <div className="rounded-lg border border-slate-700 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                        <TableHead className="text-slate-300">Estabelecimento</TableHead>
-                        <TableHead className="text-slate-300">CPF/CNPJ</TableHead>
-                        <TableHead className="text-slate-300">Contato</TableHead>
-                        <TableHead className="text-slate-300">Status</TableHead>
-                        <TableHead className="text-slate-300">Expiração</TableHead>
-                        <TableHead className="text-slate-300 text-right">Ações</TableHead>
+            {/* Tabela */}
+            <div className="rounded-lg border border-slate-700 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-700 hover:bg-slate-700/50">
+                    <TableHead className="text-slate-300">Estabelecimento</TableHead>
+                    <TableHead className="text-slate-300">CPF/CNPJ</TableHead>
+                    <TableHead className="text-slate-300">Contato</TableHead>
+                    <TableHead className="text-slate-300">Status</TableHead>
+                    <TableHead className="text-slate-300">Expiração</TableHead>
+                    <TableHead className="text-slate-300 text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEstablishments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-slate-400 py-8">
+                        Nenhum estabelecimento encontrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredEstablishments.map((establishment) => (
+                      <TableRow key={establishment.id} className="border-slate-700 hover:bg-slate-700/50">
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-white">{establishment.name}</p>
+                            <p className="text-sm text-slate-400">{establishment.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-300">{establishment.cpf_cnpj}</TableCell>
+                        <TableCell className="text-slate-300">{establishment.whatsapp}</TableCell>
+                        <TableCell>{getStatusBadge(establishment.plan_status)}</TableCell>
+                        <TableCell className="text-slate-300">{getExpirationInfo(establishment)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedEstablishment(establishment);
+                                setDetailsModalOpen(true);
+                              }}
+                              className="text-slate-400 hover:text-white hover:bg-slate-700"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {establishment.plan_status !== 'active' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openActionModal(establishment, 'activate')}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
+                              >
+                                <Play className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {establishment.plan_status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openActionModal(establishment, 'deactivate')}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                              >
+                                <Pause className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {establishment.plan_status === 'trial' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openActionModal(establishment, 'extend')}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+                              >
+                                <Calendar className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEstablishments.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-slate-400 py-8">
-                            Nenhum estabelecimento encontrado
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredEstablishments.map((establishment) => (
-                          <TableRow key={establishment.id} className="border-slate-700 hover:bg-slate-700/50">
-                            <TableCell>
-                              <div>
-                                <p className="font-medium text-white">{establishment.name}</p>
-                                <p className="text-sm text-slate-400">{establishment.email}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-slate-300">{establishment.cpfCnpj}</TableCell>
-                            <TableCell className="text-slate-300">{establishment.whatsapp}</TableCell>
-                            <TableCell>{getStatusBadge(establishment.planStatus)}</TableCell>
-                            <TableCell className="text-slate-300">{getExpirationInfo(establishment)}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setSelectedEstablishment(establishment);
-                                    setDetailsModalOpen(true);
-                                  }}
-                                  className="text-slate-400 hover:text-white hover:bg-slate-700"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                {establishment.planStatus !== 'active' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'activate')}
-                                    className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
-                                  >
-                                    <Play className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                {establishment.planStatus === 'active' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'deactivate')}
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                  >
-                                    <Pause className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                {establishment.planStatus === 'trial' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'extend')}
-                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                                  >
-                                    <Calendar className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tab Administradores */}
-          <TabsContent value="admins">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-white">Administradores</CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Gerencie os administradores do sistema
-                  </CardDescription>
-                </div>
-                <Button 
-                  onClick={() => navigate('/admin/cadastro')} 
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Novo Admin
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {/* Busca */}
-                <div className="flex gap-4 mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <Input
-                      placeholder="Buscar por nome ou email..."
-                      value={adminSearchTerm}
-                      onChange={(e) => setAdminSearchTerm(e.target.value)}
-                      className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Tabela de Admins */}
-                <div className="rounded-lg border border-slate-700 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                        <TableHead className="text-slate-300">Nome</TableHead>
-                        <TableHead className="text-slate-300">Email</TableHead>
-                        <TableHead className="text-slate-300">Cadastrado em</TableHead>
-                        <TableHead className="text-slate-300">Status</TableHead>
-                        <TableHead className="text-slate-300 text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAdmins.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-slate-400 py-8">
-                            Nenhum administrador encontrado
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredAdmins.map((admin) => (
-                          <TableRow key={admin.id} className="border-slate-700 hover:bg-slate-700/50">
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-sm font-medium">
-                                    {admin.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                <p className="font-medium text-white">{admin.name}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-slate-300">{admin.email}</TableCell>
-                            <TableCell className="text-slate-300">
-                              {format(new Date(admin.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
-                            </TableCell>
-                            <TableCell>
-                              {admin.isActive ? (
-                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Ativo</Badge>
-                              ) : (
-                                <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Inativo</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {admin.isActive ? (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openAdminActionModal(admin, 'deactivate')}
-                                    className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/20"
-                                  >
-                                    <Pause className="w-4 h-4" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openAdminActionModal(admin, 'activate')}
-                                    className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
-                                  >
-                                    <Play className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => openAdminActionModal(admin, 'remove')}
-                                  className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       {/* Modal de Detalhes */}
@@ -595,11 +513,11 @@ const AdminDashboardPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Status</p>
-                  {getStatusBadge(selectedEstablishment.planStatus)}
+                  {getStatusBadge(selectedEstablishment.plan_status)}
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">CPF/CNPJ</p>
-                  <p className="font-medium">{selectedEstablishment.cpfCnpj}</p>
+                  <p className="font-medium">{selectedEstablishment.cpf_cnpj}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">WhatsApp</p>
@@ -611,31 +529,31 @@ const AdminDashboardPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Chave Pix</p>
-                  <p className="font-medium">{selectedEstablishment.pixKey || '-'}</p>
+                  <p className="font-medium">{selectedEstablishment.pix_key || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Início do Trial</p>
                   <p className="font-medium">
-                    {format(new Date(selectedEstablishment.trialStartDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    {format(new Date(selectedEstablishment.trial_start_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Fim do Trial</p>
                   <p className="font-medium">
-                    {format(new Date(selectedEstablishment.trialEndDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    {format(new Date(selectedEstablishment.trial_end_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Data de Cadastro</p>
                   <p className="font-medium">
-                    {format(new Date(selectedEstablishment.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                    {format(new Date(selectedEstablishment.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                   </p>
                 </div>
-                {selectedEstablishment.planExpiresAt && (
+                {selectedEstablishment.plan_expires_at && (
                   <div>
                     <p className="text-sm text-slate-400">Expiração do Plano</p>
                     <p className="font-medium">
-                      {format(new Date(selectedEstablishment.planExpiresAt), 'dd/MM/yyyy', { locale: ptBR })}
+                      {format(new Date(selectedEstablishment.plan_expires_at), 'dd/MM/yyyy', { locale: ptBR })}
                     </p>
                   </div>
                 )}
@@ -689,52 +607,6 @@ const AdminDashboardPage = () => {
             {actionType === 'extend' && selectedEstablishment && (
               <Button onClick={() => handleExtendTrial(selectedEstablishment)} className="bg-blue-600 hover:bg-blue-700">
                 Estender Trial
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Ação para Admins */}
-      <Dialog open={adminActionModalOpen} onOpenChange={setAdminActionModalOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle>
-              {adminAction === 'activate' && 'Ativar Administrador'}
-              {adminAction === 'deactivate' && 'Desativar Administrador'}
-              {adminAction === 'remove' && 'Remover Administrador'}
-            </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              {adminAction === 'activate' && 'Isso permitirá que este administrador acesse o sistema novamente.'}
-              {adminAction === 'deactivate' && 'Isso impedirá que este administrador faça login no sistema.'}
-              {adminAction === 'remove' && 'Isso removerá permanentemente este administrador do sistema.'}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedAdmin && (
-            <div className="py-4">
-              <p className="text-slate-300">
-                Administrador: <span className="font-medium text-white">{selectedAdmin.name}</span>
-              </p>
-              <p className="text-slate-400 text-sm">{selectedAdmin.email}</p>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setAdminActionModalOpen(false)} className="border-slate-600">
-              Cancelar
-            </Button>
-            {adminAction === 'activate' && selectedAdmin && (
-              <Button onClick={() => handleToggleAdminStatus(selectedAdmin)} className="bg-green-600 hover:bg-green-700">
-                Ativar
-              </Button>
-            )}
-            {adminAction === 'deactivate' && selectedAdmin && (
-              <Button onClick={() => handleToggleAdminStatus(selectedAdmin)} className="bg-yellow-600 hover:bg-yellow-700">
-                Desativar
-              </Button>
-            )}
-            {adminAction === 'remove' && selectedAdmin && (
-              <Button onClick={() => handleRemoveAdmin(selectedAdmin)} className="bg-red-600 hover:bg-red-700">
-                Remover
               </Button>
             )}
           </DialogFooter>
