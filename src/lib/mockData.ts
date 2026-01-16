@@ -1,4 +1,16 @@
-import { Category, Product, Establishment } from '@/types';
+import { Category, Product, Establishment, Admin } from '@/types';
+
+// Lista de administradores do sistema
+export const mockAdmins: Admin[] = [
+  {
+    id: 'admin-1',
+    name: 'Administrador Master',
+    email: 'admin@pedy.com',
+    password: 'admin123',
+    isActive: true,
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  },
+];
 
 export const mockEstablishment: Establishment = {
   id: '1',

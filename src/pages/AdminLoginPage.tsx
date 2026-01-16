@@ -1,18 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// IMPORTANTE: Em produção, usar autenticação real com Lovable Cloud/Supabase
-// Esta é apenas uma simulação para MVP
-const ADMIN_CREDENTIALS = {
-  email: 'admin@pedy.com',
-  password: 'admin123'
-};
+import { mockAdmins } from '@/lib/mockData';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
@@ -29,12 +23,27 @@ const AdminLoginPage = () => {
     // Simulação de delay de autenticação
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+    // Verificar credenciais na lista de admins
+    const admin = mockAdmins.find(a => a.email === email && a.password === password);
+    
+    if (admin) {
+      if (!admin.isActive) {
+        toast({
+          title: 'Conta desativada',
+          description: 'Sua conta de administrador está desativada.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // NOTA: Em produção, usar tokens JWT e sessões seguras
       sessionStorage.setItem('adminAuth', 'true');
+      sessionStorage.setItem('adminId', admin.id);
+      sessionStorage.setItem('adminName', admin.name);
       toast({
         title: 'Login realizado!',
-        description: 'Bem-vindo ao painel administrativo.',
+        description: `Bem-vindo, ${admin.name}!`,
       });
       navigate('/admin/dashboard');
     } else {
@@ -104,9 +113,18 @@ const AdminLoginPage = () => {
             </Button>
           </form>
           
-          <div className="mt-6 p-3 bg-slate-700/50 rounded-lg">
+          <div className="mt-6 text-center">
+            <p className="text-sm text-slate-400">
+              Não tem uma conta?{' '}
+              <Link to="/admin/cadastro" className="text-red-400 hover:text-red-300">
+                Cadastre-se
+              </Link>
+            </p>
+          </div>
+          
+          <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
             <p className="text-xs text-slate-400 text-center">
-              ⚠️ Este é um ambiente de demonstração.<br />
+              ⚠️ Ambiente de demonstração.<br />
               Credenciais: admin@pedy.com / admin123
             </p>
           </div>
