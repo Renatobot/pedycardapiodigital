@@ -17,7 +17,5 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // Garante uma única instância do React (evita hooks quebrados em libs como Radix)
-    dedupe: ["react", "react-dom"],
   },
 }));
