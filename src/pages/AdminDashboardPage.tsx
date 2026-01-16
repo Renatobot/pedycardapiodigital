@@ -44,6 +44,7 @@ import {
   UserPlus,
   Trash2,
   Loader2,
+  Key,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,8 +96,14 @@ const AdminDashboardPage = () => {
   const [removeAdminModalOpen, setRemoveAdminModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [removeAdminLoading, setRemoveAdminLoading] = useState(false);
+  
+  // Password change state
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 
-  // Verificar autenticação admin via Supabase
+
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
@@ -277,6 +284,61 @@ const AdminDashboardPage = () => {
     setRemoveAdminLoading(false);
   };
 
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'Preencha todos os campos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não conferem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setChangePasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Senha alterada!',
+        description: 'Sua senha foi atualizada com sucesso.',
+      });
+
+      setNewPassword('');
+      setConfirmPassword('');
+      setChangePasswordModalOpen(false);
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível alterar a senha.',
+        variant: 'destructive',
+      });
+    }
+    setChangePasswordLoading(false);
+  };
+
   // Estatísticas
   const stats = {
     total: establishments.length,
@@ -445,14 +507,24 @@ const AdminDashboardPage = () => {
               <p className="text-xs text-slate-400">Painel de Administração Master</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setChangePasswordModalOpen(true)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <Key className="w-4 h-4 mr-2" />
+              Alterar Senha
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -1003,6 +1075,72 @@ const AdminDashboardPage = () => {
                   <Trash2 className="w-4 h-4 mr-2" />
                   Remover
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Alterar Senha */}
+      <Dialog open={changePasswordModalOpen} onOpenChange={setChangePasswordModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Key className="w-5 h-5" />
+              Alterar Minha Senha
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Digite sua nova senha abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm text-slate-300">Nova Senha</label>
+              <Input
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-slate-300">Confirmar Nova Senha</label>
+              <Input
+                type="password"
+                placeholder="Digite novamente"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setChangePasswordModalOpen(false);
+                setNewPassword('');
+                setConfirmPassword('');
+              }}
+              className="border-slate-600 text-slate-300"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={changePasswordLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {changePasswordLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Nova Senha'
               )}
             </Button>
           </DialogFooter>
