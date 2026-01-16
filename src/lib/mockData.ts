@@ -1,16 +1,7 @@
-import { Category, Product, Establishment, Admin } from '@/types';
+import { Category, Product, Establishment } from '@/types';
 
-// Lista de administradores do sistema
-export const mockAdmins: Admin[] = [
-  {
-    id: 'admin-1',
-    name: 'Administrador Master',
-    email: 'admin@pedy.com',
-    password: 'admin123',
-    isActive: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  },
-];
+// NOTA: mockAdmins foi removido por segurança
+// Agora a autenticação de admin usa Supabase Auth + tabela user_roles
 
 export const mockEstablishment: Establishment = {
   id: '1',

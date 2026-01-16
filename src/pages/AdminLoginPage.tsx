@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { mockAdmins } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
@@ -20,36 +20,63 @@ const AdminLoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulação de delay de autenticação
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Verificar credenciais na lista de admins
-    const admin = mockAdmins.find(a => a.email === email && a.password === password);
-    
-    if (admin) {
-      if (!admin.isActive) {
+    try {
+      // Autenticar via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (authError) {
         toast({
-          title: 'Conta desativada',
-          description: 'Sua conta de administrador está desativada.',
+          title: 'Credenciais inválidas',
+          description: 'Email ou senha incorretos.',
           variant: 'destructive',
         });
         setIsLoading(false);
         return;
       }
-      
-      // NOTA: Em produção, usar tokens JWT e sessões seguras
-      sessionStorage.setItem('adminAuth', 'true');
-      sessionStorage.setItem('adminId', admin.id);
-      sessionStorage.setItem('adminName', admin.name);
+
+      if (!authData.user) {
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Não foi possível autenticar.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar se o usuário tem role de admin usando RPC
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleError || !roleData) {
+        // Usuário não é admin, fazer logout
+        await supabase.auth.signOut();
+        toast({
+          title: 'Acesso não autorizado',
+          description: 'Você não tem permissão para acessar o painel administrativo.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       toast({
         title: 'Login realizado!',
-        description: `Bem-vindo, ${admin.name}!`,
+        description: 'Bem-vindo ao painel administrativo!',
       });
       navigate('/admin/dashboard');
-    } else {
+    } catch (error) {
+      console.error('Erro no login:', error);
       toast({
-        title: 'Credenciais inválidas',
-        description: 'Email ou senha incorretos.',
+        title: 'Erro',
+        description: 'Ocorreu um erro ao tentar fazer login.',
         variant: 'destructive',
       });
     }
@@ -76,7 +103,7 @@ const AdminLoginPage = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@pedy.com"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
@@ -113,19 +140,10 @@ const AdminLoginPage = () => {
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-400">
-              Não tem uma conta?{' '}
-              <Link to="/admin/cadastro" className="text-red-400 hover:text-red-300">
-                Cadastre-se
-              </Link>
-            </p>
-          </div>
-          
           <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
             <p className="text-xs text-slate-400 text-center">
-              ⚠️ Ambiente de demonstração.<br />
-              Credenciais: admin@pedy.com / admin123
+              ⚠️ Acesso restrito a administradores autorizados.<br />
+              Entre em contato com o suporte para obter acesso.
             </p>
           </div>
         </CardContent>

@@ -69,11 +69,15 @@ export interface User {
   establishmentId?: string;
 }
 
+// Admin é gerenciado via Supabase Auth + tabela user_roles
+// Não armazenamos senhas no frontend
 export interface Admin {
   id: string;
   name: string;
   email: string;
-  password: string;
   isActive: boolean;
   createdAt: Date;
 }
+
+// Tipos de role do sistema
+export type AppRole = 'admin' | 'moderator' | 'user';
