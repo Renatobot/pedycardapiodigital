@@ -118,8 +118,12 @@ export default function DashboardPage() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
-  const daysLeft = establishment 
-    ? Math.ceil((new Date(establishment.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const isPro = establishment?.plan_status === 'active';
+  const relevantDate = isPro 
+    ? (establishment as any)?.plan_expires_at 
+    : establishment?.trial_end_date;
+  const daysLeft = relevantDate 
+    ? Math.ceil((new Date(relevantDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : 7;
 
   const menuUrl = establishment 
@@ -488,13 +492,23 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="font-semibold text-foreground text-sm">{establishment.name}</h1>
-              <Badge 
-                variant="outline" 
-                className="text-xs bg-accent text-accent-foreground border-primary/20"
-              >
-                <Clock className="w-3 h-3 mr-1" />
-                Teste: {daysLeft} dias restantes
-              </Badge>
+              {isPro ? (
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-secondary/10 text-secondary border-secondary/20"
+                >
+                  <Crown className="w-3 h-3 mr-1" />
+                  Plano Pro
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-accent text-accent-foreground border-primary/20"
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Teste: {daysLeft} dias restantes
+                </Badge>
+              )}
             </div>
           </div>
           
@@ -507,7 +521,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Trial Warning Banner */}
-      {daysLeft <= 5 && (
+      {!isPro && daysLeft <= 5 && (
         <div className="bg-warning/10 border-b border-warning/20 px-4 py-3">
           <div className="container flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-warning">
