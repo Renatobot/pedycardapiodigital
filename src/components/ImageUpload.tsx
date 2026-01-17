@@ -100,30 +100,33 @@ export function ImageUpload({
       />
       
       {value ? (
-        <div className="relative group">
+        <div className="relative">
           <img 
             src={value} 
             alt="Preview" 
             className="w-full h-full object-cover rounded-lg"
           />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+          {/* Botões sempre visíveis no canto superior direito */}
+          <div className="absolute top-1 right-1 flex gap-1">
             <Button
               type="button"
               variant="secondary"
-              size="sm"
+              size="icon"
+              className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
               onClick={() => inputRef.current?.click()}
               disabled={isUploading}
             >
-              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
             </Button>
             <Button
               type="button"
               variant="destructive"
-              size="sm"
+              size="icon"
+              className="h-7 w-7 shadow-sm"
               onClick={handleRemove}
               disabled={isUploading}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </Button>
           </div>
         </div>
