@@ -17,11 +17,14 @@ interface PublicEstablishment {
   id: string;
   name: string;
   logo_url: string | null;
-  whatsapp: string;
-  pix_key: string | null;
   plan_status: string;
   trial_end_date: string;
   plan_expires_at: string | null;
+}
+
+interface EstablishmentContact {
+  whatsapp: string;
+  pix_key: string | null;
 }
 
 function CheckoutContent() {
@@ -31,6 +34,7 @@ function CheckoutContent() {
   const { toast } = useToast();
   
   const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
+  const [contact, setContact] = useState<EstablishmentContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [planStatus, setPlanStatus] = useState<{ active: boolean; reason: 'trial_expired' | 'plan_expired' | null }>({ active: true, reason: null });
   
@@ -50,6 +54,7 @@ function CheckoutContent() {
       if (!id) return;
       
       try {
+        // Fetch public establishment data (no sensitive info)
         const { data, error } = await supabase
           .from('public_establishments')
           .select('*')
@@ -76,6 +81,16 @@ function CheckoutContent() {
           plan_expires_at: data.plan_expires_at,
         });
         setPlanStatus(status);
+        
+        // Fetch contact info securely via function (only if plan is active)
+        if (status.active) {
+          const { data: contactData, error: contactError } = await supabase
+            .rpc('get_establishment_contact', { establishment_id: id });
+          
+          if (!contactError && contactData && contactData.length > 0) {
+            setContact(contactData[0] as EstablishmentContact);
+          }
+        }
       } catch (err) {
         console.error('Error:', err);
       } finally {
@@ -96,8 +111,8 @@ function CheckoutContent() {
   };
 
   const copyPixKey = () => {
-    if (establishment?.pix_key) {
-      navigator.clipboard.writeText(establishment.pix_key);
+    if (contact?.pix_key) {
+      navigator.clipboard.writeText(contact.pix_key);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -128,7 +143,7 @@ function CheckoutContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!establishment) return;
+    if (!establishment || !contact) return;
     
     if (!formData.address) {
       toast({
@@ -150,7 +165,7 @@ function CheckoutContent() {
       formData.observations
     );
 
-    openWhatsApp(establishment.whatsapp, message);
+    openWhatsApp(contact.whatsapp, message);
     clearCart();
     
     toast({
@@ -350,12 +365,12 @@ function CheckoutContent() {
               </RadioGroup>
 
               {/* Pix details */}
-              {formData.paymentMethod === 'pix' && establishment.pix_key && (
+              {formData.paymentMethod === 'pix' && contact?.pix_key && (
                 <div className="mt-4 p-4 bg-secondary/10 rounded-xl border border-secondary/20">
                   <p className="text-sm font-medium text-foreground mb-2">Chave Pix do estabelecimento:</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-card p-2 rounded text-sm break-all">
-                      {establishment.pix_key}
+                      {contact.pix_key}
                     </code>
                     <Button 
                       type="button"
