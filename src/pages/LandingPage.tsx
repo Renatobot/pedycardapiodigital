@@ -52,7 +52,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="container flex items-center justify-between h-16">
-          <img src={pedyLogo} alt="PEDY" className="h-10 object-contain" />
+          <img src={pedyLogo} alt="PEDY" className="h-14 md:h-16 object-contain" />
           <div className="flex items-center gap-3">
             <Link to="/login">
               <Button variant="ghost" size="sm">Entrar</Button>
