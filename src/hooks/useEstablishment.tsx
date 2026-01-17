@@ -189,13 +189,20 @@ export function useEstablishment() {
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .update(updates)
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) throw error;
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    
+    if (!data) {
+      throw new Error('Não foi possível atualizar o produto. Verifique suas permissões.');
+    }
+    
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
   };
 
   const deleteProduct = async (id: string) => {
