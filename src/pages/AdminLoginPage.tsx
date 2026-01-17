@@ -4,7 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Eye, EyeOff, Loader2, Zap } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Shield, Eye, EyeOff, Loader2, Zap, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +26,14 @@ const AdminLoginPage = () => {
   const [isCheckingAdmins, setIsCheckingAdmins] = useState(true);
   const [hasAdmins, setHasAdmins] = useState(true);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
+
+  // Password reset states
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     checkForAdmins();
@@ -150,6 +166,78 @@ const AdminLoginPage = () => {
     setIsLoading(false);
   };
 
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        title: 'Erro',
+        description: 'Informe o email do administrador.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A senha deve ter no mínimo 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-admin-password', {
+        body: { email: resetEmail, new_password: newPassword }
+      });
+
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível redefinir a senha.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: 'Senha redefinida!',
+          description: 'Você já pode fazer login com a nova senha.',
+        });
+        setResetModalOpen(false);
+        setResetEmail('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setEmail(resetEmail);
+      } else {
+        toast({
+          title: 'Erro',
+          description: data?.error || 'Erro ao redefinir senha.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao redefinir a senha.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (isCheckingAdmins) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -264,6 +352,15 @@ const AdminLoginPage = () => {
                   )}
                 </Button>
               </form>
+
+              <button
+                type="button"
+                onClick={() => setResetModalOpen(true)}
+                className="w-full mt-3 text-sm text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2"
+              >
+                <KeyRound className="w-4 h-4" />
+                Esqueci minha senha
+              </button>
               
               <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-xs text-slate-400 text-center">
@@ -275,6 +372,92 @@ const AdminLoginPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Password Reset Modal */}
+      <Dialog open={resetModalOpen} onOpenChange={setResetModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-red-500" />
+              Redefinir Senha de Admin
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Informe o email do administrador e a nova senha.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail" className="text-slate-300">Email do administrador</Label>
+              <Input
+                id="resetEmail"
+                type="email"
+                placeholder="admin@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-slate-300">Nova senha</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-slate-300">Confirmar senha</Label>
+              <Input
+                id="confirmPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="Repita a nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+              />
+            </div>
+            {newPassword && confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-xs text-red-400">As senhas não coincidem</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setResetModalOpen(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              disabled={isResetting}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handlePasswordReset}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isResetting || !resetEmail || newPassword.length < 6 || newPassword !== confirmPassword}
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Redefinindo...
+                </>
+              ) : (
+                'Redefinir Senha'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
