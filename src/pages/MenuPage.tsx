@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,17 +9,26 @@ import {
   Plus, 
   Minus, 
   X,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
-import { mockEstablishment, mockCategories, mockProducts } from '@/lib/mockData';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
-import { Product, ProductAddition } from '@/types';
+import { Product, ProductAddition, Category } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PublicEstablishment {
+  id: string;
+  name: string | null;
+  logo_url: string | null;
+  plan_status: string | null;
+  trial_end_date: string | null;
+  plan_expires_at: string | null;
+}
 
 function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -289,9 +298,107 @@ function CartSheet() {
 }
 
 function MenuContent() {
-  const establishment = mockEstablishment;
-  const categories = mockCategories;
-  const products = mockProducts;
+  const { id } = useParams();
+  const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
+      
+      try {
+        // Buscar estabelecimento da view pública
+        const { data: estData, error: estError } = await supabase
+          .from('public_establishments')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (estError) {
+          console.error('Erro ao buscar estabelecimento:', estError);
+        } else if (estData) {
+          setEstablishment(estData);
+        }
+        
+        // Buscar categorias
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('establishment_id', id)
+          .order('sort_order', { ascending: true });
+        
+        // Buscar produtos com adicionais
+        const { data: prodData } = await supabase
+          .from('products')
+          .select(`
+            *,
+            product_additions (*)
+          `)
+          .eq('establishment_id', id);
+        
+        // Mapear categorias para formato esperado
+        setCategories(catData?.map(c => ({
+          id: c.id,
+          establishmentId: c.establishment_id,
+          name: c.name,
+          order: c.sort_order
+        })) || []);
+        
+        // Mapear produtos para formato esperado
+        setProducts(prodData?.map(p => ({
+          id: p.id,
+          categoryId: p.category_id,
+          establishmentId: p.establishment_id,
+          name: p.name,
+          description: p.description || '',
+          price: Number(p.price),
+          image: p.image_url,
+          available: p.available,
+          additions: (p.product_additions || []).map((a: any) => ({
+            id: a.id,
+            name: a.name,
+            price: Number(a.price)
+          }))
+        })) || []);
+        
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!establishment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="pt-6">
+            <Store className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Estabelecimento não encontrado</h2>
+            <p className="text-muted-foreground mb-4">
+              O cardápio que você está procurando não existe ou foi removido.
+            </p>
+            <Link to="/">
+              <Button>Voltar ao início</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -300,7 +407,15 @@ function MenuContent() {
         <div className="container">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center overflow-hidden shadow-lg">
-              <Store className="w-8 h-8 text-muted-foreground" />
+              {establishment.logo_url ? (
+                <img 
+                  src={establishment.logo_url} 
+                  alt={establishment.name || 'Logo'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Store className="w-8 h-8 text-muted-foreground" />
+              )}
             </div>
             <div>
               <h1 className="text-xl font-bold">{establishment.name}</h1>
