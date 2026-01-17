@@ -76,9 +76,17 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Create the first admin user with predefined credentials
-      const adminEmail = 'renatodg2006@admin'
-      const adminPassword = '749672'
+      // Get admin credentials from environment variables (SECURE)
+      const adminEmail = Deno.env.get('BOOTSTRAP_ADMIN_EMAIL')
+      const adminPassword = Deno.env.get('BOOTSTRAP_ADMIN_PASSWORD')
+
+      if (!adminEmail || !adminPassword) {
+        console.error('Bootstrap credentials not configured in environment')
+        return new Response(
+          JSON.stringify({ error: 'Credenciais de bootstrap não configuradas. Configure BOOTSTRAP_ADMIN_EMAIL e BOOTSTRAP_ADMIN_PASSWORD.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
 
       console.log('Creating first admin user:', adminEmail)
 
