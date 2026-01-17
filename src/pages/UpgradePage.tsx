@@ -3,7 +3,7 @@ import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Crown, CheckCircle2, MessageCircle, ArrowLeft } from 'lucide-react';
-import { openWhatsApp, generateUpgradeMessage } from '@/lib/whatsapp';
+import { openWhatsApp, generateUpgradeMessage, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 
 const benefits = [
   'Cardápio digital ilimitado',
@@ -18,8 +18,7 @@ const benefits = [
 
 export default function UpgradePage() {
   const handleUpgrade = () => {
-    // Replace with your business WhatsApp number
-    openWhatsApp('5511999999999', generateUpgradeMessage());
+    openWhatsApp(SUPPORT_WHATSAPP, generateUpgradeMessage());
   };
 
   return (
