@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -40,12 +41,19 @@ import {
   Crown,
   X,
   Upload,
-  Loader2
+  Loader2,
+  QrCode,
+  Pencil,
+  Check,
+  Download,
+  Printer
 } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useEstablishment, ProductAddition } from '@/hooks/useEstablishment';
+
 import { ImageUpload } from '@/components/ImageUpload';
 
 export default function DashboardPage() {
@@ -66,7 +74,12 @@ export default function DashboardPage() {
     createAddition,
     deleteAddition,
     getProductAdditions,
+    checkSlugAvailable,
+    updateSlug,
   } = useEstablishment();
+
+  // QR Code ref
+  const qrCodeRef = useRef<HTMLCanvasElement>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -79,6 +92,8 @@ export default function DashboardPage() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [slugModalOpen, setSlugModalOpen] = useState(false);
+  const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Edit states
@@ -97,6 +112,11 @@ export default function DashboardPage() {
   });
   const [productAdditions, setProductAdditions] = useState<{ id: string; name: string; price: number; image_url?: string }[]>([]);
   const [newAddition, setNewAddition] = useState({ name: '', price: '', image: '' });
+
+  // Slug editing states
+  const [newSlug, setNewSlug] = useState('');
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
   const daysLeft = establishment 
     ? Math.ceil((new Date(establishment.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -117,6 +137,98 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  // Slug handlers
+  const openSlugModal = () => {
+    const currentSlug = (establishment as any)?.slug || '';
+    setNewSlug(currentSlug);
+    setSlugAvailable(null);
+    setSlugModalOpen(true);
+  };
+
+  const validateSlugFormat = (slug: string): boolean => {
+    if (slug.length < 3) return false;
+    const regex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+    return regex.test(slug);
+  };
+
+  const handleSlugChange = async (value: string) => {
+    const normalized = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setNewSlug(normalized);
+    setSlugAvailable(null);
+
+    if (normalized.length >= 3 && validateSlugFormat(normalized)) {
+      setIsCheckingSlug(true);
+      try {
+        const available = await checkSlugAvailable(normalized);
+        setSlugAvailable(available);
+      } catch (error) {
+        console.error('Error checking slug:', error);
+      } finally {
+        setIsCheckingSlug(false);
+      }
+    }
+  };
+
+  const handleSaveSlug = async () => {
+    if (!validateSlugFormat(newSlug) || !slugAvailable) return;
+
+    setIsSaving(true);
+    try {
+      await updateSlug(newSlug);
+      toast({
+        title: "URL atualizada!",
+        description: `Sua nova URL é: ${window.location.origin}/${newSlug}`,
+      });
+      setSlugModalOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível atualizar a URL.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // QR Code handlers
+  const downloadQRCode = (forPrint: boolean = false) => {
+    const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const size = forPrint ? 1024 : 256;
+    const printCanvas = document.createElement('canvas');
+    printCanvas.width = size;
+    printCanvas.height = size + 80; // Extra space for text
+    const ctx = printCanvas.getContext('2d');
+    
+    if (!ctx) return;
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+
+    // Draw QR code scaled
+    ctx.drawImage(canvas, 0, 0, size, size);
+
+    // Add establishment name below
+    ctx.fillStyle = '#000000';
+    ctx.font = `bold ${forPrint ? 32 : 14}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(establishment?.name || '', size / 2, size + (forPrint ? 50 : 25));
+
+    const url = printCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `${(establishment as any)?.slug || 'cardapio'}-qrcode${forPrint ? '-impressao' : ''}.png`;
+    link.href = url;
+    link.click();
+
+    toast({
+      title: forPrint ? "QR Code para impressão baixado!" : "QR Code baixado!",
+      description: "O arquivo foi salvo no seu dispositivo.",
+    });
   };
 
   // Category handlers
@@ -423,12 +535,22 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium opacity-90 mb-1">Link do seu cardápio:</p>
                 <p className="text-xs truncate opacity-75">{menuUrl}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="text-primary-foreground hover:bg-white/20"
+                  onClick={openSlugModal}
+                  title="Editar URL"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
                 <Button 
                   size="icon" 
                   variant="ghost" 
                   className="text-primary-foreground hover:bg-white/20"
                   onClick={copyLink}
+                  title="Copiar link"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -437,10 +559,20 @@ export default function DashboardPage() {
                     size="icon" 
                     variant="ghost" 
                     className="text-primary-foreground hover:bg-white/20"
+                    title="Abrir cardápio"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 </Link>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="text-primary-foreground hover:bg-white/20"
+                  onClick={() => setQrCodeModalOpen(true)}
+                  title="QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -773,6 +905,123 @@ export default function DashboardPage() {
               {editingProduct ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Slug Edit Modal */}
+      <Dialog open={slugModalOpen} onOpenChange={setSlugModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar URL do Cardápio</DialogTitle>
+            <DialogDescription>
+              Personalize a URL do seu cardápio para facilitar o compartilhamento.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nova URL</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {window.location.origin}/
+                </span>
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="meu-restaurante"
+                    value={newSlug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    className="pr-8"
+                  />
+                  {isCheckingSlug && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {!isCheckingSlug && slugAvailable === true && newSlug.length >= 3 && (
+                    <Check className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                  )}
+                  {!isCheckingSlug && slugAvailable === false && (
+                    <X className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-destructive" />
+                  )}
+                </div>
+              </div>
+              {slugAvailable === true && newSlug.length >= 3 && (
+                <p className="text-xs text-green-500">✓ URL disponível</p>
+              )}
+              {slugAvailable === false && (
+                <p className="text-xs text-destructive">✗ Esta URL já está em uso</p>
+              )}
+              {newSlug.length > 0 && newSlug.length < 3 && (
+                <p className="text-xs text-muted-foreground">Mínimo 3 caracteres</p>
+              )}
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                • Use apenas letras minúsculas, números e hífens<br />
+                • Mínimo 3 caracteres<br />
+                • Não pode começar ou terminar com hífen
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSlugModalOpen(false)} disabled={isSaving}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveSlug} 
+              disabled={isSaving || !slugAvailable || newSlug.length < 3}
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Salvar URL
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Modal */}
+      <Dialog open={qrCodeModalOpen} onOpenChange={setQrCodeModalOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">QR Code do Cardápio</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center py-4 space-y-4">
+            <div className="bg-white p-4 rounded-xl">
+              <QRCodeCanvas
+                id="qr-canvas"
+                value={menuUrl}
+                size={200}
+                level="H"
+                includeMargin={true}
+                imageSettings={establishment?.logo_url ? {
+                  src: establishment.logo_url,
+                  height: 40,
+                  width: 40,
+                  excavate: true,
+                } : undefined}
+              />
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-foreground">{establishment?.name}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[250px]">{menuUrl}</p>
+            </div>
+            <div className="flex gap-2 w-full">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => downloadQRCode(false)}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                PNG
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => downloadQRCode(true)}
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Impressão
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Use o QR Code em mesas, cardápios físicos e materiais promocionais
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -248,6 +248,45 @@ export function useEstablishment() {
     return additions.filter(a => a.product_id === productId);
   };
 
+  // Slug operations
+  const checkSlugAvailable = async (slug: string): Promise<boolean> => {
+    if (!establishment) return false;
+
+    const { data } = await supabase
+      .from('establishments')
+      .select('id')
+      .eq('slug', slug)
+      .neq('id', establishment.id)
+      .maybeSingle();
+
+    return !data; // true se disponível
+  };
+
+  const updateSlug = async (newSlug: string) => {
+    if (!establishment) throw new Error('Estabelecimento não encontrado');
+
+    // Validate slug format
+    const slugRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+    if (newSlug.length < 3 || !slugRegex.test(newSlug)) {
+      throw new Error('URL inválida. Use apenas letras minúsculas, números e hífens (mínimo 3 caracteres)');
+    }
+
+    // Check availability
+    const isAvailable = await checkSlugAvailable(newSlug);
+    if (!isAvailable) {
+      throw new Error('Esta URL já está em uso por outro estabelecimento');
+    }
+
+    const { error } = await supabase
+      .from('establishments')
+      .update({ slug: newSlug })
+      .eq('id', establishment.id);
+
+    if (error) throw error;
+    
+    setEstablishment(prev => prev ? { ...prev, slug: newSlug } as any : null);
+  };
+
   return {
     establishment,
     categories,
@@ -264,5 +303,7 @@ export function useEstablishment() {
     createAddition,
     deleteAddition,
     getProductAdditions,
+    checkSlugAvailable,
+    updateSlug,
   };
 }
