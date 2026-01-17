@@ -53,6 +53,33 @@ export type Database = {
           },
         ]
       }
+      email_verifications: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       establishments: {
         Row: {
           cpf_cnpj: string
@@ -246,6 +273,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_verifications: { Args: never; Returns: undefined }
       get_establishment_contact: {
         Args: { establishment_id: string }
         Returns: {

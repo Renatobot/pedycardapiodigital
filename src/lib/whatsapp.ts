@@ -85,3 +85,8 @@ export function openPaymentWhatsApp(establishmentName: string, isTrialExpired: b
   const message = generatePaymentMessage(establishmentName, isTrialExpired);
   openWhatsApp(SUPPORT_WHATSAPP, message);
 }
+
+export function generateWhatsAppLink(message: string): string {
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/55${SUPPORT_WHATSAPP}?text=${encodedMessage}`;
+}
