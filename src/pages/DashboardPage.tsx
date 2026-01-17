@@ -103,7 +103,7 @@ export default function DashboardPage() {
     : 7;
 
   const menuUrl = establishment 
-    ? `${window.location.origin}/cardapio/${establishment.id}`
+    ? `${window.location.origin}/${(establishment as any).slug || establishment.id}`
     : '';
 
   const copyLink = () => {
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
-                <Link to={`/cardapio/${establishment.id}`} target="_blank">
+                <Link to={`/${(establishment as any).slug || establishment.id}`} target="_blank">
                   <Button 
                     size="icon" 
                     variant="ghost" 

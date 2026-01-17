@@ -28,6 +28,7 @@ interface PublicEstablishment {
   plan_status: string | null;
   trial_end_date: string | null;
   plan_expires_at: string | null;
+  slug: string | null;
 }
 
 function ProductCard({ product }: { product: Product }) {
@@ -184,7 +185,7 @@ function ProductCard({ product }: { product: Product }) {
 
 function CartSheet() {
   const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
-  const { id } = useParams();
+  const { id, slug } = useParams();
   
   if (itemCount === 0) return null;
 
@@ -285,7 +286,7 @@ function CartSheet() {
             <span className="text-2xl font-bold text-foreground">{formatCurrency(total)}</span>
           </div>
           
-          <Link to={`/cardapio/${id}/checkout`}>
+          <Link to={`/${slug || id}/checkout`}>
             <Button variant="hero" size="lg" className="w-full">
               Continuar para entrega
               <ChevronRight className="w-5 h-5 ml-1" />
@@ -298,7 +299,7 @@ function CartSheet() {
 }
 
 function MenuContent() {
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -306,14 +307,18 @@ function MenuContent() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id) return;
+      const identifier = slug || id;
+      if (!identifier) return;
+      
+      // Verificar se é UUID ou slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
       
       try {
-        // Buscar estabelecimento da view pública
+        // Buscar estabelecimento da view pública por id ou slug
         const { data: estData, error: estError } = await supabase
           .from('public_establishments')
           .select('*')
-          .eq('id', id)
+          .eq(isUUID ? 'id' : 'slug', identifier)
           .single();
         
         if (estError) {
@@ -322,11 +327,17 @@ function MenuContent() {
           setEstablishment(estData);
         }
         
+        const establishmentId = estData?.id;
+        if (!establishmentId) {
+          setLoading(false);
+          return;
+        }
+        
         // Buscar categorias
         const { data: catData } = await supabase
           .from('categories')
           .select('*')
-          .eq('establishment_id', id)
+          .eq('establishment_id', establishmentId)
           .order('sort_order', { ascending: true });
         
         // Buscar produtos com adicionais
@@ -336,7 +347,7 @@ function MenuContent() {
             *,
             product_additions (*)
           `)
-          .eq('establishment_id', id);
+          .eq('establishment_id', establishmentId);
         
         // Mapear categorias para formato esperado
         setCategories(catData?.map(c => ({
@@ -371,7 +382,7 @@ function MenuContent() {
     };
     
     fetchData();
-  }, [id]);
+  }, [id, slug]);
 
   if (loading) {
     return (

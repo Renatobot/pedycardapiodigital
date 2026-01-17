@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, '')    // Remove caracteres especiais
+    .replace(/\s+/g, '-')            // Espaços viram hífens
+    .replace(/-+/g, '-')             // Remove hífens duplicados
+    .replace(/^-|-$/g, '')           // Remove hífens no início/fim
+    .trim();
+}
+
 export function isEstablishmentActive(establishment: {
   plan_status: string;
   trial_end_date?: string;
