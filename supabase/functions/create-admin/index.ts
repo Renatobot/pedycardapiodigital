@@ -62,8 +62,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { email, password, action } = await req.json();
+    // Parse request body UMA VEZ
+    const body = await req.json();
+    const { email, password, action, user_id: targetUserId } = body;
 
     // Handle different actions
     if (action === 'list') {
@@ -167,13 +168,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'remove') {
-      const { user_id: targetUserId } = await req.json().catch(() => ({}));
-      
-      // Re-parse to get user_id from body
-      const body = JSON.parse(await req.text().catch(() => '{}'));
-      const removeUserId = body.user_id || targetUserId;
-
-      if (!removeUserId) {
+      if (!targetUserId) {
         return new Response(
           JSON.stringify({ error: 'ID do usuário é obrigatório' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -181,7 +176,7 @@ Deno.serve(async (req) => {
       }
 
       // Prevent self-removal
-      if (removeUserId === user.id) {
+      if (targetUserId === user.id) {
         return new Response(
           JSON.stringify({ error: 'Você não pode remover seu próprio acesso de administrador' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -192,7 +187,7 @@ Deno.serve(async (req) => {
       const { error: deleteError } = await supabaseAdmin
         .from('user_roles')
         .delete()
-        .eq('user_id', removeUserId)
+        .eq('user_id', targetUserId)
         .eq('role', 'admin');
 
       if (deleteError) {
@@ -203,7 +198,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      console.log('Admin role removed for user:', removeUserId);
+      console.log('Admin role removed for user:', targetUserId);
 
       return new Response(
         JSON.stringify({ success: true, message: 'Administrador removido com sucesso' }),
