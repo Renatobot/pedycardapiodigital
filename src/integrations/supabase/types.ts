@@ -222,19 +222,31 @@ export type Database = {
           id: string | null
           logo_url: string | null
           name: string | null
+          pix_key: string | null
+          plan_expires_at: string | null
           plan_status: string | null
+          trial_end_date: string | null
+          whatsapp: string | null
         }
         Insert: {
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          pix_key?: string | null
+          plan_expires_at?: string | null
           plan_status?: string | null
+          trial_end_date?: string | null
+          whatsapp?: string | null
         }
         Update: {
           id?: string | null
           logo_url?: string | null
           name?: string | null
+          pix_key?: string | null
+          plan_expires_at?: string | null
           plan_status?: string | null
+          trial_end_date?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
