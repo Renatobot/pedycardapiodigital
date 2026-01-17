@@ -68,3 +68,20 @@ export function openWhatsApp(phone: string, message: string): void {
 export function generateUpgradeMessage(): string {
   return 'Olá! Quero ativar/renovar o Plano Pro do PEDY por R$ 37,00 por mês para o meu estabelecimento.';
 }
+
+export function generatePaymentMessage(
+  establishmentName: string,
+  isTrialExpired: boolean
+): string {
+  if (isTrialExpired) {
+    return `Olá! Sou do estabelecimento "${establishmentName}" e gostaria de ativar o Plano PRO do PEDY por R$ 37,00/mês.`;
+  }
+  return `Olá! Sou do estabelecimento "${establishmentName}" e gostaria de renovar meu Plano PRO do PEDY por R$ 37,00.`;
+}
+
+export const SUPPORT_WHATSAPP = '21920078469';
+
+export function openPaymentWhatsApp(establishmentName: string, isTrialExpired: boolean): void {
+  const message = generatePaymentMessage(establishmentName, isTrialExpired);
+  openWhatsApp(SUPPORT_WHATSAPP, message);
+}

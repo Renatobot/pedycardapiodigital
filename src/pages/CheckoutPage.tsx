@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,18 +6,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle } from 'lucide-react';
-import { mockEstablishment } from '@/lib/mockData';
-import { formatCurrency, generateOrderMessage, openWhatsApp } from '@/lib/whatsapp';
+import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle } from 'lucide-react';
+import { formatCurrency, generateOrderMessage, openWhatsApp, openPaymentWhatsApp } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { isEstablishmentActive } from '@/lib/utils';
+
+interface PublicEstablishment {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  whatsapp: string;
+  pix_key: string | null;
+  plan_status: string;
+  trial_end_date: string;
+  plan_expires_at: string | null;
+}
 
 function CheckoutContent() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
-  const establishment = mockEstablishment;
+  
+  const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [planStatus, setPlanStatus] = useState<{ active: boolean; reason: 'trial_expired' | 'plan_expired' | null }>({ active: true, reason: null });
   
   const [formData, setFormData] = useState({
     address: '',
@@ -30,6 +45,47 @@ function CheckoutContent() {
   });
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    const fetchEstablishment = async () => {
+      if (!id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('public_establishments')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching establishment:', error);
+          toast({
+            title: 'Erro',
+            description: 'Estabelecimento não encontrado.',
+            variant: 'destructive',
+          });
+          navigate('/');
+          return;
+        }
+        
+        setEstablishment(data as PublicEstablishment);
+        
+        // Check plan status
+        const status = isEstablishmentActive({
+          plan_status: data.plan_status || 'trial',
+          trial_end_date: data.trial_end_date,
+          plan_expires_at: data.plan_expires_at,
+        });
+        setPlanStatus(status);
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchEstablishment();
+  }, [id, navigate, toast]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -40,8 +96,8 @@ function CheckoutContent() {
   };
 
   const copyPixKey = () => {
-    if (establishment.pixKey) {
-      navigator.clipboard.writeText(establishment.pixKey);
+    if (establishment?.pix_key) {
+      navigator.clipboard.writeText(establishment.pix_key);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -72,6 +128,8 @@ function CheckoutContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!establishment) return;
+    
     if (!formData.address) {
       toast({
         title: 'Erro',
@@ -82,7 +140,7 @@ function CheckoutContent() {
     }
 
     const message = generateOrderMessage(
-      establishment.name,
+      establishment.name || '',
       items,
       formData.address,
       formData.referencePoint,
@@ -102,6 +160,82 @@ function CheckoutContent() {
 
     navigate(`/cardapio/${id}`);
   };
+
+  const handleActivatePlan = () => {
+    if (establishment) {
+      openPaymentWhatsApp(establishment.name || '', planStatus.reason === 'trial_expired');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!establishment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground mb-4">Estabelecimento não encontrado</p>
+            <Link to="/">
+              <Button>Voltar ao início</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Plan expired/inactive - show blocking screen
+  if (!planStatus.active) {
+    const isTrialExpired = planStatus.reason === 'trial_expired';
+    
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+            </div>
+            
+            <h2 className="text-xl font-semibold text-foreground">
+              Cardápio Temporariamente Indisponível
+            </h2>
+            
+            <p className="text-muted-foreground">
+              {isTrialExpired 
+                ? 'O período de teste deste estabelecimento expirou. Para continuar recebendo pedidos, é necessário ativar o Plano PRO.'
+                : 'O plano deste estabelecimento precisa ser renovado para continuar recebendo pedidos.'
+              }
+            </p>
+            
+            <div className="pt-4 space-y-3">
+              <Button 
+                variant="whatsapp" 
+                size="lg" 
+                className="w-full"
+                onClick={handleActivatePlan}
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                {isTrialExpired ? 'Ativar Plano PRO - R$ 37/mês' : 'Renovar Plano PRO - R$ 37/mês'}
+              </Button>
+              
+              <Link to={`/cardapio/${id}`} className="block">
+                <Button variant="outline" size="lg" className="w-full">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar ao cardápio
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -216,12 +350,12 @@ function CheckoutContent() {
               </RadioGroup>
 
               {/* Pix details */}
-              {formData.paymentMethod === 'pix' && establishment.pixKey && (
+              {formData.paymentMethod === 'pix' && establishment.pix_key && (
                 <div className="mt-4 p-4 bg-secondary/10 rounded-xl border border-secondary/20">
                   <p className="text-sm font-medium text-foreground mb-2">Chave Pix do estabelecimento:</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-card p-2 rounded text-sm break-all">
-                      {establishment.pixKey}
+                      {establishment.pix_key}
                     </code>
                     <Button 
                       type="button"
