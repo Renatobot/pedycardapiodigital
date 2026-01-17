@@ -208,9 +208,8 @@ const AdminLoginPage = () => {
 
               <div className="p-3 bg-slate-700/50 rounded-lg">
                 <p className="text-xs text-slate-400 text-center">
-                  Será criado um admin com:<br />
-                  <span className="text-slate-300">Email: renatodg2006@admin</span><br />
-                  <span className="text-slate-300">Senha: 749672</span>
+                  Um administrador master será criado automaticamente.<br />
+                  <span className="text-slate-300">Entre em contato com o suporte para obter as credenciais.</span>
                 </p>
               </div>
             </div>
