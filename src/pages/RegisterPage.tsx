@@ -131,8 +131,22 @@ export default function RegisterPage() {
       console.error('Registration error:', error);
       
       let errorMessage = 'Ocorreu um erro ao criar sua conta.';
+      
+      // Verificar erros de unicidade do Supabase Auth
       if (error.message?.includes('already registered')) {
         errorMessage = 'Este e-mail já está cadastrado. Faça login ou use outro e-mail.';
+      } 
+      // Verificar erros de constraint de unicidade do PostgreSQL
+      else if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        if (error.message?.includes('cpf_cnpj') || error.details?.includes('cpf_cnpj')) {
+          errorMessage = 'Este CPF/CNPJ já está cadastrado em outro estabelecimento. Se seu trial expirou, entre em contato para fazer o upgrade.';
+        } else if (error.message?.includes('whatsapp') || error.details?.includes('whatsapp')) {
+          errorMessage = 'Este WhatsApp já está cadastrado em outro estabelecimento. Se seu trial expirou, entre em contato para fazer o upgrade.';
+        } else if (error.message?.includes('email') || error.details?.includes('email')) {
+          errorMessage = 'Este e-mail já está cadastrado. Faça login ou entre em contato se precisar de ajuda.';
+        } else {
+          errorMessage = 'Alguns dados informados já estão em uso por outro estabelecimento. Se seu trial expirou, entre em contato para fazer o upgrade.';
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
