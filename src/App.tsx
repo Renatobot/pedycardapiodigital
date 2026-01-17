@@ -33,6 +33,8 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/cardapio/:id" element={<MenuPage />} />
               <Route path="/cardapio/:id/checkout" element={<CheckoutPage />} />
+              <Route path="/:slug" element={<MenuPage />} />
+              <Route path="/:slug/checkout" element={<CheckoutPage />} />
               <Route path="/upgrade" element={<UpgradePage />} />
               <Route path="/demo" element={<MenuPage />} />
               {/* Admin Routes */}

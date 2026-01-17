@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, CheckCircle2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { generateSlug } from '@/lib/utils';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -243,7 +244,25 @@ export default function RegisterPage() {
       // 2. Upload logo if provided
       const logoUrl = await uploadLogo(authData.user.id);
 
-      // 3. Create establishment record
+      // 3. Generate unique slug
+      let baseSlug = generateSlug(formData.establishmentName);
+      let slug = baseSlug;
+      let counter = 1;
+      
+      // Check if slug exists and make it unique
+      while (true) {
+        const { data: existingSlug } = await supabase
+          .from('establishments')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+        
+        if (!existingSlug) break;
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      // 4. Create establishment record with slug
       const { error: establishmentError } = await supabase
         .from('establishments')
         .insert({
@@ -253,6 +272,7 @@ export default function RegisterPage() {
           cpf_cnpj: formData.cpfCnpj,
           whatsapp: formData.whatsapp,
           email: formData.email,
+          slug: slug,
         });
 
       if (establishmentError) throw establishmentError;

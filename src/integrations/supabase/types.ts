@@ -91,6 +91,7 @@ export type Database = {
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
+          slug: string | null
           trial_end_date: string
           trial_start_date: string
           user_id: string | null
@@ -106,6 +107,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          slug?: string | null
           trial_end_date?: string
           trial_start_date?: string
           user_id?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          slug?: string | null
           trial_end_date?: string
           trial_start_date?: string
           user_id?: string | null
@@ -251,6 +254,7 @@ export type Database = {
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
+          slug: string | null
           trial_end_date: string | null
         }
         Insert: {
@@ -259,6 +263,7 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          slug?: string | null
           trial_end_date?: string | null
         }
         Update: {
@@ -267,6 +272,7 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          slug?: string | null
           trial_end_date?: string | null
         }
         Relationships: []

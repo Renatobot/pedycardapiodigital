@@ -28,7 +28,7 @@ interface EstablishmentContact {
 }
 
 function CheckoutContent() {
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
@@ -51,14 +51,18 @@ function CheckoutContent() {
 
   useEffect(() => {
     const fetchEstablishment = async () => {
-      if (!id) return;
+      const identifier = slug || id;
+      if (!identifier) return;
+      
+      // Verificar se é UUID ou slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
       
       try {
         // Fetch public establishment data (no sensitive info)
         const { data, error } = await supabase
           .from('public_establishments')
           .select('*')
-          .eq('id', id)
+          .eq(isUUID ? 'id' : 'slug', identifier)
           .single();
         
         if (error) {
@@ -82,10 +86,12 @@ function CheckoutContent() {
         });
         setPlanStatus(status);
         
+        const establishmentId = data.id;
+        
         // Fetch contact info securely via function (only if plan is active)
-        if (status.active) {
+        if (status.active && establishmentId) {
           const { data: contactData, error: contactError } = await supabase
-            .rpc('get_establishment_contact', { establishment_id: id });
+            .rpc('get_establishment_contact', { establishment_id: establishmentId });
           
           if (!contactError && contactData && contactData.length > 0) {
             setContact(contactData[0] as EstablishmentContact);
@@ -99,7 +105,7 @@ function CheckoutContent() {
     };
     
     fetchEstablishment();
-  }, [id, navigate, toast]);
+  }, [id, slug, navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -173,7 +179,7 @@ function CheckoutContent() {
       description: 'Seu pedido foi enviado para o WhatsApp do estabelecimento.',
     });
 
-    navigate(`/cardapio/${id}`);
+    navigate(`/${slug || id}`);
   };
 
   const handleActivatePlan = () => {
@@ -239,7 +245,7 @@ function CheckoutContent() {
                 {isTrialExpired ? 'Ativar Plano PRO - R$ 37/mês' : 'Renovar Plano PRO - R$ 37/mês'}
               </Button>
               
-              <Link to={`/cardapio/${id}`} className="block">
+              <Link to={`/${slug || id}`} className="block">
                 <Button variant="outline" size="lg" className="w-full">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar ao cardápio
@@ -258,7 +264,7 @@ function CheckoutContent() {
         <Card className="max-w-md w-full text-center">
           <CardContent className="pt-6">
             <p className="text-muted-foreground mb-4">Seu carrinho está vazio</p>
-            <Link to={`/cardapio/${id}`}>
+            <Link to={`/${slug || id}`}>
               <Button>Voltar ao cardápio</Button>
             </Link>
           </CardContent>
@@ -272,7 +278,7 @@ function CheckoutContent() {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container flex items-center gap-4 h-14">
-          <Link to={`/cardapio/${id}`}>
+          <Link to={`/${slug || id}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
