@@ -53,6 +53,63 @@ export type Database = {
           },
         ]
       }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_type: string
+          discount_value: number
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_value: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type: string
+          discount_value: number
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type?: string
+          discount_value?: number
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_codes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verifications: {
         Row: {
           code: string
@@ -84,6 +141,7 @@ export type Database = {
         Row: {
           cpf_cnpj: string
           created_at: string
+          delivery_fee: number | null
           email: string
           id: string
           logo_url: string | null
@@ -100,6 +158,7 @@ export type Database = {
         Insert: {
           cpf_cnpj: string
           created_at?: string
+          delivery_fee?: number | null
           email: string
           id?: string
           logo_url?: string | null
@@ -116,6 +175,7 @@ export type Database = {
         Update: {
           cpf_cnpj?: string
           created_at?: string
+          delivery_fee?: number | null
           email?: string
           id?: string
           logo_url?: string | null
@@ -130,6 +190,81 @@ export type Database = {
           whatsapp?: string
         }
         Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          customer_address: string
+          customer_phone: string | null
+          delivery_fee: number | null
+          discount_code: string | null
+          discount_value: number | null
+          establishment_id: string
+          id: string
+          items: Json
+          observations: string | null
+          payment_details: string | null
+          payment_method: string
+          reference_point: string | null
+          status: string | null
+          subtotal: number
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_address: string
+          customer_phone?: string | null
+          delivery_fee?: number | null
+          discount_code?: string | null
+          discount_value?: number | null
+          establishment_id: string
+          id?: string
+          items: Json
+          observations?: string | null
+          payment_details?: string | null
+          payment_method: string
+          reference_point?: string | null
+          status?: string | null
+          subtotal: number
+          total: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_address?: string
+          customer_phone?: string | null
+          delivery_fee?: number | null
+          discount_code?: string | null
+          discount_value?: number | null
+          establishment_id?: string
+          id?: string
+          items?: Json
+          observations?: string | null
+          payment_details?: string | null
+          payment_method?: string
+          reference_point?: string | null
+          status?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_additions: {
         Row: {
@@ -249,6 +384,7 @@ export type Database = {
     Views: {
       public_establishments: {
         Row: {
+          delivery_fee: number | null
           id: string | null
           logo_url: string | null
           name: string | null
@@ -258,6 +394,7 @@ export type Database = {
           trial_end_date: string | null
         }
         Insert: {
+          delivery_fee?: number | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
@@ -267,6 +404,7 @@ export type Database = {
           trial_end_date?: string | null
         }
         Update: {
+          delivery_fee?: number | null
           id?: string | null
           logo_url?: string | null
           name?: string | null
