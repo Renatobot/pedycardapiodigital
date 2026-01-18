@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PWARedirectHandler } from "@/components/PWARedirectHandler";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -30,6 +31,7 @@ const App = () => (
             <Sonner />
             <PWAInstallPrompt />
             <BrowserRouter>
+              <PWARedirectHandler />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />

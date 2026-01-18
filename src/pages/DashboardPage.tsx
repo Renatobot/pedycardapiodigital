@@ -72,6 +72,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MenuAppearanceSettings } from '@/components/MenuAppearanceSettings';
+import { DashboardPWAPrompt } from '@/components/DashboardPWAPrompt';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -1460,6 +1461,9 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PWA Install Prompt específico para Dashboard */}
+      <DashboardPWAPrompt />
     </div>
   );
 }
