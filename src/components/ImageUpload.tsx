@@ -106,7 +106,7 @@ export function ImageUpload({
       />
       
       {value ? (
-        <div className="relative h-full">
+        <div className="relative h-full overflow-hidden rounded-lg">
           <img 
             src={value} 
             alt="Preview" 

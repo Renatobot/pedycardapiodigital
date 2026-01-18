@@ -425,6 +425,30 @@ export default function DashboardPage() {
 
       if (editingProduct) {
         await updateProduct(editingProduct.id, productData);
+        
+        // Sincronizar adicionais
+        const originalAdditions = getProductAdditions(editingProduct.id);
+        const currentAdditionIds = productAdditions.map(a => a.id);
+        
+        // Deletar adicionais removidos
+        for (const original of originalAdditions) {
+          if (!currentAdditionIds.includes(original.id)) {
+            await deleteAddition(original.id);
+          }
+        }
+        
+        // Criar novos adicionais (IDs temporários)
+        for (const addition of productAdditions) {
+          if (addition.id.startsWith('temp-')) {
+            await createAddition({
+              product_id: editingProduct.id,
+              name: addition.name,
+              price: addition.price,
+              image_url: addition.image_url,
+            });
+          }
+        }
+        
         toast({
           title: "Produto atualizado!",
           description: `O produto "${productForm.name}" foi atualizado.`,
@@ -901,7 +925,7 @@ export default function DashboardPage() {
             {/* Product Image Upload */}
             <div className="space-y-2">
               <Label>Foto do produto (opcional)</Label>
-              <div className="w-full h-32">
+              <div className="w-full h-32 overflow-hidden">
                 <ImageUpload
                   value={productForm.image}
                   onChange={(url) => setProductForm(prev => ({ ...prev, image: url || '' }))}
