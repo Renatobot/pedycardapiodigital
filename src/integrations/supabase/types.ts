@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_hours: {
+        Row: {
+          closing_time: string | null
+          created_at: string | null
+          day_of_week: number
+          establishment_id: string
+          id: string
+          is_open: boolean
+          opening_time: string | null
+        }
+        Insert: {
+          closing_time?: string | null
+          created_at?: string | null
+          day_of_week: number
+          establishment_id: string
+          id?: string
+          is_open?: boolean
+          opening_time?: string | null
+        }
+        Update: {
+          closing_time?: string | null
+          created_at?: string | null
+          day_of_week?: number
+          establishment_id?: string
+          id?: string
+          is_open?: boolean
+          opening_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_hours_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_hours_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -185,6 +230,7 @@ export type Database = {
       establishments: {
         Row: {
           accept_pickup: boolean | null
+          allow_orders_when_closed: boolean | null
           city: string | null
           cpf_cnpj: string
           created_at: string
@@ -198,6 +244,7 @@ export type Database = {
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
+          scheduled_orders_message: string | null
           slug: string | null
           trial_days: number | null
           trial_end_date: string
@@ -207,6 +254,7 @@ export type Database = {
         }
         Insert: {
           accept_pickup?: boolean | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           cpf_cnpj: string
           created_at?: string
@@ -220,6 +268,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          scheduled_orders_message?: string | null
           slug?: string | null
           trial_days?: number | null
           trial_end_date?: string
@@ -229,6 +278,7 @@ export type Database = {
         }
         Update: {
           accept_pickup?: boolean | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           cpf_cnpj?: string
           created_at?: string
@@ -242,6 +292,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          scheduled_orders_message?: string | null
           slug?: string | null
           trial_days?: number | null
           trial_end_date?: string
@@ -523,6 +574,7 @@ export type Database = {
       public_establishments: {
         Row: {
           accept_pickup: boolean | null
+          allow_orders_when_closed: boolean | null
           city: string | null
           delivery_fee: number | null
           free_delivery_min: number | null
@@ -532,11 +584,13 @@ export type Database = {
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
+          scheduled_orders_message: string | null
           slug: string | null
           trial_end_date: string | null
         }
         Insert: {
           accept_pickup?: boolean | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
@@ -546,11 +600,13 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          scheduled_orders_message?: string | null
           slug?: string | null
           trial_end_date?: string | null
         }
         Update: {
           accept_pickup?: boolean | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
@@ -560,6 +616,7 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          scheduled_orders_message?: string | null
           slug?: string | null
           trial_end_date?: string | null
         }

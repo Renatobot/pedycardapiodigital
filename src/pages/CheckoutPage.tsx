@@ -14,12 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package } from 'lucide-react';
+import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package, Clock } from 'lucide-react';
 import { formatCurrency, generateOrderMessage, openWhatsApp, openPaymentWhatsApp } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { isEstablishmentActive } from '@/lib/utils';
+import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage } from '@/lib/businessHours';
 
 interface PublicEstablishment {
   id: string;
@@ -32,6 +33,8 @@ interface PublicEstablishment {
   min_order_value: number | null;
   free_delivery_min: number | null;
   accept_pickup: boolean | null;
+  allow_orders_when_closed: boolean | null;
+  scheduled_orders_message: string | null;
 }
 
 interface EstablishmentContact {
@@ -63,7 +66,9 @@ function CheckoutContent() {
   const [contact, setContact] = useState<EstablishmentContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [planStatus, setPlanStatus] = useState<{ active: boolean; reason: 'trial_expired' | 'plan_expired' | null }>({ active: true, reason: null });
-  
+  const [businessStatus, setBusinessStatus] = useState<BusinessStatus>({ isOpen: true, message: 'Aberto', todayHours: null, nextOpenInfo: null });
+  const [allowOrdersWhenClosed, setAllowOrdersWhenClosed] = useState(false);
+  const [scheduledOrdersMessage, setScheduledOrdersMessage] = useState<string | null>(null);
   // Delivery zones and saved addresses
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -139,6 +144,24 @@ function CheckoutContent() {
             delivery_type: z.delivery_type as 'paid' | 'free',
           })));
         }
+
+        // Fetch business hours
+        const { data: hoursData } = await supabase
+          .from('business_hours')
+          .select('*')
+          .eq('establishment_id', establishmentId);
+
+        if (hoursData && hoursData.length > 0) {
+          const bStatus = checkBusinessStatus(
+            hoursData,
+            data.allow_orders_when_closed || false,
+            data.scheduled_orders_message
+          );
+          setBusinessStatus(bStatus);
+        }
+
+        setAllowOrdersWhenClosed(data.allow_orders_when_closed || false);
+        setScheduledOrdersMessage(data.scheduled_orders_message);
         
         if (status.active && establishmentId) {
           const { data: contactData, error: contactError } = await supabase
@@ -456,6 +479,12 @@ function CheckoutContent() {
       console.error('Error saving order:', err);
     }
 
+    // Determine if this is a scheduled order (made when closed)
+    const isScheduledOrder = !businessStatus.isOpen && allowOrdersWhenClosed;
+    const scheduledMessage = isScheduledOrder 
+      ? getScheduledOrderMessage(true, scheduledOrdersMessage)
+      : undefined;
+
     const message = generateOrderMessage(
       establishment.name || '',
       items,
@@ -470,7 +499,9 @@ function CheckoutContent() {
       deliveryInfo.fee,
       discountValue,
       appliedCoupon?.code || null,
-      formData.observations
+      formData.observations,
+      isScheduledOrder,
+      scheduledMessage || undefined
     );
 
     openWhatsApp(contact.whatsapp, message);
@@ -998,6 +1029,32 @@ function CheckoutContent() {
                     </p>
                   </div>
                 )}
+
+                {/* Business hours closed warning */}
+                {!businessStatus.isOpen && !allowOrdersWhenClosed && (
+                  <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-destructive" />
+                      <p className="font-medium text-destructive">Estabelecimento fechado</p>
+                    </div>
+                    <p className="text-sm text-destructive/80">
+                      {businessStatus.nextOpenInfo || 'Não é possível fazer pedidos no momento.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Scheduled order info */}
+                {!businessStatus.isOpen && allowOrdersWhenClosed && (
+                  <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-4 h-4 text-warning" />
+                      <p className="font-medium text-warning">Pedido agendado</p>
+                    </div>
+                    <p className="text-sm text-warning/80">
+                      {scheduledOrdersMessage || 'Estamos fechados, mas você pode fazer seu pedido. Será preparado quando reabrirmos.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1006,16 +1063,30 @@ function CheckoutContent() {
 
       {/* Fixed bottom button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
-        <Button 
-          variant="whatsapp" 
-          size="lg" 
-          className="w-full"
-          onClick={handleSubmit}
-          disabled={!isMinOrderMet}
-        >
-          <MessageCircle className="w-5 h-5 mr-2" />
-          Enviar pedido via WhatsApp
-        </Button>
+        {!businessStatus.isOpen && !allowOrdersWhenClosed ? (
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="w-full"
+            disabled
+          >
+            <Clock className="w-5 h-5 mr-2" />
+            Fechado - {businessStatus.nextOpenInfo || 'Volte mais tarde'}
+          </Button>
+        ) : (
+          <Button 
+            variant="whatsapp" 
+            size="lg" 
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={!isMinOrderMet}
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            {!businessStatus.isOpen && allowOrdersWhenClosed 
+              ? 'Agendar pedido via WhatsApp' 
+              : 'Enviar pedido via WhatsApp'}
+          </Button>
+        )}
       </div>
     </div>
   );

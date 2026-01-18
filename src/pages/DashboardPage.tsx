@@ -58,6 +58,7 @@ import { OrderManagement } from '@/components/OrderManagement';
 import { DeliverySettings } from '@/components/DeliverySettings';
 import { DeliveryZones } from '@/components/DeliveryZones';
 import { CouponManagement } from '@/components/CouponManagement';
+import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -710,6 +711,7 @@ export default function DashboardPage() {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            <BusinessHoursSettings establishmentId={establishment.id} />
             <DeliverySettings
               establishmentId={establishment.id}
               currentFee={deliveryFee}

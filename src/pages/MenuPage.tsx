@@ -10,7 +10,8 @@ import {
   Minus, 
   X,
   ChevronRight,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -20,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { BusinessHour, BusinessStatus, checkBusinessStatus } from '@/lib/businessHours';
 
 interface PublicEstablishment {
   id: string;
@@ -29,6 +31,8 @@ interface PublicEstablishment {
   trial_end_date: string | null;
   plan_expires_at: string | null;
   slug: string | null;
+  allow_orders_when_closed: boolean | null;
+  scheduled_orders_message: string | null;
 }
 
 function ProductCard({ product }: { product: Product }) {
@@ -303,6 +307,8 @@ function MenuContent() {
   const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
+  const [businessStatus, setBusinessStatus] = useState<BusinessStatus>({ isOpen: true, message: 'Aberto', todayHours: null, nextOpenInfo: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -349,6 +355,12 @@ function MenuContent() {
           `)
           .eq('establishment_id', establishmentId);
         
+        // Buscar horários de funcionamento
+        const { data: hoursData } = await supabase
+          .from('business_hours')
+          .select('*')
+          .eq('establishment_id', establishmentId);
+        
         // Mapear categorias para formato esperado
         setCategories(catData?.map(c => ({
           id: c.id,
@@ -373,6 +385,17 @@ function MenuContent() {
             price: Number(a.price)
           }))
         })) || []);
+
+        // Configurar horários de funcionamento
+        if (hoursData) {
+          setBusinessHours(hoursData);
+          const status = checkBusinessStatus(
+            hoursData,
+            estData.allow_orders_when_closed || false,
+            estData.scheduled_orders_message
+          );
+          setBusinessStatus(status);
+        }
         
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
@@ -430,8 +453,16 @@ function MenuContent() {
             </div>
             <div>
               <h1 className="text-xl font-bold">{establishment.name}</h1>
-              <Badge variant="outline" className="bg-white/20 text-primary-foreground border-white/30 mt-1">
-                Aberto
+              <Badge 
+                variant="outline" 
+                className={`mt-1 ${
+                  businessStatus.isOpen 
+                    ? 'bg-green-500/20 text-white border-green-400/30' 
+                    : 'bg-red-500/20 text-white border-red-400/30'
+                }`}
+              >
+                <Clock className="w-3 h-3 mr-1" />
+                {businessStatus.message}
               </Badge>
             </div>
           </div>
