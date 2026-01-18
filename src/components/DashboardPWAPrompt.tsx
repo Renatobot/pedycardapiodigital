@@ -48,6 +48,9 @@ export function DashboardPWAPrompt() {
 
     // Para iOS, mostrar instruções manuais
     if (isIOS()) {
+      // Salvar URL atual para redirecionamento após instalação manual
+      localStorage.setItem('pwa-start-url', '/dashboard');
+      
       setIsSafari(isIOSSafari());
       const dismissed = localStorage.getItem('pwa-dashboard-ios-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
@@ -58,6 +61,9 @@ export function DashboardPWAPrompt() {
 
     // Para Safari no Mac, mostrar instruções manuais
     if (isMacSafari()) {
+      // Salvar URL atual para redirecionamento após instalação manual
+      localStorage.setItem('pwa-start-url', '/dashboard');
+      
       const dismissed = localStorage.getItem('pwa-dashboard-mac-safari-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
         setShowMacSafariPrompt(true);

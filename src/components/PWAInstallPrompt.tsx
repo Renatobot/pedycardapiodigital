@@ -48,6 +48,12 @@ export function PWAInstallPrompt() {
 
     // Para iOS, mostrar instruções manuais
     if (isIOS()) {
+      // Salvar URL atual para redirecionamento após instalação manual
+      const currentPath = window.location.pathname;
+      if (currentPath && currentPath !== '/') {
+        localStorage.setItem('pwa-start-url', currentPath);
+      }
+      
       setIsSafari(isIOSSafari());
       const dismissed = localStorage.getItem('pwa-ios-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
@@ -58,6 +64,12 @@ export function PWAInstallPrompt() {
 
     // Para Safari no Mac, mostrar instruções manuais
     if (isMacSafari()) {
+      // Salvar URL atual para redirecionamento após instalação manual
+      const currentPath = window.location.pathname;
+      if (currentPath && currentPath !== '/') {
+        localStorage.setItem('pwa-start-url', currentPath);
+      }
+      
       const dismissed = localStorage.getItem('pwa-mac-safari-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
         setShowMacSafariPrompt(true);

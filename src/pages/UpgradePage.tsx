@@ -1,9 +1,20 @@
 import { Link } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Crown, CheckCircle2, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Crown, CheckCircle2, MessageCircle, ArrowLeft, Clock, X } from 'lucide-react';
 import { openWhatsApp, generateUpgradeMessage, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
+
+const trialFeatures = [
+  'Cardápio digital',
+  'Até 5 categorias',
+  'Até 10 produtos',
+  'Pedidos via WhatsApp',
+];
+
+const trialLimitations = [
+  'Sem configurações avançadas',
+];
 
 const benefits = [
   'Cardápio digital ilimitado',
@@ -32,19 +43,59 @@ export default function UpgradePage() {
       </header>
 
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-hero rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Crown className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Plano Pro</h1>
+        <div className="w-full max-w-md animate-fade-in space-y-4">
+          <div className="text-center mb-2">
+            <h1 className="text-2xl font-bold text-foreground">Escolha seu Plano</h1>
             <p className="text-muted-foreground mt-1">
-              Desbloqueie todo o potencial do PEDY
+              Compare os recursos e escolha o melhor para você
             </p>
           </div>
 
-          <Card className="shadow-soft mb-6 overflow-hidden">
+          {/* Plano Grátis / Trial */}
+          <Card className="shadow-soft border-muted">
+            <div className="bg-muted p-4 text-center rounded-t-lg">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Clock className="w-5 h-5 text-muted-foreground" />
+                <span className="font-semibold text-foreground">PLANO GRÁTIS</span>
+              </div>
+              <div className="flex items-baseline justify-center gap-1 text-foreground">
+                <span className="text-sm">R$</span>
+                <span className="text-4xl font-bold">0</span>
+                <span className="text-muted-foreground">/7 dias</span>
+              </div>
+            </div>
+            
+            <CardContent className="pt-4">
+              <ul className="space-y-2 mb-4">
+                {trialFeatures.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+                {trialLimitations.map((limitation, index) => (
+                  <li key={index} className="flex items-center gap-3 text-muted-foreground">
+                    <X className="w-4 h-4 text-destructive/60 flex-shrink-0" />
+                    <span className="text-sm">{limitation}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-center text-muted-foreground">
+                Teste gratuito por 7 dias, sem compromisso
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Plano Pro */}
+          <Card className="shadow-soft overflow-hidden border-primary/30 ring-2 ring-primary/20">
             <div className="bg-gradient-hero p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Crown className="w-5 h-5 text-primary-foreground" />
+                <span className="font-semibold text-primary-foreground">PLANO PRO</span>
+                <span className="text-xs bg-primary-foreground/20 text-primary-foreground px-2 py-0.5 rounded-full">
+                  RECOMENDADO
+                </span>
+              </div>
               <div className="flex items-baseline justify-center gap-1 text-primary-foreground">
                 <span className="text-sm">R$</span>
                 <span className="text-5xl font-bold">37</span>
@@ -78,7 +129,7 @@ export default function UpgradePage() {
             </CardContent>
           </Card>
 
-          <div className="text-center">
+          <div className="text-center pt-2">
             <img src={pedyLogo} alt="PEDY" className="h-8 mx-auto opacity-50" />
           </div>
         </div>
