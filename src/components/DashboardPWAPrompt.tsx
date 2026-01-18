@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, X, LayoutDashboard, Share, MoreVertical } from 'lucide-react';
+import { Download, X, LayoutDashboard, Share, MoreVertical, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -19,11 +19,24 @@ const isIOSSafari = (): boolean => {
          !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
 };
 
+// Detectar macOS
+const isMacOS = (): boolean => {
+  return /Macintosh|MacIntel|MacPPC|Mac68K/.test(navigator.userAgent);
+};
+
+// Detectar Safari no macOS (não Chromium)
+const isMacSafari = (): boolean => {
+  return isMacOS() && 
+         /Safari/.test(navigator.userAgent) && 
+         !/Chrome|CriOS|Chromium|Edg/.test(navigator.userAgent);
+};
+
 export function DashboardPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [showMacSafariPrompt, setShowMacSafariPrompt] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
@@ -39,6 +52,15 @@ export function DashboardPWAPrompt() {
       const dismissed = localStorage.getItem('pwa-dashboard-ios-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
         setShowIOSPrompt(true);
+      }
+      return;
+    }
+
+    // Para Safari no Mac, mostrar instruções manuais
+    if (isMacSafari()) {
+      const dismissed = localStorage.getItem('pwa-dashboard-mac-safari-dismissed');
+      if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
+        setShowMacSafariPrompt(true);
       }
       return;
     }
@@ -99,6 +121,57 @@ export function DashboardPWAPrompt() {
     setShowIOSPrompt(false);
     localStorage.setItem('pwa-dashboard-ios-dismissed', Date.now().toString());
   };
+
+  const handleMacSafariDismiss = () => {
+    setShowMacSafariPrompt(false);
+    localStorage.setItem('pwa-dashboard-mac-safari-dismissed', Date.now().toString());
+  };
+
+  // Prompt para Safari no Mac
+  if (showMacSafariPrompt && !isInstalled) {
+    return (
+      <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
+          <div className="flex items-start gap-3">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Monitor className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm">Instalar Painel PEDY</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                No Safari, vá em <strong>Arquivo → Adicionar ao Dock</strong> ou clique no ícone <Share className="inline h-3.5 w-3.5 mx-0.5" /> na barra de endereço
+              </p>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleMacSafariDismiss}
+                  className="flex-1"
+                >
+                  Entendi
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleMacSafariDismiss}
+                >
+                  Agora não
+                </Button>
+              </div>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 -mt-1 -mr-1"
+              onClick={handleMacSafariDismiss}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Prompt para iOS
   if (showIOSPrompt && !isInstalled) {
