@@ -6,14 +6,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, User, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const REMEMBER_EMAIL_KEY = 'pedy_remembered_email';
+const REMEMBER_IDENTIFIER_KEY = 'pedy_remembered_identifier';
+
+// Extrai apenas dígitos de uma string
+const extractDigits = (value: string): string => value.replace(/\D/g, '');
+
+// Detecta o tipo de identificador
+const detectIdentifierType = (identifier: string): 'email' | 'cpf' | 'cnpj' | 'phone' => {
+  if (identifier.includes('@')) return 'email';
+  
+  const digits = extractDigits(identifier);
+  if (digits.length === 11 && !digits.startsWith('0')) return 'cpf';
+  if (digits.length === 14) return 'cnpj';
+  if (digits.length >= 10 && digits.length <= 11) return 'phone';
+  
+  // Fallback para CPF se tiver 11 dígitos
+  if (digits.length === 11) return 'cpf';
+  
+  return 'email'; // Default
+};
+
+// Busca o e-mail associado ao identificador
+const resolveEmailFromIdentifier = async (identifier: string): Promise<string | null> => {
+  const type = detectIdentifierType(identifier);
+  
+  if (type === 'email') return identifier;
+  
+  const digits = extractDigits(identifier);
+  
+  let query = supabase.from('establishments').select('email');
+  
+  if (type === 'phone') {
+    query = query.eq('whatsapp', digits);
+  } else {
+    // CPF ou CNPJ
+    query = query.eq('cpf_cnpj', digits);
+  }
+  
+  const { data, error } = await query.maybeSingle();
+  
+  if (error || !data) return null;
+  
+  return data.email;
+};
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +63,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
-    if (savedEmail) {
-      setEmail(savedEmail);
+    const savedIdentifier = localStorage.getItem(REMEMBER_IDENTIFIER_KEY);
+    if (savedIdentifier) {
+      setIdentifier(savedIdentifier);
       setRememberMe(true);
     }
   }, []);
@@ -32,7 +74,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!identifier || !password) {
       toast({
         title: 'Erro',
         description: 'Por favor, preencha todos os campos.',
@@ -44,6 +86,15 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Resolver o e-mail a partir do identificador
+      const email = await resolveEmailFromIdentifier(identifier.trim());
+      
+      if (!email) {
+        const type = detectIdentifierType(identifier);
+        const typeLabel = type === 'phone' ? 'celular' : 'CPF/CNPJ';
+        throw new Error(`Não encontramos uma conta com esse ${typeLabel}.`);
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -51,11 +102,11 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      // Salvar ou remover e-mail do localStorage
+      // Salvar ou remover identificador do localStorage
       if (rememberMe) {
-        localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+        localStorage.setItem(REMEMBER_IDENTIFIER_KEY, identifier);
       } else {
-        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
       }
 
       toast({
@@ -68,7 +119,7 @@ export default function LoginPage() {
       
       let errorMessage = 'Ocorreu um erro ao fazer login.';
       if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = 'E-mail ou senha incorretos.';
+        errorMessage = 'Identificador ou senha incorretos.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -107,15 +158,15 @@ export default function LoginPage() {
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
+                  <Label htmlFor="identifier">E-mail, Celular ou CPF/CNPJ</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="identifier"
+                      type="text"
+                      placeholder="seu@email.com, celular ou CPF/CNPJ"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -163,7 +214,7 @@ export default function LoginPage() {
                     htmlFor="rememberMe" 
                     className="text-sm font-normal text-muted-foreground cursor-pointer"
                   >
-                    Lembrar meu e-mail
+                    Lembrar meus dados
                   </Label>
                 </div>
 
