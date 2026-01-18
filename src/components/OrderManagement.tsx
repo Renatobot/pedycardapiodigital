@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -233,6 +233,31 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                   {formatTimeAgo(order.created_at)}
                 </span>
               </div>
+              {/* Customer info */}
+              {order.customer_name && (
+                <p className="text-sm font-medium text-foreground flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {order.customer_name}
+                </p>
+              )}
+              {order.customer_phone && (
+                <div className="flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{order.customer_phone}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const phone = order.customer_phone?.replace(/\D/g, '');
+                      window.open(`https://wa.me/55${phone}`, '_blank');
+                    }}
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
               <p className="text-sm text-foreground font-medium truncate">
                 <MapPin className="w-3 h-3 inline mr-1" />
                 {order.customer_address}
@@ -352,6 +377,43 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                   {new Date(selectedOrder.created_at).toLocaleString('pt-BR')}
                 </span>
               </div>
+
+              {/* Customer Contact Card */}
+              {(selectedOrder.customer_name || selectedOrder.customer_phone) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Cliente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-2">
+                    {selectedOrder.customer_name && (
+                      <p className="font-medium">{selectedOrder.customer_name}</p>
+                    )}
+                    {selectedOrder.customer_phone && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <span>{selectedOrder.customer_phone}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={() => {
+                            const phone = selectedOrder.customer_phone?.replace(/\D/g, '');
+                            window.open(`https://wa.me/55${phone}`, '_blank');
+                          }}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          WhatsApp
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader className="pb-2">
