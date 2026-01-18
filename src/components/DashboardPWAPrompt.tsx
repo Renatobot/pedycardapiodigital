@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -7,7 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export function PWAInstallPrompt() {
+export function DashboardPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -19,8 +19,8 @@ export function PWAInstallPrompt() {
       return;
     }
 
-    // Verificar se já foi dismissado recentemente
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    // Verificar se já foi dismissado recentemente (específico do dashboard)
+    const dismissed = localStorage.getItem('pwa-dashboard-dismissed');
     if (dismissed) {
       const dismissedTime = parseInt(dismissed, 10);
       // Mostrar novamente após 7 dias
@@ -53,11 +53,8 @@ export function PWAInstallPrompt() {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    // Salvar a URL atual como start_url do PWA
-    const currentPath = window.location.pathname;
-    if (currentPath && currentPath !== '/') {
-      localStorage.setItem('pwa-start-url', currentPath);
-    }
+    // Salvar que deve abrir no dashboard
+    localStorage.setItem('pwa-start-url', '/dashboard');
 
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -71,7 +68,7 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    localStorage.setItem('pwa-dashboard-dismissed', Date.now().toString());
   };
 
   if (!isVisible || isInstalled) {
@@ -83,12 +80,12 @@ export function PWAInstallPrompt() {
       <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
         <div className="flex items-start gap-3">
           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Smartphone className="h-6 w-6 text-primary" />
+            <LayoutDashboard className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm">Instalar o PEDY</h3>
+            <h3 className="font-semibold text-sm">Instalar Painel PEDY</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Adicione à tela inicial para acesso rápido e receber notificações
+              Acesse seu painel rapidamente e receba notificações de novos pedidos
             </p>
             <div className="flex gap-2 mt-3">
               <Button
