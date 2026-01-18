@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +76,15 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Audio ref for new order notification
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Initialize audio on mount
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/new-order.mp3');
+    audioRef.current.volume = 0.7;
+  }, []);
 
   const fetchOrders = async () => {
     try {
@@ -107,7 +116,31 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `establishment_id=eq.${establishmentId}`,
+        },
+        () => {
+          // Play notification sound for new orders
+          if (audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+          }
+          
+          // Show toast notification
+          toast({
+            title: '🔔 Novo Pedido!',
+            description: 'Um novo pedido acabou de chegar.',
+          });
+          
+          fetchOrders();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'orders',
           filter: `establishment_id=eq.${establishmentId}`,
@@ -121,7 +154,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [establishmentId]);
+  }, [establishmentId, toast]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(orderId);
