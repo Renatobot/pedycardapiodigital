@@ -10,8 +10,11 @@ export function formatCurrency(value: number): string {
 export function generateOrderMessage(
   establishmentName: string,
   items: CartItem[],
+  customerName: string,
   address: string,
+  neighborhood: string,
   referencePoint: string,
+  deliveryType: 'delivery' | 'pickup' | 'other',
   paymentMethod: string,
   paymentDetails: string,
   subtotal: number,
@@ -23,8 +26,18 @@ export function generateOrderMessage(
   const total = subtotal + deliveryFee - discountValue;
   
   let message = `🛒 *NOVO PEDIDO - ${establishmentName}*\n\n`;
-  message += `📍 *Endereço:* ${address}\n`;
-  message += `📌 *Ponto de referência:* ${referencePoint}\n\n`;
+  message += `👤 *Cliente:* ${customerName}\n`;
+  
+  if (deliveryType === 'pickup') {
+    message += `📦 *Tipo:* Retirada no local\n\n`;
+  } else {
+    message += `📍 *Endereço:* ${address}\n`;
+    message += `🏘️ *Bairro:* ${neighborhood}\n`;
+    if (referencePoint) {
+      message += `📌 *Ponto de referência:* ${referencePoint}\n`;
+    }
+    message += `\n`;
+  }
   
   message += `📝 *ITENS DO PEDIDO:*\n`;
   message += `━━━━━━━━━━━━━━━━━━━━\n`;

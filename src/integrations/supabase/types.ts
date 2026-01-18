@@ -53,6 +53,51 @@ export type Database = {
           },
         ]
       }
+      delivery_zones: {
+        Row: {
+          created_at: string | null
+          delivery_fee: number | null
+          delivery_type: string
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          neighborhood: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_type: string
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          neighborhood: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_type?: string
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          neighborhood?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_codes: {
         Row: {
           code: string
@@ -139,51 +184,66 @@ export type Database = {
       }
       establishments: {
         Row: {
+          accept_pickup: boolean | null
+          city: string | null
           cpf_cnpj: string
           created_at: string
           delivery_fee: number | null
           email: string
+          free_delivery_min: number | null
           id: string
           logo_url: string | null
+          min_order_value: number | null
           name: string
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
           slug: string | null
+          trial_days: number | null
           trial_end_date: string
           trial_start_date: string
           user_id: string | null
           whatsapp: string
         }
         Insert: {
+          accept_pickup?: boolean | null
+          city?: string | null
           cpf_cnpj: string
           created_at?: string
           delivery_fee?: number | null
           email: string
+          free_delivery_min?: number | null
           id?: string
           logo_url?: string | null
+          min_order_value?: number | null
           name: string
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
           slug?: string | null
+          trial_days?: number | null
           trial_end_date?: string
           trial_start_date?: string
           user_id?: string | null
           whatsapp: string
         }
         Update: {
+          accept_pickup?: boolean | null
+          city?: string | null
           cpf_cnpj?: string
           created_at?: string
           delivery_fee?: number | null
           email?: string
+          free_delivery_min?: number | null
           id?: string
           logo_url?: string | null
+          min_order_value?: number | null
           name?: string
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
           slug?: string | null
+          trial_days?: number | null
           trial_end_date?: string
           trial_start_date?: string
           user_id?: string | null
@@ -195,13 +255,16 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_address: string
+          customer_name: string | null
           customer_phone: string | null
           delivery_fee: number | null
+          delivery_type: string | null
           discount_code: string | null
           discount_value: number | null
           establishment_id: string
           id: string
           items: Json
+          neighborhood: string | null
           observations: string | null
           payment_details: string | null
           payment_method: string
@@ -214,13 +277,16 @@ export type Database = {
         Insert: {
           created_at?: string | null
           customer_address: string
+          customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number | null
+          delivery_type?: string | null
           discount_code?: string | null
           discount_value?: number | null
           establishment_id: string
           id?: string
           items: Json
+          neighborhood?: string | null
           observations?: string | null
           payment_details?: string | null
           payment_method: string
@@ -233,13 +299,16 @@ export type Database = {
         Update: {
           created_at?: string | null
           customer_address?: string
+          customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number | null
+          delivery_type?: string | null
           discount_code?: string | null
           discount_value?: number | null
           establishment_id?: string
           id?: string
           items?: Json
+          neighborhood?: string | null
           observations?: string | null
           payment_details?: string | null
           payment_method?: string
@@ -303,6 +372,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allow_observations: boolean | null
           available: boolean
           category_id: string
           created_at: string
@@ -310,10 +380,17 @@ export type Database = {
           establishment_id: string
           id: string
           image_url: string | null
+          is_promotional: boolean | null
+          max_quantity: number | null
           name: string
+          original_price: number | null
           price: number
+          promotional_price: number | null
+          subject_to_availability: boolean | null
+          unit_type: string | null
         }
         Insert: {
+          allow_observations?: boolean | null
           available?: boolean
           category_id: string
           created_at?: string
@@ -321,10 +398,17 @@ export type Database = {
           establishment_id: string
           id?: string
           image_url?: string | null
+          is_promotional?: boolean | null
+          max_quantity?: number | null
           name: string
+          original_price?: number | null
           price?: number
+          promotional_price?: number | null
+          subject_to_availability?: boolean | null
+          unit_type?: string | null
         }
         Update: {
+          allow_observations?: boolean | null
           available?: boolean
           category_id?: string
           created_at?: string
@@ -332,8 +416,14 @@ export type Database = {
           establishment_id?: string
           id?: string
           image_url?: string | null
+          is_promotional?: boolean | null
+          max_quantity?: number | null
           name?: string
+          original_price?: number | null
           price?: number
+          promotional_price?: number | null
+          subject_to_availability?: boolean | null
+          unit_type?: string | null
         }
         Relationships: [
           {
@@ -352,6 +442,54 @@ export type Database = {
           },
           {
             foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_addresses: {
+        Row: {
+          address: string
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_default: boolean | null
+          neighborhood: string | null
+          reference_point: string | null
+          whatsapp: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          is_default?: boolean | null
+          neighborhood?: string | null
+          reference_point?: string | null
+          whatsapp: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          is_default?: boolean | null
+          neighborhood?: string | null
+          reference_point?: string | null
+          whatsapp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_addresses_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_addresses_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
@@ -384,9 +522,13 @@ export type Database = {
     Views: {
       public_establishments: {
         Row: {
+          accept_pickup: boolean | null
+          city: string | null
           delivery_fee: number | null
+          free_delivery_min: number | null
           id: string | null
           logo_url: string | null
+          min_order_value: number | null
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
@@ -394,9 +536,13 @@ export type Database = {
           trial_end_date: string | null
         }
         Insert: {
+          accept_pickup?: boolean | null
+          city?: string | null
           delivery_fee?: number | null
+          free_delivery_min?: number | null
           id?: string | null
           logo_url?: string | null
+          min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
@@ -404,9 +550,13 @@ export type Database = {
           trial_end_date?: string | null
         }
         Update: {
+          accept_pickup?: boolean | null
+          city?: string | null
           delivery_fee?: number | null
+          free_delivery_min?: number | null
           id?: string | null
           logo_url?: string | null
+          min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
