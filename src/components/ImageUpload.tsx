@@ -10,6 +10,8 @@ interface ImageUploadProps {
   folder?: string;
   className?: string;
   placeholder?: React.ReactNode;
+  onUploadStart?: () => void;
+  onUploadEnd?: () => void;
 }
 
 export function ImageUpload({ 
@@ -17,7 +19,9 @@ export function ImageUpload({
   onChange, 
   folder = 'products',
   className = '',
-  placeholder 
+  placeholder,
+  onUploadStart,
+  onUploadEnd
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +52,7 @@ export function ImageUpload({
     }
 
     setIsUploading(true);
+    onUploadStart?.();
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -78,6 +83,7 @@ export function ImageUpload({
       });
     } finally {
       setIsUploading(false);
+      onUploadEnd?.();
       if (inputRef.current) {
         inputRef.current.value = '';
       }
@@ -100,7 +106,7 @@ export function ImageUpload({
       />
       
       {value ? (
-        <div className="relative">
+        <div className="relative h-full">
           <img 
             src={value} 
             alt="Preview" 
