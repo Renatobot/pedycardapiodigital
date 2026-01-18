@@ -438,6 +438,15 @@ function CheckoutContent() {
         name: a.name,
         price: a.price,
       })),
+      selectedOptions: item.selectedOptions.map(g => ({
+        groupId: g.groupId,
+        groupName: g.groupName,
+        options: g.options.map(o => ({
+          id: o.id,
+          name: o.name,
+          price: o.price,
+        })),
+      })),
       observations: item.observations,
     }));
 

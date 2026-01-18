@@ -15,13 +15,15 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
-import { Product, ProductAddition, Category } from '@/types';
+import { Product, ProductAddition, Category, SelectedProductOption } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { BusinessHour, BusinessStatus, checkBusinessStatus } from '@/lib/businessHours';
+import { ProductOptionSelector } from '@/components/ProductOptionSelector';
+import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGroupsManager';
 
 interface PublicEstablishment {
   id: string;
@@ -35,12 +37,17 @@ interface PublicEstablishment {
   scheduled_orders_message: string | null;
 }
 
-function ProductCard({ product }: { product: Product }) {
+interface ProductWithOptions extends Product {
+  optionGroups?: ProductOptionGroup[];
+}
+
+function ProductCard({ product }: { product: ProductWithOptions }) {
   const { addItem } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedAdditions, setSelectedAdditions] = useState<ProductAddition[]>([]);
   const [observations, setObservations] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<SelectedProductOption[]>([]);
 
   const toggleAddition = (addition: ProductAddition) => {
     setSelectedAdditions((prev) =>
@@ -51,14 +58,45 @@ function ProductCard({ product }: { product: Product }) {
   };
 
   const additionsTotal = selectedAdditions.reduce((sum, a) => sum + a.price, 0);
-  const itemTotal = (product.price + additionsTotal) * quantity;
+  const optionsTotal = selectedOptions.reduce((sum, group) => 
+    sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
+  );
+  const itemTotal = (product.price + additionsTotal + optionsTotal) * quantity;
+
+  // Validation for required option groups
+  const validateOptions = (): { valid: boolean; message?: string } => {
+    if (!product.optionGroups || product.optionGroups.length === 0) {
+      return { valid: true };
+    }
+
+    for (const group of product.optionGroups) {
+      const selection = selectedOptions.find(s => s.groupId === group.id);
+      const selectedCount = selection?.options.length || 0;
+
+      if (group.is_required && selectedCount === 0) {
+        return { valid: false, message: `Selecione ${group.name}` };
+      }
+
+      if (group.min_selections > 0 && selectedCount < group.min_selections) {
+        return { valid: false, message: `Selecione pelo menos ${group.min_selections} em ${group.name}` };
+      }
+    }
+
+    return { valid: true };
+  };
 
   const handleAddToCart = () => {
-    addItem(product, quantity, selectedAdditions, observations);
+    const validation = validateOptions();
+    if (!validation.valid) {
+      return;
+    }
+
+    addItem(product, quantity, selectedAdditions, observations, selectedOptions);
     setIsOpen(false);
     setQuantity(1);
     setSelectedAdditions([]);
     setObservations('');
+    setSelectedOptions([]);
   };
 
   if (!product.available) return null;
@@ -113,6 +151,15 @@ function ProductCard({ product }: { product: Product }) {
             <p className="text-muted-foreground">{product.description}</p>
             <p className="text-xl font-bold text-primary mt-2">{formatCurrency(product.price)}</p>
           </div>
+
+          {/* Product Option Groups */}
+          {product.optionGroups && product.optionGroups.length > 0 && (
+            <ProductOptionSelector
+              groups={product.optionGroups}
+              selectedOptions={selectedOptions}
+              onSelectionChange={setSelectedOptions}
+            />
+          )}
           
           {product.additions.length > 0 && (
             <div>
@@ -178,9 +225,20 @@ function ProductCard({ product }: { product: Product }) {
             <span className="text-lg font-bold text-foreground">{formatCurrency(itemTotal)}</span>
           </div>
           
-          <Button variant="hero" size="lg" className="w-full" onClick={handleAddToCart}>
-            Adicionar ao carrinho
-          </Button>
+          {(() => {
+            const validation = validateOptions();
+            return (
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="w-full" 
+                onClick={handleAddToCart}
+                disabled={!validation.valid}
+              >
+                {validation.valid ? 'Adicionar ao carrinho' : validation.message}
+              </Button>
+            );
+          })()}
         </div>
       </SheetContent>
     </Sheet>
@@ -220,7 +278,10 @@ function CartSheet() {
         <div className="space-y-4 overflow-auto max-h-[calc(85vh-200px)]">
           {items.map((item, index) => {
             const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
-            const itemTotal = (item.product.price + additionsTotal) * item.quantity;
+            const optionsTotal = item.selectedOptions.reduce((sum, group) => 
+              sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
+            );
+            const itemTotal = (item.product.price + additionsTotal + optionsTotal) * item.quantity;
             
             return (
               <div 
@@ -247,6 +308,23 @@ function CartSheet() {
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
+                  
+                  {/* Display selected options */}
+                  {item.selectedOptions.length > 0 && (
+                    <div className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
+                      {item.selectedOptions.map((group) => (
+                        <p key={group.groupId}>
+                          <span className="font-medium">{group.groupName}:</span>{' '}
+                          {group.options.map(o => o.name).join(', ')}
+                          {group.options.some(o => o.price > 0) && (
+                            <span className="text-secondary ml-1">
+                              (+{formatCurrency(group.options.reduce((sum, o) => sum + o.price, 0))})
+                            </span>
+                          )}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   
                   {item.selectedAdditions.length > 0 && (
                     <p className="text-xs text-muted-foreground">
@@ -306,7 +384,7 @@ function MenuContent() {
   const { id, slug } = useParams();
   const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithOptions[]>([]);
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   const [businessStatus, setBusinessStatus] = useState<BusinessStatus>({ isOpen: true, message: 'Aberto', todayHours: null, nextOpenInfo: null });
   const [loading, setLoading] = useState(true);
@@ -355,6 +433,16 @@ function MenuContent() {
           `)
           .eq('establishment_id', establishmentId);
         
+        // Buscar grupos de opções e suas opções
+        const { data: optionGroupsData } = await supabase
+          .from('product_option_groups')
+          .select(`
+            *,
+            product_options (*)
+          `)
+          .in('product_id', (prodData || []).map(p => p.id))
+          .order('sort_order', { ascending: true });
+        
         // Buscar horários de funcionamento
         const { data: hoursData } = await supabase
           .from('business_hours')
@@ -369,22 +457,49 @@ function MenuContent() {
           order: c.sort_order
         })) || []);
         
-        // Mapear produtos para formato esperado
-        setProducts(prodData?.map(p => ({
-          id: p.id,
-          categoryId: p.category_id,
-          establishmentId: p.establishment_id,
-          name: p.name,
-          description: p.description || '',
-          price: Number(p.price),
-          image: p.image_url,
-          available: p.available,
-          additions: (p.product_additions || []).map((a: any) => ({
-            id: a.id,
-            name: a.name,
-            price: Number(a.price)
-          }))
-        })) || []);
+        // Mapear produtos para formato esperado com grupos de opções
+        setProducts(prodData?.map(p => {
+          // Find option groups for this product
+          const productGroups = (optionGroupsData || [])
+            .filter(g => g.product_id === p.id)
+            .map(g => ({
+              id: g.id,
+              name: g.name,
+              type: g.type as 'single' | 'multiple' | 'flavor',
+              is_required: g.is_required || false,
+              min_selections: g.min_selections || 0,
+              max_selections: g.max_selections || 1,
+              sort_order: g.sort_order || 0,
+              options: (g.product_options || [])
+                .filter((o: any) => o.is_available !== false)
+                .map((o: any) => ({
+                  id: o.id,
+                  name: o.name,
+                  price: Number(o.price) || 0,
+                  is_default: o.is_default || false,
+                  is_available: o.is_available !== false,
+                  sort_order: o.sort_order || 0
+                }))
+                .sort((a: any, b: any) => a.sort_order - b.sort_order)
+            }));
+
+          return {
+            id: p.id,
+            categoryId: p.category_id,
+            establishmentId: p.establishment_id,
+            name: p.name,
+            description: p.description || '',
+            price: Number(p.price),
+            image: p.image_url,
+            available: p.available,
+            additions: (p.product_additions || []).map((a: any) => ({
+              id: a.id,
+              name: a.name,
+              price: Number(a.price)
+            })),
+            optionGroups: productGroups
+          };
+        }) || []);
 
         // Configurar horários de funcionamento
         if (hoursData) {
