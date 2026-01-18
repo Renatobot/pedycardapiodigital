@@ -278,6 +278,28 @@ export function ProductOptionGroupsManager({
         <ProPlusUpgradeCard feature={PRO_PLUS_FEATURES.PRODUCT_CUSTOMIZATION} />
       )}
 
+      {/* Card informativo sobre Pro+ para trial */}
+      {hasProductCustomization && establishment?.plan_status === 'trial' && (
+        <Card className="mb-4 border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-foreground">
+                  Recurso Exclusivo Pro+
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Durante o período de teste, você tem acesso a todas as configurações de personalização. 
+                  Após o trial, para continuar usando esses recursos, será necessário ativar o <strong>Plano Pro+ (R$ 57/mês)</strong>.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Conteúdo - esmaecido se bloqueado mas PRESERVADO */}
       <div className={!hasProductCustomization ? 'opacity-40 pointer-events-none select-none' : ''}>
         <div className="space-y-4">
