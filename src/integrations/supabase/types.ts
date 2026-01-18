@@ -702,6 +702,7 @@ export type Database = {
           address_neighborhood: string | null
           address_number: string | null
           address_street: string | null
+          allow_orders_when_closed: boolean | null
           city: string | null
           delivery_fee: number | null
           free_delivery_min: number | null
@@ -711,6 +712,7 @@ export type Database = {
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
+          scheduled_orders_message: string | null
           show_address_on_menu: boolean | null
           slug: string | null
           trial_end_date: string | null
@@ -721,6 +723,7 @@ export type Database = {
           address_neighborhood?: string | null
           address_number?: string | null
           address_street?: string | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
@@ -730,6 +733,7 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          scheduled_orders_message?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null
@@ -740,6 +744,7 @@ export type Database = {
           address_neighborhood?: string | null
           address_number?: string | null
           address_street?: string | null
+          allow_orders_when_closed?: boolean | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
@@ -749,6 +754,7 @@ export type Database = {
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          scheduled_orders_message?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null
