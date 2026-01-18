@@ -62,6 +62,7 @@ import { DeliveryZones } from '@/components/DeliveryZones';
 import { CouponManagement } from '@/components/CouponManagement';
 import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { EstablishmentAddressSettings } from '@/components/EstablishmentAddressSettings';
 import { ProductOptionGroupsManager, ProductOptionGroup } from '@/components/ProductOptionGroupsManager';
 import { HelpTooltip, ProductOptionsHelpContent } from '@/components/HelpTooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -835,6 +836,7 @@ export default function DashboardPage() {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            <EstablishmentAddressSettings establishmentId={establishment.id} />
             <BusinessHoursSettings establishmentId={establishment.id} />
             <NotificationSettings 
               establishmentId={establishment.id} 
