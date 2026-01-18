@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Sparkles, FileText } from 'lucide-react';
-import { MENU_TEMPLATES, MenuTemplate } from '@/lib/menuTemplates';
+import { NICHE_TEMPLATES, NicheTemplate } from '@/lib/nicheTemplates';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,7 +29,14 @@ export function NicheSelectionModal({
   const [loading, setLoading] = useState(false);
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
 
-  const handleSelectNiche = async (template: MenuTemplate) => {
+  const handleSelectNiche = async (template: NicheTemplate) => {
+    if (!template.categories || template.categories.length === 0) {
+      toast.info(`Template ${template.name} selecionado!`);
+      onComplete();
+      onOpenChange(false);
+      return;
+    }
+
     setSelectedNiche(template.id);
     setLoading(true);
 
@@ -94,7 +101,7 @@ export function NicheSelectionModal({
     onOpenChange(false);
   };
 
-  const templates = Object.values(MENU_TEMPLATES);
+  const templates = Object.values(NICHE_TEMPLATES);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,8 +137,8 @@ export function NicheSelectionModal({
                   {template.description}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {template.categories.length} categorias • {' '}
-                  {template.categories.reduce((acc, cat) => acc + cat.products.length, 0)} produtos
+                  {template.categories?.length || 0} categorias • {' '}
+                  {template.categories?.reduce((acc, cat) => acc + cat.products.length, 0) || 0} produtos
                 </p>
               </CardContent>
             </Card>
