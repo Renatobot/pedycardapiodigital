@@ -704,11 +704,11 @@ export default function DashboardPage() {
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
+            <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
               {establishment.logo_url ? (
                 <img src={establishment.logo_url} alt={establishment.name} className="w-full h-full object-cover" />
               ) : (
-                <Store className="w-5 h-5 text-muted-foreground" />
+                <Store className="w-8 h-8 text-muted-foreground" />
               )}
             </div>
             <div>
@@ -1424,8 +1424,8 @@ export default function DashboardPage() {
                 includeMargin={true}
                 imageSettings={establishment?.logo_url ? {
                   src: establishment.logo_url,
-                  height: 40,
-                  width: 40,
+                  height: 60,
+                  width: 60,
                   excavate: true,
                 } : undefined}
               />

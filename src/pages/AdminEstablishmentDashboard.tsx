@@ -717,11 +717,11 @@ export default function AdminEstablishmentDashboard() {
                 <img 
                   src={establishment.logo_url} 
                   alt={establishment.name}
-                  className="w-12 h-12 rounded-lg object-cover"
+                  className="w-16 h-16 rounded-xl object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-                  <Store className="w-6 h-6 text-primary-foreground" />
+                <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
+                  <Store className="w-8 h-8 text-primary-foreground" />
                 </div>
               )}
               <div>
