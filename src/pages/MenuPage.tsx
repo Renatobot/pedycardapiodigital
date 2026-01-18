@@ -12,7 +12,9 @@ import {
   ChevronRight,
   Loader2,
   Clock,
-  ChevronDown
+  ChevronDown,
+  MapPin,
+  Package
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -38,6 +40,13 @@ interface PublicEstablishment {
   slug: string | null;
   allow_orders_when_closed: boolean | null;
   scheduled_orders_message: string | null;
+  accept_pickup: boolean | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_neighborhood: string | null;
+  address_complement: string | null;
+  show_address_on_menu: boolean | null;
+  city: string | null;
 }
 
 interface ProductWithOptions extends Product {
@@ -636,6 +645,39 @@ function MenuContent() {
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+              )}
+
+              {/* Pickup Address Section */}
+              {establishment.accept_pickup && establishment.show_address_on_menu && establishment.address_street && (
+                <div className="mt-3 bg-white/10 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium">Endereço para retirada</p>
+                      <p className="text-primary-foreground/80">
+                        {establishment.address_street}, {establishment.address_number}
+                        {establishment.address_complement && ` - ${establishment.address_complement}`}
+                        {' - '}{establishment.address_neighborhood}
+                        {establishment.city && `, ${establishment.city}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mt-2 text-xs text-green-300">
+                    <Package className="w-3 h-3" />
+                    Aceitamos retirada no local
+                  </div>
+                </div>
+              )}
+
+              {/* Only pickup badge when address is hidden */}
+              {establishment.accept_pickup && !establishment.show_address_on_menu && (
+                <Badge 
+                  variant="outline" 
+                  className="mt-2 bg-green-500/20 text-white border-green-400/30"
+                >
+                  <Package className="w-3 h-3 mr-1" />
+                  Aceita retirada no local
+                </Badge>
               )}
             </div>
           </div>

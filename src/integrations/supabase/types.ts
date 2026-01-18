@@ -230,6 +230,10 @@ export type Database = {
       establishments: {
         Row: {
           accept_pickup: boolean | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_street: string | null
           allow_orders_when_closed: boolean | null
           city: string | null
           cpf_cnpj: string
@@ -248,6 +252,7 @@ export type Database = {
           plan_status: string
           pro_plus_activated_at: string | null
           scheduled_orders_message: string | null
+          show_address_on_menu: boolean | null
           slug: string | null
           trial_days: number | null
           trial_end_date: string
@@ -257,6 +262,10 @@ export type Database = {
         }
         Insert: {
           accept_pickup?: boolean | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_street?: string | null
           allow_orders_when_closed?: boolean | null
           city?: string | null
           cpf_cnpj: string
@@ -275,6 +284,7 @@ export type Database = {
           plan_status?: string
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
+          show_address_on_menu?: boolean | null
           slug?: string | null
           trial_days?: number | null
           trial_end_date?: string
@@ -284,6 +294,10 @@ export type Database = {
         }
         Update: {
           accept_pickup?: boolean | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_street?: string | null
           allow_orders_when_closed?: boolean | null
           city?: string | null
           cpf_cnpj?: string
@@ -302,6 +316,7 @@ export type Database = {
           plan_status?: string
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
+          show_address_on_menu?: boolean | null
           slug?: string | null
           trial_days?: number | null
           trial_end_date?: string
@@ -683,52 +698,58 @@ export type Database = {
       public_establishments: {
         Row: {
           accept_pickup: boolean | null
-          allow_orders_when_closed: boolean | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_street: string | null
           city: string | null
           delivery_fee: number | null
           free_delivery_min: number | null
-          has_pro_plus: boolean | null
           id: string | null
           logo_url: string | null
           min_order_value: number | null
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
-          scheduled_orders_message: string | null
+          show_address_on_menu: boolean | null
           slug: string | null
           trial_end_date: string | null
         }
         Insert: {
           accept_pickup?: boolean | null
-          allow_orders_when_closed?: boolean | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_street?: string | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
-          has_pro_plus?: boolean | null
           id?: string | null
           logo_url?: string | null
           min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
-          scheduled_orders_message?: string | null
+          show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null
         }
         Update: {
           accept_pickup?: boolean | null
-          allow_orders_when_closed?: boolean | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_street?: string | null
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
-          has_pro_plus?: boolean | null
           id?: string | null
           logo_url?: string | null
           min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
-          scheduled_orders_message?: string | null
+          show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null
         }
