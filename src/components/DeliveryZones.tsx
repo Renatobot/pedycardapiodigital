@@ -12,6 +12,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,6 +51,9 @@ export function DeliveryZones({ establishmentId }: DeliveryZonesProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
+  const [deletingZoneId, setDeletingZoneId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [zoneToDelete, setZoneToDelete] = useState<DeliveryZone | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -207,22 +220,34 @@ export function DeliveryZones({ establishmentId }: DeliveryZonesProps) {
     }
   };
 
-  const handleDeleteZone = async (zoneId: string) => {
+  const openDeleteConfirm = (zone: DeliveryZone) => {
+    setZoneToDelete(zone);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteZone = async () => {
+    if (!zoneToDelete || deletingZoneId) return;
+    
+    setDeletingZoneId(zoneToDelete.id);
     try {
       const { error } = await supabase
         .from('delivery_zones')
         .delete()
-        .eq('id', zoneId);
+        .eq('id', zoneToDelete.id);
 
       if (error) throw error;
-      setZones(prev => prev.filter(z => z.id !== zoneId));
+      setZones(prev => prev.filter(z => z.id !== zoneToDelete.id));
       toast({ title: 'Bairro removido!' });
+      setDeleteConfirmOpen(false);
+      setZoneToDelete(null);
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível remover o bairro.',
         variant: 'destructive',
       });
+    } finally {
+      setDeletingZoneId(null);
     }
   };
 
@@ -354,9 +379,14 @@ export function DeliveryZones({ establishmentId }: DeliveryZonesProps) {
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 text-destructive"
-                      onClick={() => handleDeleteZone(zone.id)}
+                      disabled={deletingZoneId === zone.id}
+                      onClick={() => openDeleteConfirm(zone)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingZoneId === zone.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -424,6 +454,32 @@ export function DeliveryZones({ establishmentId }: DeliveryZonesProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover bairro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover o bairro "{zoneToDelete?.neighborhood}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingZoneId}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteZone}
+              disabled={!!deletingZoneId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingZoneId ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
