@@ -100,6 +100,7 @@ export default function DashboardPage() {
   const [slugModalOpen, setSlugModalOpen] = useState(false);
   const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings'>('menu');
   const [deliveryFee, setDeliveryFee] = useState(0);
 
@@ -906,6 +907,8 @@ export default function DashboardPage() {
                   onChange={(url) => setProductForm(prev => ({ ...prev, image: url || '' }))}
                   folder="products"
                   className="w-full h-full"
+                  onUploadStart={() => setIsImageUploading(true)}
+                  onUploadEnd={() => setIsImageUploading(false)}
                   placeholder={
                     <>
                       <Upload className="w-6 h-6 text-muted-foreground" />
@@ -1115,12 +1118,12 @@ export default function DashboardPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProductModalOpen(false)} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setProductModalOpen(false)} disabled={isSaving || isImageUploading}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveProduct} disabled={isSaving}>
+            <Button onClick={handleSaveProduct} disabled={isSaving || isImageUploading}>
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {editingProduct ? 'Salvar' : 'Criar'}
+              {isImageUploading ? 'Enviando imagem...' : editingProduct ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
         </DialogContent>
