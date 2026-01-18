@@ -329,6 +329,8 @@ export type Database = {
           payment_details: string | null
           payment_method: string
           reference_point: string | null
+          scheduled_date: string | null
+          scheduled_time: string | null
           status: string | null
           subtotal: number
           total: number
@@ -351,6 +353,8 @@ export type Database = {
           payment_details?: string | null
           payment_method: string
           reference_point?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: string | null
           subtotal: number
           total: number
@@ -373,6 +377,8 @@ export type Database = {
           payment_details?: string | null
           payment_method?: string
           reference_point?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: string | null
           subtotal?: number
           total?: number
