@@ -106,11 +106,11 @@ export function ImageUpload({
       />
       
       {value ? (
-        <div className="relative h-full overflow-hidden rounded-lg">
+        <div className="relative h-full overflow-hidden rounded-lg bg-muted/30">
           <img 
             src={value} 
             alt="Preview" 
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-contain rounded-lg"
           />
           {/* Botões sempre visíveis no canto superior direito */}
           <div className="absolute top-1 right-1 flex gap-1">
