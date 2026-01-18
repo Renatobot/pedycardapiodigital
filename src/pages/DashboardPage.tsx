@@ -61,6 +61,7 @@ import { DeliverySettings } from '@/components/DeliverySettings';
 import { DeliveryZones } from '@/components/DeliveryZones';
 import { CouponManagement } from '@/components/CouponManagement';
 import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { ProductOptionGroupsManager, ProductOptionGroup } from '@/components/ProductOptionGroupsManager';
 import { HelpTooltip, ProductOptionsHelpContent } from '@/components/HelpTooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -824,13 +825,21 @@ export default function DashboardPage() {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && (
-          <OrderManagement establishmentId={establishment.id} />
+          <OrderManagement 
+            establishmentId={establishment.id} 
+            establishmentName={establishment.name}
+            notifyCustomerEnabled={(establishment as any).notify_customer_on_status_change ?? true}
+          />
         )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
             <BusinessHoursSettings establishmentId={establishment.id} />
+            <NotificationSettings 
+              establishmentId={establishment.id} 
+              initialEnabled={(establishment as any).notify_customer_on_status_change ?? true}
+            />
             <DeliverySettings
               establishmentId={establishment.id}
               currentFee={deliveryFee}

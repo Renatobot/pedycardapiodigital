@@ -18,6 +18,7 @@ export interface Establishment {
   created_at: string;
   has_pro_plus: boolean | null;
   pro_plus_activated_at: string | null;
+  notify_customer_on_status_change: boolean | null;
 }
 
 export interface Category {

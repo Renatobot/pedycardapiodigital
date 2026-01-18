@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2 } from 'lucide-react';
-import { formatCurrency } from '@/lib/whatsapp';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle } from 'lucide-react';
+import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,6 +38,8 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  customer_name: string | null;
+  customer_phone: string | null;
   customer_address: string;
   reference_point: string | null;
   payment_method: string;
@@ -63,9 +65,11 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
 
 interface OrderManagementProps {
   establishmentId: string;
+  establishmentName: string;
+  notifyCustomerEnabled: boolean;
 }
 
-export function OrderManagement({ establishmentId }: OrderManagementProps) {
+export function OrderManagement({ establishmentId, establishmentName, notifyCustomerEnabled }: OrderManagementProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -129,6 +133,9 @@ export function OrderManagement({ establishmentId }: OrderManagementProps) {
 
       if (error) throw error;
 
+      // Find the order to get customer info
+      const updatedOrder = orders.find(o => o.id === orderId);
+
       setOrders(prev =>
         prev.map(order =>
           order.id === orderId ? { ...order, status: newStatus } : order
@@ -139,6 +146,24 @@ export function OrderManagement({ establishmentId }: OrderManagementProps) {
         title: 'Status atualizado!',
         description: `Pedido alterado para "${STATUS_LABELS[newStatus]?.label || newStatus}"`,
       });
+
+      // Send WhatsApp notification to customer if enabled
+      if (notifyCustomerEnabled && updatedOrder?.customer_phone) {
+        const message = generateStatusNotificationMessage(
+          newStatus,
+          establishmentName,
+          orderId
+        );
+        
+        if (message) {
+          const whatsappLink = generateWhatsAppLinkToCustomer(
+            updatedOrder.customer_phone,
+            message
+          );
+          // Open WhatsApp in new tab
+          window.open(whatsappLink, '_blank');
+        }
+      }
     } catch (error: any) {
       toast({
         title: 'Erro',
