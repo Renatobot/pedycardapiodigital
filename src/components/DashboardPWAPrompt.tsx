@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, X, LayoutDashboard } from 'lucide-react';
+import { Download, X, LayoutDashboard, Share, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -7,15 +7,39 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Detectar iOS (qualquer navegador)
+const isIOS = (): boolean => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+         !(window as any).MSStream;
+};
+
+// Detectar se é Safari no iOS (para mostrar ícone correto)
+const isIOSSafari = (): boolean => {
+  return isIOS() && /Safari/.test(navigator.userAgent) && 
+         !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
+};
+
 export function DashboardPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
     // Verificar se já está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
+      return;
+    }
+
+    // Para iOS, mostrar instruções manuais
+    if (isIOS()) {
+      setIsSafari(isIOSSafari());
+      const dismissed = localStorage.getItem('pwa-dashboard-ios-dismissed');
+      if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
+        setShowIOSPrompt(true);
+      }
       return;
     }
 
@@ -70,6 +94,65 @@ export function DashboardPWAPrompt() {
     setIsVisible(false);
     localStorage.setItem('pwa-dashboard-dismissed', Date.now().toString());
   };
+
+  const handleIOSDismiss = () => {
+    setShowIOSPrompt(false);
+    localStorage.setItem('pwa-dashboard-ios-dismissed', Date.now().toString());
+  };
+
+  // Prompt para iOS
+  if (showIOSPrompt && !isInstalled) {
+    return (
+      <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
+          <div className="flex items-start gap-3">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <LayoutDashboard className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm">Instalar Painel PEDY</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isSafari ? (
+                  <>
+                    Toque no ícone <Share className="inline h-3.5 w-3.5 mx-0.5" /> de compartilhar e depois em <strong>"Adicionar à Tela de Início"</strong>
+                  </>
+                ) : (
+                  <>
+                    Toque no menu <MoreVertical className="inline h-3.5 w-3.5 mx-0.5" /> e depois em <strong>"Adicionar à Tela de Início"</strong>
+                  </>
+                )}
+              </p>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleIOSDismiss}
+                  className="flex-1"
+                >
+                  Entendi
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleIOSDismiss}
+                >
+                  Agora não
+                </Button>
+              </div>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 -mt-1 -mr-1"
+              onClick={handleIOSDismiss}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isVisible || isInstalled) {
     return null;
