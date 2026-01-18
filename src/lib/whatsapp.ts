@@ -23,7 +23,8 @@ export function generateOrderMessage(
   discountCode: string | null = null,
   observations?: string,
   isScheduledOrder: boolean = false,
-  scheduledOrderMessage?: string
+  scheduledOrderMessage?: string,
+  scheduledDateTime?: { date: string; time: string }
 ): string {
   const total = subtotal + deliveryFee - discountValue;
   
@@ -101,7 +102,14 @@ export function generateOrderMessage(
   }
 
   if (isScheduledOrder) {
-    message += `\n⏰ *PEDIDO AGENDADO* (feito fora do horário)\n`;
+    message += `\n⏰ *PEDIDO AGENDADO*\n`;
+    if (scheduledDateTime) {
+      const dateObj = new Date(scheduledDateTime.date);
+      const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      message += `📅 *Data:* ${dayName}, ${dateStr}\n`;
+      message += `🕐 *Horário:* ${scheduledDateTime.time}\n`;
+    }
     if (scheduledOrderMessage) {
       message += `📋 ${scheduledOrderMessage}\n`;
     }

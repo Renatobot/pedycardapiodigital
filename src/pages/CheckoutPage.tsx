@@ -14,13 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package, Clock, Calendar } from 'lucide-react';
 import { formatCurrency, generateOrderMessage, openWhatsApp, openPaymentWhatsApp } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { isEstablishmentActive } from '@/lib/utils';
-import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage } from '@/lib/businessHours';
+import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage, getAvailableScheduleSlots, ScheduleSlot } from '@/lib/businessHours';
 
 interface PublicEstablishment {
   id: string;
@@ -69,9 +69,15 @@ function CheckoutContent() {
   const [businessStatus, setBusinessStatus] = useState<BusinessStatus>({ isOpen: true, message: 'Aberto', todayHours: null, nextOpenInfo: null });
   const [allowOrdersWhenClosed, setAllowOrdersWhenClosed] = useState(false);
   const [scheduledOrdersMessage, setScheduledOrdersMessage] = useState<string | null>(null);
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   // Delivery zones and saved addresses
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  
+  // Scheduled order state
+  const [availableSlots, setAvailableSlots] = useState<ScheduleSlot[]>([]);
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState(0);
+  const [selectedTime, setSelectedTime] = useState('');
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -152,12 +158,22 @@ function CheckoutContent() {
           .eq('establishment_id', establishmentId);
 
         if (hoursData && hoursData.length > 0) {
+          setBusinessHours(hoursData);
           const bStatus = checkBusinessStatus(
             hoursData,
             data.allow_orders_when_closed || false,
             data.scheduled_orders_message
           );
           setBusinessStatus(bStatus);
+          
+          // Generate available slots for scheduling if closed and allows scheduled orders
+          if (!bStatus.isOpen && data.allow_orders_when_closed) {
+            const slots = getAvailableScheduleSlots(hoursData, 7);
+            setAvailableSlots(slots);
+            if (slots.length > 0 && slots[0].times.length > 0) {
+              setSelectedTime(slots[0].times[0]);
+            }
+          }
         }
 
         setAllowOrdersWhenClosed(data.allow_orders_when_closed || false);
@@ -451,6 +467,19 @@ function CheckoutContent() {
     }));
 
     try {
+      // Build scheduled date/time if this is a scheduled order
+      const isScheduledOrder = !businessStatus.isOpen && allowOrdersWhenClosed;
+      let scheduledDate: string | null = null;
+      let scheduledTime: string | null = null;
+      
+      if (isScheduledOrder && availableSlots.length > 0 && selectedTime) {
+        const slot = availableSlots[selectedSlotIndex];
+        if (slot) {
+          scheduledDate = slot.date.toISOString().split('T')[0];
+          scheduledTime = selectedTime;
+        }
+      }
+      
       const { error } = await supabase
         .from('orders')
         .insert({
@@ -471,6 +500,8 @@ function CheckoutContent() {
           status: 'pending',
           observations: formData.observations || null,
           items: orderItems,
+          scheduled_date: scheduledDate,
+          scheduled_time: scheduledTime,
         });
 
       if (error) {
@@ -489,10 +520,22 @@ function CheckoutContent() {
     }
 
     // Determine if this is a scheduled order (made when closed)
-    const isScheduledOrder = !businessStatus.isOpen && allowOrdersWhenClosed;
-    const scheduledMessage = isScheduledOrder 
+    const isScheduledOrderFinal = !businessStatus.isOpen && allowOrdersWhenClosed;
+    const scheduledMessage = isScheduledOrderFinal 
       ? getScheduledOrderMessage(true, scheduledOrdersMessage)
       : undefined;
+    
+    // Build scheduled date/time for WhatsApp message
+    let scheduledDateTimeForMessage: { date: string; time: string } | undefined;
+    if (isScheduledOrderFinal && availableSlots.length > 0 && selectedTime) {
+      const slot = availableSlots[selectedSlotIndex];
+      if (slot) {
+        scheduledDateTimeForMessage = {
+          date: slot.date.toISOString().split('T')[0],
+          time: selectedTime,
+        };
+      }
+    }
 
     const message = generateOrderMessage(
       establishment.name || '',
@@ -509,8 +552,9 @@ function CheckoutContent() {
       discountValue,
       appliedCoupon?.code || null,
       formData.observations,
-      isScheduledOrder,
-      scheduledMessage || undefined
+      isScheduledOrderFinal,
+      scheduledMessage || undefined,
+      scheduledDateTimeForMessage
     );
 
     openWhatsApp(contact.whatsapp, message);
@@ -1052,16 +1096,75 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                {/* Scheduled order info */}
+                {/* Scheduled order info with time selector */}
                 {!businessStatus.isOpen && allowOrdersWhenClosed && (
-                  <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg space-y-4">
+                    <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-warning" />
-                      <p className="font-medium text-warning">Pedido agendado</p>
+                      <p className="font-medium text-warning">Agendar pedido</p>
                     </div>
-                    <p className="text-sm text-warning/80">
-                      {scheduledOrdersMessage || 'Estamos fechados, mas você pode fazer seu pedido. Será preparado quando reabrirmos.'}
-                    </p>
+                    
+                    {availableSlots.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-warning/80 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Dia do pedido
+                          </Label>
+                          <Select 
+                            value={String(selectedSlotIndex)} 
+                            onValueChange={(value) => {
+                              const idx = Number(value);
+                              setSelectedSlotIndex(idx);
+                              if (availableSlots[idx]?.times.length > 0) {
+                                setSelectedTime(availableSlots[idx].times[0]);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="bg-card">
+                              <SelectValue placeholder="Selecione o dia" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableSlots.map((slot, idx) => (
+                                <SelectItem key={idx} value={String(idx)}>
+                                  {slot.dayLabel} ({slot.dateLabel})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm text-warning/80 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Horário desejado
+                          </Label>
+                          <Select 
+                            value={selectedTime} 
+                            onValueChange={setSelectedTime}
+                          >
+                            <SelectTrigger className="bg-card">
+                              <SelectValue placeholder="Selecione o horário" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableSlots[selectedSlotIndex]?.times.map((time) => (
+                                <SelectItem key={time} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <p className="text-xs text-warning/60">
+                          {scheduledOrdersMessage || 'Seu pedido será preparado no horário selecionado.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-warning/80">
+                        {scheduledOrdersMessage || 'Estamos fechados, mas você pode fazer seu pedido. Será preparado quando reabrirmos.'}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

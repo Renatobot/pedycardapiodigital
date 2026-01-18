@@ -11,7 +11,8 @@ import {
   X,
   ChevronRight,
   Loader2,
-  Clock
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -20,8 +21,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
-import { BusinessHour, BusinessStatus, checkBusinessStatus } from '@/lib/businessHours';
+import { BusinessHour, BusinessStatus, checkBusinessStatus, formatBusinessHoursForDisplay, FormattedBusinessHours } from '@/lib/businessHours';
 import { ProductOptionSelector } from '@/components/ProductOptionSelector';
 import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGroupsManager';
 import { useToast } from '@/hooks/use-toast';
@@ -413,6 +415,8 @@ function MenuContent() {
   const [products, setProducts] = useState<ProductWithOptions[]>([]);
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
   const [businessStatus, setBusinessStatus] = useState<BusinessStatus>({ isOpen: true, message: 'Aberto', todayHours: null, nextOpenInfo: null });
+  const [formattedHours, setFormattedHours] = useState<FormattedBusinessHours[]>([]);
+  const [hoursOpen, setHoursOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -536,6 +540,10 @@ function MenuContent() {
             estData.scheduled_orders_message
           );
           setBusinessStatus(status);
+          
+          // Format hours for display
+          const formatted = formatBusinessHoursForDisplay(hoursData);
+          setFormattedHours(formatted);
         }
         
       } catch (error) {
@@ -605,6 +613,30 @@ function MenuContent() {
                 <Clock className="w-3 h-3 mr-1" />
                 {businessStatus.message}
               </Badge>
+              
+              {/* Business Hours Collapsible */}
+              {formattedHours.length > 0 && (
+                <Collapsible open={hoursOpen} onOpenChange={setHoursOpen}>
+                  <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground mt-2 transition-colors">
+                    <Clock className="w-3 h-3" />
+                    Ver horários de funcionamento
+                    <ChevronDown className={`w-4 h-4 transition-transform ${hoursOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="mt-3">
+                    <div className="bg-white/10 rounded-lg p-3 text-sm space-y-1">
+                      {formattedHours.map((item, index) => (
+                        <div key={index} className="flex justify-between">
+                          <span className="text-primary-foreground/80">{item.label}</span>
+                          <span className={item.isOpen ? 'text-white font-medium' : 'text-white/60'}>
+                            {item.isOpen ? item.hours : 'Fechado'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
           </div>
         </div>

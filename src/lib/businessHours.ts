@@ -14,6 +14,19 @@ export interface BusinessStatus {
   nextOpenInfo: string | null;
 }
 
+export interface ScheduleSlot {
+  date: Date;
+  dayLabel: string;
+  dateLabel: string;
+  times: string[];
+}
+
+export interface FormattedBusinessHours {
+  label: string;
+  hours: string | null;
+  isOpen: boolean;
+}
+
 const DAY_NAMES = [
   'Domingo',
   'Segunda-feira',
@@ -165,6 +178,193 @@ export function getScheduledOrderMessage(
 
 export function getAllDays(): number[] {
   return [0, 1, 2, 3, 4, 5, 6];
+}
+
+/**
+ * Generate available schedule slots for scheduling orders
+ * Returns slots for the next X days based on business hours
+ */
+export function getAvailableScheduleSlots(
+  hours: BusinessHour[],
+  daysAhead: number = 7
+): ScheduleSlot[] {
+  const slots: ScheduleSlot[] = [];
+  const now = new Date();
+  
+  for (let i = 0; i <= daysAhead; i++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    const dayOfWeek = date.getDay();
+    
+    const dayHours = hours.find(h => h.day_of_week === dayOfWeek);
+    
+    if (dayHours?.is_open && dayHours.opening_time && dayHours.closing_time) {
+      const openTime = formatTime(dayHours.opening_time);
+      const closeTime = formatTime(dayHours.closing_time);
+      
+      // Generate 30-minute slots
+      const timeSlots = generateTimeSlots(openTime, closeTime, i === 0);
+      
+      if (timeSlots.length > 0) {
+        let dayLabel = '';
+        if (i === 0) dayLabel = 'Hoje';
+        else if (i === 1) dayLabel = 'Amanhã';
+        else dayLabel = getDayName(dayOfWeek);
+        
+        slots.push({
+          date,
+          dayLabel,
+          dateLabel: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          times: timeSlots,
+        });
+      }
+    }
+  }
+  
+  return slots;
+}
+
+/**
+ * Generate 30-minute time slots between opening and closing times
+ */
+function generateTimeSlots(
+  openTime: string, 
+  closeTime: string, 
+  isToday: boolean
+): string[] {
+  const slots: string[] = [];
+  const [openHour, openMin] = openTime.split(':').map(Number);
+  const [closeHour, closeMin] = closeTime.split(':').map(Number);
+  
+  let currentHour = openHour;
+  let currentMin = openMin;
+  
+  // If today, start from the next available slot (+ 30 min margin)
+  if (isToday) {
+    const now = new Date();
+    const currentTimeHour = now.getHours();
+    const currentTimeMin = now.getMinutes();
+    
+    // Advance to next 30-min slot + 30 min margin for preparation
+    while (currentHour < currentTimeHour || 
+           (currentHour === currentTimeHour && currentMin <= currentTimeMin + 30)) {
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
+    }
+  }
+  
+  // Handle overnight hours
+  const isOvernight = closeHour < openHour || (closeHour === openHour && closeMin < openMin);
+  
+  if (isOvernight) {
+    // For overnight, generate until midnight, then from midnight to closing
+    // For simplicity, we'll just generate until 23:30 for today's slots
+    const endHour = 23;
+    const endMin = 30;
+    
+    while (currentHour < endHour || (currentHour === endHour && currentMin <= endMin)) {
+      const timeStr = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+      slots.push(timeStr);
+      
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
+    }
+  } else {
+    // Normal hours: generate slots until closing
+    while (currentHour < closeHour || 
+           (currentHour === closeHour && currentMin < closeMin)) {
+      const timeStr = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+      slots.push(timeStr);
+      
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
+    }
+  }
+  
+  return slots;
+}
+
+/**
+ * Format business hours for display, grouping consecutive days with same hours
+ */
+export function formatBusinessHoursForDisplay(hours: BusinessHour[]): FormattedBusinessHours[] {
+  const result: FormattedBusinessHours[] = [];
+  
+  // Sort hours by day of week starting from Monday (1)
+  const orderedDays = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sat, then Sun
+  const sortedHours = orderedDays.map(day => hours.find(h => h.day_of_week === day));
+  
+  let i = 0;
+  while (i < sortedHours.length) {
+    const currentHour = sortedHours[i];
+    const currentDayIndex = orderedDays[i];
+    
+    if (!currentHour) {
+      // Day not configured, show as closed
+      result.push({
+        label: getDayName(currentDayIndex),
+        hours: null,
+        isOpen: false,
+      });
+      i++;
+      continue;
+    }
+    
+    const currentOpen = currentHour.is_open;
+    const currentOpenTime = formatTime(currentHour.opening_time);
+    const currentCloseTime = formatTime(currentHour.closing_time);
+    const currentHoursStr = currentOpen ? `${currentOpenTime} - ${currentCloseTime}` : null;
+    
+    // Look for consecutive days with same hours
+    let endIndex = i;
+    for (let j = i + 1; j < sortedHours.length; j++) {
+      const nextHour = sortedHours[j];
+      if (!nextHour) break;
+      
+      const nextOpen = nextHour.is_open;
+      const nextOpenTime = formatTime(nextHour.opening_time);
+      const nextCloseTime = formatTime(nextHour.closing_time);
+      
+      if (nextOpen === currentOpen && 
+          nextOpenTime === currentOpenTime && 
+          nextCloseTime === currentCloseTime) {
+        endIndex = j;
+      } else {
+        break;
+      }
+    }
+    
+    // Build label
+    const startDayName = getDayName(orderedDays[i], true);
+    const endDayName = getDayName(orderedDays[endIndex], true);
+    
+    let label: string;
+    if (i === endIndex) {
+      label = getDayName(orderedDays[i]);
+    } else {
+      label = `${startDayName} a ${endDayName}`;
+    }
+    
+    result.push({
+      label,
+      hours: currentHoursStr,
+      isOpen: currentOpen,
+    });
+    
+    i = endIndex + 1;
+  }
+  
+  return result;
 }
 
 export { DAY_NAMES, DAY_NAMES_SHORT };
