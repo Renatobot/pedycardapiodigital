@@ -46,7 +46,8 @@ import {
   Pencil,
   Check,
   Download,
-  Printer
+  Printer,
+  Settings2
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -59,8 +60,11 @@ import { DeliverySettings } from '@/components/DeliverySettings';
 import { DeliveryZones } from '@/components/DeliveryZones';
 import { CouponManagement } from '@/components/CouponManagement';
 import { BusinessHoursSettings } from '@/components/BusinessHoursSettings';
+import { ProductOptionGroupsManager, ProductOptionGroup } from '@/components/ProductOptionGroupsManager';
+import { HelpTooltip, ProductOptionsHelpContent } from '@/components/HelpTooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -129,6 +133,7 @@ export default function DashboardPage() {
   });
   const [productAdditions, setProductAdditions] = useState<{ id: string; name: string; price: number; image_url?: string }[]>([]);
   const [newAddition, setNewAddition] = useState({ name: '', price: '', image: '' });
+  const [productOptionGroups, setProductOptionGroups] = useState<ProductOptionGroup[]>([]);
 
   // Slug editing states
   const [newSlug, setNewSlug] = useState('');
@@ -360,6 +365,7 @@ export default function DashboardPage() {
     setSelectedCategoryId(categoryId);
     setProductForm(getDefaultProductForm());
     setProductAdditions([]);
+    setProductOptionGroups([]);
     setProductModalOpen(true);
   };
 
@@ -381,6 +387,7 @@ export default function DashboardPage() {
     });
     const additions = getProductAdditions(product.id);
     setProductAdditions(additions);
+    setProductOptionGroups([]); // Will be loaded by ProductOptionGroupsManager
     setProductModalOpen(true);
   };
 
@@ -450,6 +457,9 @@ export default function DashboardPage() {
           }
         }
         
+        // Salvar grupos de opções
+        await saveProductOptionGroups(editingProduct.id, productOptionGroups);
+        
         toast({
           title: "Produto atualizado!",
           description: `O produto "${productForm.name}" foi atualizado.`,
@@ -470,6 +480,9 @@ export default function DashboardPage() {
               image_url: addition.image_url,
             });
           }
+          
+          // Salvar grupos de opções para novo produto
+          await saveProductOptionGroups(newProduct.id, productOptionGroups);
         }
 
         toast({
@@ -481,6 +494,7 @@ export default function DashboardPage() {
       setProductModalOpen(false);
       setProductForm(getDefaultProductForm());
       setProductAdditions([]);
+      setProductOptionGroups([]);
       setEditingProduct(null);
     } catch (error: any) {
       toast({
@@ -490,6 +504,102 @@ export default function DashboardPage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Save product option groups to database
+  const saveProductOptionGroups = async (productId: string, groups: ProductOptionGroup[]) => {
+    try {
+      // 1. Fetch existing groups
+      const { data: existingGroups } = await supabase
+        .from('product_option_groups')
+        .select('id')
+        .eq('product_id', productId);
+
+      const existingIds = existingGroups?.map(g => g.id) || [];
+      const currentIds = groups.filter(g => !g.id.startsWith('temp-')).map(g => g.id);
+
+      // 2. Delete removed groups
+      const toDelete = existingIds.filter(id => !currentIds.includes(id));
+      if (toDelete.length > 0) {
+        // Delete options first (cascade might not work)
+        await supabase.from('product_options').delete().in('option_group_id', toDelete);
+        await supabase.from('product_option_groups').delete().in('id', toDelete);
+      }
+
+      // 3. Upsert groups and options
+      for (const group of groups) {
+        const isNewGroup = group.id.startsWith('temp-');
+
+        const groupData = {
+          product_id: productId,
+          name: group.name,
+          type: group.type,
+          is_required: group.is_required,
+          min_selections: group.min_selections,
+          max_selections: group.max_selections,
+          sort_order: group.sort_order,
+        };
+
+        let groupId = group.id;
+
+        if (isNewGroup) {
+          const { data, error } = await supabase
+            .from('product_option_groups')
+            .insert(groupData)
+            .select('id')
+            .single();
+          if (error) throw error;
+          groupId = data.id;
+        } else {
+          const { error } = await supabase
+            .from('product_option_groups')
+            .update(groupData)
+            .eq('id', group.id);
+          if (error) throw error;
+        }
+
+        // Handle options for this group
+        if (groupId) {
+          // Fetch existing options
+          const { data: existingOptions } = await supabase
+            .from('product_options')
+            .select('id')
+            .eq('option_group_id', isNewGroup ? groupId : group.id);
+
+          const existingOptIds = existingOptions?.map(o => o.id) || [];
+          const currentOptIds = group.options.filter(o => !o.id.startsWith('temp-')).map(o => o.id);
+
+          // Delete removed options
+          const optsToDelete = existingOptIds.filter(id => !currentOptIds.includes(id));
+          if (optsToDelete.length > 0) {
+            await supabase.from('product_options').delete().in('id', optsToDelete);
+          }
+
+          // Upsert options
+          for (const option of group.options) {
+            const isNewOption = option.id.startsWith('temp-');
+
+            const optionData = {
+              option_group_id: groupId,
+              name: option.name,
+              price: option.price,
+              is_default: option.is_default,
+              is_available: option.is_available,
+              sort_order: option.sort_order,
+            };
+
+            if (isNewOption) {
+              await supabase.from('product_options').insert(optionData);
+            } else {
+              await supabase.from('product_options').update(optionData).eq('id', option.id);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error saving option groups:', error);
+      throw error;
     }
   };
 
@@ -1142,6 +1252,30 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Product Option Groups */}
+            <Card className="border-dashed">
+              <CardHeader className="p-3 pb-2">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Personalização do Produto</CardTitle>
+                  <HelpTooltip>
+                    <ProductOptionsHelpContent />
+                  </HelpTooltip>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Configure as opções que o cliente poderá escolher ao pedir este produto.
+                </p>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <ProductOptionGroupsManager
+                  productId={editingProduct?.id || `temp-${Date.now()}`}
+                  establishment={establishment}
+                  categoryName={categories.find(c => c.id === selectedCategoryId)?.name}
+                  onGroupsChange={setProductOptionGroups}
+                />
+              </CardContent>
+            </Card>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setProductModalOpen(false)} disabled={isSaving || isImageUploading}>
