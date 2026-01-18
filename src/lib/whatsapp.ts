@@ -48,6 +48,19 @@ export function generateOrderMessage(
     message += `\n${index + 1}. *${item.product.name}*\n`;
     message += `   Qtd: ${item.quantity}x ${formatCurrency(item.product.price)}\n`;
     
+    // Selected options (customizations)
+    if (item.selectedOptions && item.selectedOptions.length > 0) {
+      item.selectedOptions.forEach((group) => {
+        const optionNames = group.options.map(o => o.name).join(', ');
+        const optionPrices = group.options.reduce((sum, o) => sum + o.price, 0);
+        message += `   ${group.groupName}: ${optionNames}`;
+        if (optionPrices > 0) {
+          message += ` (+${formatCurrency(optionPrices)})`;
+        }
+        message += `\n`;
+      });
+    }
+    
     if (item.selectedAdditions.length > 0) {
       message += `   Adicionais:\n`;
       item.selectedAdditions.forEach((add) => {
@@ -56,7 +69,10 @@ export function generateOrderMessage(
     }
     
     const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
-    const itemTotal = (item.product.price + additionsTotal) * item.quantity;
+    const optionsTotal = (item.selectedOptions || []).reduce((sum, g) => 
+      sum + g.options.reduce((oSum, o) => oSum + o.price, 0), 0
+    );
+    const itemTotal = (item.product.price + additionsTotal + optionsTotal) * item.quantity;
     message += `   *Subtotal: ${formatCurrency(itemTotal)}*\n`;
     
     if (item.observations) {

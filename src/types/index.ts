@@ -40,10 +40,17 @@ export interface Product {
   available: boolean;
 }
 
+export interface SelectedProductOption {
+  groupId: string;
+  groupName: string;
+  options: { id: string; name: string; price: number }[];
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;
   selectedAdditions: ProductAddition[];
+  selectedOptions: SelectedProductOption[];
   observations?: string;
 }
 

@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { CartItem, Product, ProductAddition } from '@/types';
+import { CartItem, Product, ProductAddition, SelectedProductOption } from '@/types';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity: number, additions: ProductAddition[], observations?: string) => void;
+  addItem: (
+    product: Product, 
+    quantity: number, 
+    additions: ProductAddition[], 
+    observations?: string,
+    selectedOptions?: SelectedProductOption[]
+  ) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -16,12 +22,19 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addItem = (product: Product, quantity: number, additions: ProductAddition[], observations?: string) => {
+  const addItem = (
+    product: Product, 
+    quantity: number, 
+    additions: ProductAddition[], 
+    observations?: string,
+    selectedOptions: SelectedProductOption[] = []
+  ) => {
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) =>
           item.product.id === product.id &&
-          JSON.stringify(item.selectedAdditions) === JSON.stringify(additions)
+          JSON.stringify(item.selectedAdditions) === JSON.stringify(additions) &&
+          JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
       );
 
       if (existingIndex >= 0) {
@@ -30,7 +43,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return updated;
       }
 
-      return [...prev, { product, quantity, selectedAdditions: additions, observations }];
+      return [...prev, { 
+        product, 
+        quantity, 
+        selectedAdditions: additions, 
+        selectedOptions,
+        observations 
+      }];
     });
   };
 
@@ -54,7 +73,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const total = items.reduce((sum, item) => {
     const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
-    return sum + (item.product.price + additionsTotal) * item.quantity;
+    const optionsTotal = item.selectedOptions.reduce((optSum, group) => {
+      return optSum + group.options.reduce((oSum, opt) => oSum + opt.price, 0);
+    }, 0);
+    return sum + (item.product.price + additionsTotal + optionsTotal) * item.quantity;
   }, 0);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
