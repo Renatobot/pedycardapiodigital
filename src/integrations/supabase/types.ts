@@ -244,14 +244,17 @@ export type Database = {
           has_pro_plus: boolean | null
           id: string
           logo_url: string | null
+          menu_theme: string | null
           min_order_value: number | null
           name: string
           notify_customer_on_status_change: boolean | null
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
+          primary_color: string | null
           pro_plus_activated_at: string | null
           scheduled_orders_message: string | null
+          secondary_color: string | null
           show_address_on_menu: boolean | null
           slug: string | null
           trial_days: number | null
@@ -276,14 +279,17 @@ export type Database = {
           has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
+          menu_theme?: string | null
           min_order_value?: number | null
           name: string
           notify_customer_on_status_change?: boolean | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          primary_color?: string | null
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
+          secondary_color?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_days?: number | null
@@ -308,14 +314,17 @@ export type Database = {
           has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
+          menu_theme?: string | null
           min_order_value?: number | null
           name?: string
           notify_customer_on_status_change?: boolean | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          primary_color?: string | null
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
+          secondary_color?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_days?: number | null
@@ -708,11 +717,14 @@ export type Database = {
           free_delivery_min: number | null
           id: string | null
           logo_url: string | null
+          menu_theme: string | null
           min_order_value: number | null
           name: string | null
           plan_expires_at: string | null
           plan_status: string | null
+          primary_color: string | null
           scheduled_orders_message: string | null
+          secondary_color: string | null
           show_address_on_menu: boolean | null
           slug: string | null
           trial_end_date: string | null
@@ -729,11 +741,14 @@ export type Database = {
           free_delivery_min?: number | null
           id?: string | null
           logo_url?: string | null
+          menu_theme?: string | null
           min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          primary_color?: string | null
           scheduled_orders_message?: string | null
+          secondary_color?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null
@@ -750,11 +765,14 @@ export type Database = {
           free_delivery_min?: number | null
           id?: string | null
           logo_url?: string | null
+          menu_theme?: string | null
           min_order_value?: number | null
           name?: string | null
           plan_expires_at?: string | null
           plan_status?: string | null
+          primary_color?: string | null
           scheduled_orders_message?: string | null
+          secondary_color?: string | null
           show_address_on_menu?: boolean | null
           slug?: string | null
           trial_end_date?: string | null

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,9 @@ import {
   Clock,
   ChevronDown,
   MapPin,
-  Package
+  Package,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -29,6 +32,7 @@ import { BusinessHour, BusinessStatus, checkBusinessStatus, formatBusinessHoursF
 import { ProductOptionSelector } from '@/components/ProductOptionSelector';
 import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGroupsManager';
 import { useToast } from '@/hooks/use-toast';
+import { hexToHsl } from '@/lib/colors';
 
 interface PublicEstablishment {
   id: string;
@@ -47,6 +51,9 @@ interface PublicEstablishment {
   address_complement: string | null;
   show_address_on_menu: boolean | null;
   city: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  menu_theme: string | null;
 }
 
 interface ProductWithOptions extends Product {
@@ -419,6 +426,8 @@ function CartSheet() {
 
 function MenuContent() {
   const { id, slug } = useParams();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [establishment, setEstablishment] = useState<PublicEstablishment | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<ProductWithOptions[]>([]);
@@ -427,6 +436,36 @@ function MenuContent() {
   const [formattedHours, setFormattedHours] = useState<FormattedBusinessHours[]>([]);
   const [hoursOpen, setHoursOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Apply custom colors from establishment
+  useEffect(() => {
+    if (establishment) {
+      const primaryColor = establishment.primary_color || '#4A9BD9';
+      const secondaryColor = establishment.secondary_color || '#4CAF50';
+      
+      document.documentElement.style.setProperty('--menu-primary', hexToHsl(primaryColor));
+      document.documentElement.style.setProperty('--menu-secondary', hexToHsl(secondaryColor));
+      
+      // Apply establishment's default theme preference if not set by user
+      if (establishment.menu_theme && establishment.menu_theme !== 'system') {
+        const storedTheme = localStorage.getItem('theme');
+        if (!storedTheme) {
+          setTheme(establishment.menu_theme);
+        }
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.documentElement.style.removeProperty('--menu-primary');
+      document.documentElement.style.removeProperty('--menu-secondary');
+    };
+  }, [establishment, setTheme]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -595,8 +634,27 @@ function MenuContent() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-hero text-primary-foreground p-6 pt-8">
+      <div className="bg-menu-gradient text-white p-6 pt-8">
         <div className="container">
+          {/* Theme Toggle in top right */}
+          <div className="flex justify-end mb-2">
+            {mounted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="text-white hover:bg-white/20"
+                title={resolvedTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+            )}
+          </div>
+          
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center overflow-hidden shadow-lg">
               {establishment.logo_url ? (
@@ -609,7 +667,7 @@ function MenuContent() {
                 <Store className="w-8 h-8 text-muted-foreground" />
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-bold">{establishment.name}</h1>
               <Badge 
                 variant="outline" 

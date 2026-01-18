@@ -48,7 +48,9 @@ import {
   Download,
   Printer,
   Settings2,
-  Sparkles
+  Sparkles,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -68,6 +70,8 @@ import { HelpTooltip, ProductOptionsHelpContent } from '@/components/HelpTooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { MenuAppearanceSettings } from '@/components/MenuAppearanceSettings';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -717,6 +721,7 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="w-4 h-4" />
             </Button>
@@ -836,6 +841,12 @@ export default function DashboardPage() {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            <MenuAppearanceSettings 
+              establishmentId={establishment.id}
+              initialPrimaryColor={(establishment as any).primary_color}
+              initialSecondaryColor={(establishment as any).secondary_color}
+              initialMenuTheme={(establishment as any).menu_theme}
+            />
             <EstablishmentAddressSettings establishmentId={establishment.id} />
             <BusinessHoursSettings establishmentId={establishment.id} />
             <NotificationSettings 

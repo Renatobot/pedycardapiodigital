@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { isEstablishmentActive } from '@/lib/utils';
 import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage, getAvailableScheduleSlots, ScheduleSlot } from '@/lib/businessHours';
+import { hexToHsl } from '@/lib/colors';
 
 interface PublicEstablishment {
   id: string;
@@ -35,6 +36,8 @@ interface PublicEstablishment {
   accept_pickup: boolean | null;
   allow_orders_when_closed: boolean | null;
   scheduled_orders_message: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
 }
 
 interface EstablishmentContact {
@@ -196,6 +199,23 @@ function CheckoutContent() {
     
     fetchEstablishment();
   }, [id, slug, navigate, toast]);
+
+  // Apply custom colors from establishment
+  useEffect(() => {
+    if (establishment) {
+      const primaryColor = (establishment as any).primary_color || '#4A9BD9';
+      const secondaryColor = (establishment as any).secondary_color || '#4CAF50';
+      
+      document.documentElement.style.setProperty('--menu-primary', hexToHsl(primaryColor));
+      document.documentElement.style.setProperty('--menu-secondary', hexToHsl(secondaryColor));
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.documentElement.style.removeProperty('--menu-primary');
+      document.documentElement.style.removeProperty('--menu-secondary');
+    };
+  }, [establishment]);
 
   // Load saved addresses when phone is entered
   useEffect(() => {
