@@ -172,6 +172,10 @@ const faqs = [
     answer: 'Não! O PEDY funciona de forma independente. Você só precisa de um número de WhatsApp.',
   },
   {
+    question: 'Preciso ter CNPJ para me cadastrar?',
+    answer: 'Não! Você pode se cadastrar usando apenas o seu CPF. O PEDY é para todos: MEIs, autônomos e empresas de qualquer porte.',
+  },
+  {
     question: 'Quanto tempo leva para configurar meu cardápio?',
     answer: 'Em média 5 minutos. É só cadastrar suas categorias, produtos e pronto!',
   },
