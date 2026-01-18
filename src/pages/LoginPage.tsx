@@ -1,20 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import pedyLogo from '@/assets/logo_pedy.jpg';
+import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+const REMEMBER_EMAIL_KEY = 'pedy_remembered_email';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,6 +50,13 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
+
+      // Salvar ou remover e-mail do localStorage
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      }
 
       toast({
         title: 'Bem-vindo de volta!',
@@ -134,7 +153,21 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <Button 
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  />
+                  <Label 
+                    htmlFor="rememberMe" 
+                    className="text-sm font-normal text-muted-foreground cursor-pointer"
+                  >
+                    Lembrar meu e-mail
+                  </Label>
+                </div>
+
+                <Button
                   type="submit" 
                   variant="hero" 
                   size="lg" 
