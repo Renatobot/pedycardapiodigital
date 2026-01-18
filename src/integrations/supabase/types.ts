@@ -237,6 +237,7 @@ export type Database = {
           delivery_fee: number | null
           email: string
           free_delivery_min: number | null
+          has_pro_plus: boolean | null
           id: string
           logo_url: string | null
           min_order_value: number | null
@@ -244,6 +245,7 @@ export type Database = {
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
+          pro_plus_activated_at: string | null
           scheduled_orders_message: string | null
           slug: string | null
           trial_days: number | null
@@ -261,6 +263,7 @@ export type Database = {
           delivery_fee?: number | null
           email: string
           free_delivery_min?: number | null
+          has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
           min_order_value?: number | null
@@ -268,6 +271,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
           slug?: string | null
           trial_days?: number | null
@@ -285,6 +289,7 @@ export type Database = {
           delivery_fee?: number | null
           email?: string
           free_delivery_min?: number | null
+          has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
           min_order_value?: number | null
@@ -292,6 +297,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
           slug?: string | null
           trial_days?: number | null
@@ -421,6 +427,91 @@ export type Database = {
           },
         ]
       }
+      product_option_groups: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_required: boolean | null
+          max_selections: number | null
+          min_selections: number | null
+          name: string
+          product_id: string
+          sort_order: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          min_selections?: number | null
+          name: string
+          product_id: string
+          sort_order?: number | null
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          min_selections?: number | null
+          name?: string
+          product_id?: string
+          sort_order?: number | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_available: boolean | null
+          is_default: boolean | null
+          name: string
+          option_group_id: string
+          price: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          is_default?: boolean | null
+          name: string
+          option_group_id: string
+          price?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          option_group_id?: string
+          price?: number | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_option_group_id_fkey"
+            columns: ["option_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           allow_observations: boolean | null
@@ -428,10 +519,13 @@ export type Database = {
           category_id: string
           created_at: string
           description: string | null
+          enable_multi_flavor: boolean | null
           establishment_id: string
+          flavor_price_rule: string | null
           id: string
           image_url: string | null
           is_promotional: boolean | null
+          max_flavors: number | null
           max_quantity: number | null
           name: string
           original_price: number | null
@@ -446,10 +540,13 @@ export type Database = {
           category_id: string
           created_at?: string
           description?: string | null
+          enable_multi_flavor?: boolean | null
           establishment_id: string
+          flavor_price_rule?: string | null
           id?: string
           image_url?: string | null
           is_promotional?: boolean | null
+          max_flavors?: number | null
           max_quantity?: number | null
           name: string
           original_price?: number | null
@@ -464,10 +561,13 @@ export type Database = {
           category_id?: string
           created_at?: string
           description?: string | null
+          enable_multi_flavor?: boolean | null
           establishment_id?: string
+          flavor_price_rule?: string | null
           id?: string
           image_url?: string | null
           is_promotional?: boolean | null
+          max_flavors?: number | null
           max_quantity?: number | null
           name?: string
           original_price?: number | null
@@ -578,6 +678,7 @@ export type Database = {
           city: string | null
           delivery_fee: number | null
           free_delivery_min: number | null
+          has_pro_plus: boolean | null
           id: string | null
           logo_url: string | null
           min_order_value: number | null
@@ -594,6 +695,7 @@ export type Database = {
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
+          has_pro_plus?: boolean | null
           id?: string | null
           logo_url?: string | null
           min_order_value?: number | null
@@ -610,6 +712,7 @@ export type Database = {
           city?: string | null
           delivery_fee?: number | null
           free_delivery_min?: number | null
+          has_pro_plus?: boolean | null
           id?: string | null
           logo_url?: string | null
           min_order_value?: number | null
