@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package, Clock, Calendar, Store } from 'lucide-react';
 import { formatCurrency, generateOrderMessage, openWhatsApp, openPaymentWhatsApp } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
@@ -634,38 +634,24 @@ function CheckoutContent() {
   }
 
   if (!planStatus.active) {
-    const isTrialExpired = planStatus.reason === 'trial_expired';
-    
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-4">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+              <Store className="w-8 h-8 text-muted-foreground" />
             </div>
             
             <h2 className="text-xl font-semibold text-foreground">
-              Cardápio Temporariamente Indisponível
+              Estabelecimento Indisponível
             </h2>
             
             <p className="text-muted-foreground">
-              {isTrialExpired 
-                ? 'O período de teste deste estabelecimento expirou. Para continuar recebendo pedidos, é necessário ativar o Plano PRO.'
-                : 'O plano deste estabelecimento precisa ser renovado para continuar recebendo pedidos.'
-              }
+              Este estabelecimento não está recebendo pedidos no momento. 
+              Por favor, tente novamente mais tarde.
             </p>
             
-            <div className="pt-4 space-y-3">
-              <Button 
-                variant="whatsapp" 
-                size="lg" 
-                className="w-full"
-                onClick={handleActivatePlan}
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                {isTrialExpired ? 'Ativar Plano PRO - R$ 37/mês' : 'Renovar Plano PRO - R$ 37/mês'}
-              </Button>
-              
+            <div className="pt-4">
               <Link to={`/${slug || id}`} className="block">
                 <Button variant="outline" size="lg" className="w-full">
                   <ArrowLeft className="w-4 h-4 mr-2" />
