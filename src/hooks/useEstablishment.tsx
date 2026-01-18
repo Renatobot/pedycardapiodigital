@@ -16,6 +16,8 @@ export interface Establishment {
   plan_status: string;
   plan_expires_at: string | null;
   created_at: string;
+  has_pro_plus: boolean | null;
+  pro_plus_activated_at: string | null;
 }
 
 export interface Category {

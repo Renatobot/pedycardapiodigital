@@ -47,7 +47,8 @@ import {
   Check,
   Download,
   Printer,
-  Settings2
+  Settings2,
+  Sparkles
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -685,7 +686,15 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="font-semibold text-foreground text-sm">{establishment.name}</h1>
-              {isPro ? (
+              {establishment?.has_pro_plus ? (
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Plano Pro+
+                </Badge>
+              ) : isPro ? (
                 <Badge 
                   variant="outline" 
                   className="text-xs bg-secondary/10 text-secondary border-secondary/20"
