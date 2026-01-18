@@ -6,9 +6,13 @@ export const PRO_PLUS_FEATURES = {
   ADVANCED_PRICING: 'advanced_pricing',
   COMPLEX_COMBOS: 'complex_combos',
   OPTION_DEPENDENCIES: 'option_dependencies',
+  PRODUCT_CUSTOMIZATION: 'product_customization',
 } as const;
 
 export type ProPlusFeature = typeof PRO_PLUS_FEATURES[keyof typeof PRO_PLUS_FEATURES];
+
+// Preço do Pro+
+export const PRO_PLUS_PRICE = 57; // R$ 57,00/mês
 
 export interface FeatureAccess {
   hasAccess: boolean;
@@ -69,6 +73,7 @@ export const FEATURE_LABELS: Record<ProPlusFeature, string> = {
   advanced_pricing: 'Precificação avançada',
   complex_combos: 'Combos complexos (açaí, etc.)',
   option_dependencies: 'Dependências entre opções',
+  product_customization: 'Personalização avançada de produtos',
 };
 
 // Descriptions for Pro+ features
@@ -78,14 +83,12 @@ export const FEATURE_DESCRIPTIONS: Record<ProPlusFeature, string> = {
   advanced_pricing: 'Regras avançadas de precificação como "cobrar pelo maior valor"',
   complex_combos: 'Monte combos complexos com itens grátis e pagos',
   option_dependencies: 'Mostre opções baseadas em seleções anteriores',
+  product_customization: 'Configure grupos de opções personalizáveis para seus produtos',
 };
 
 /**
  * Generate WhatsApp message for Pro+ upgrade inquiry
  */
 export function generateProPlusUpgradeMessage(featureName?: string): string {
-  if (featureName) {
-    return `Olá! Tenho interesse em ativar os Recursos Avançados (Pro+) do PEDY para usar: ${featureName}. Podem me ajudar?`;
-  }
-  return 'Olá! Gostaria de saber mais sobre os Recursos Avançados (Pro+) do PEDY. Podem me explicar?';
+  return 'Quero atualizar para o plano Pro+';
 }

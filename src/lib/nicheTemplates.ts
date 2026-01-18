@@ -223,33 +223,312 @@ export const NICHE_TEMPLATES: Record<string, NicheTemplate> = {
       },
     ],
   },
+  petshop: {
+    id: 'petshop',
+    name: 'Pet Shop',
+    description: 'Porte do animal e serviços extras',
+    groups: [
+      {
+        name: 'Porte do Animal',
+        type: 'single',
+        isRequired: true,
+        options: [
+          { name: 'Pequeno (até 10kg)' },
+          { name: 'Médio (10-25kg)' },
+          { name: 'Grande (acima de 25kg)' },
+        ],
+      },
+      {
+        name: 'Serviços Extras',
+        type: 'multiple',
+        maxSelections: 5,
+        options: [
+          { name: 'Tosa higiênica', pricePerOption: 20 },
+          { name: 'Corte de unhas', pricePerOption: 15 },
+          { name: 'Limpeza de ouvidos', pricePerOption: 10 },
+          { name: 'Hidratação', pricePerOption: 25 },
+          { name: 'Perfume', pricePerOption: 10 },
+        ],
+      },
+    ],
+  },
+  loja_racao: {
+    id: 'loja_racao',
+    name: 'Loja de Ração',
+    description: 'Peso e tipo de ração',
+    groups: [
+      {
+        name: 'Peso',
+        type: 'single',
+        isRequired: true,
+        options: [
+          { name: '1kg' },
+          { name: '3kg' },
+          { name: '7kg' },
+          { name: '15kg' },
+          { name: 'A granel (por kg)' },
+        ],
+      },
+      {
+        name: 'Sabor / Tipo',
+        type: 'single',
+        options: [
+          { name: 'Carne' },
+          { name: 'Frango' },
+          { name: 'Carne e Vegetais' },
+          { name: 'Filhotes' },
+          { name: 'Adultos' },
+          { name: 'Idosos' },
+        ],
+      },
+    ],
+  },
+  farmacia: {
+    id: 'farmacia',
+    name: 'Farmácia / Drogaria',
+    description: 'Dosagem e quantidade',
+    groups: [
+      {
+        name: 'Dosagem',
+        type: 'single',
+        options: [
+          { name: '100mg' },
+          { name: '200mg' },
+          { name: '500mg' },
+          { name: '1g' },
+        ],
+      },
+      {
+        name: 'Quantidade',
+        type: 'single',
+        options: [
+          { name: '10 comprimidos' },
+          { name: '20 comprimidos' },
+          { name: '30 comprimidos' },
+          { name: '60 comprimidos' },
+        ],
+      },
+    ],
+  },
+  deposito_bebidas: {
+    id: 'deposito_bebidas',
+    name: 'Depósito de Bebidas',
+    description: 'Temperatura e quantidade',
+    groups: [
+      {
+        name: 'Temperatura',
+        type: 'single',
+        options: [
+          { name: 'Gelada' },
+          { name: 'Normal (ambiente)' },
+        ],
+      },
+      {
+        name: 'Quantidade',
+        type: 'single',
+        options: [
+          { name: 'Unidade' },
+          { name: 'Pack (6 unidades)' },
+          { name: 'Caixa (12 unidades)' },
+          { name: 'Engradado (24 unidades)' },
+        ],
+      },
+    ],
+  },
+  sorveteria: {
+    id: 'sorveteria',
+    name: 'Sorveteria / Geladinho',
+    description: 'Tamanho, sabores e coberturas',
+    groups: [
+      {
+        name: 'Tamanho',
+        type: 'single',
+        isRequired: true,
+        options: [
+          { name: 'Pequeno (1 bola)' },
+          { name: 'Médio (2 bolas)' },
+          { name: 'Grande (3 bolas)' },
+          { name: 'Casquinha' },
+        ],
+      },
+      {
+        name: 'Sabores',
+        type: 'flavor',
+        maxSelections: 3,
+        options: [
+          { name: 'Chocolate' },
+          { name: 'Morango' },
+          { name: 'Creme' },
+          { name: 'Flocos' },
+          { name: 'Limão' },
+          { name: 'Maracujá' },
+        ],
+      },
+      {
+        name: 'Coberturas',
+        type: 'multiple',
+        maxSelections: 3,
+        options: [
+          { name: 'Calda de chocolate', pricePerOption: 3 },
+          { name: 'Granulado', pricePerOption: 2 },
+          { name: 'Chantilly', pricePerOption: 3 },
+          { name: 'Leite condensado', pricePerOption: 3 },
+        ],
+      },
+    ],
+  },
+  padaria: {
+    id: 'padaria',
+    name: 'Padaria / Confeitaria',
+    description: 'Tamanho, recheio e cobertura',
+    groups: [
+      {
+        name: 'Tamanho do Bolo',
+        type: 'single',
+        options: [
+          { name: 'Mini (serve 4)' },
+          { name: 'Pequeno (serve 10)' },
+          { name: 'Médio (serve 20)' },
+          { name: 'Grande (serve 40)' },
+        ],
+      },
+      {
+        name: 'Recheio',
+        type: 'multiple',
+        maxSelections: 2,
+        options: [
+          { name: 'Brigadeiro' },
+          { name: 'Beijinho' },
+          { name: 'Morango com chantilly' },
+          { name: 'Doce de leite' },
+          { name: 'Nutella', pricePerOption: 15 },
+        ],
+      },
+      {
+        name: 'Cobertura',
+        type: 'single',
+        options: [
+          { name: 'Chantilly' },
+          { name: 'Ganache' },
+          { name: 'Pasta americana', pricePerOption: 30 },
+          { name: 'Naked (sem cobertura)' },
+        ],
+      },
+    ],
+  },
+  hortifruti: {
+    id: 'hortifruti',
+    name: 'Hortifrúti / Verduras',
+    description: 'Peso e maturação',
+    groups: [
+      {
+        name: 'Peso / Quantidade',
+        type: 'single',
+        isRequired: true,
+        options: [
+          { name: '500g' },
+          { name: '1kg' },
+          { name: '2kg' },
+          { name: 'Unidade' },
+          { name: 'Maço' },
+          { name: 'Bandeja' },
+        ],
+      },
+      {
+        name: 'Maturação (frutas)',
+        type: 'single',
+        options: [
+          { name: 'Verde (amadurece em casa)' },
+          { name: 'Maduro (pronto para consumo)' },
+          { name: 'Muito maduro (ideal para sucos)' },
+        ],
+      },
+    ],
+  },
 };
 
 // Keywords to suggest templates based on category name
 export const TEMPLATE_KEYWORDS: Record<string, string> = {
+  // Pizzaria
   pizza: 'pizzaria',
   pizzas: 'pizzaria',
+  // Hamburgueria
   lanche: 'hamburgueria',
   lanches: 'hamburgueria',
   burguer: 'hamburgueria',
   burger: 'hamburgueria',
   hamburguer: 'hamburgueria',
   hambúrguer: 'hamburgueria',
+  // Marmitaria
   marmita: 'marmitaria',
   marmitas: 'marmitaria',
   prato: 'marmitaria',
   pratos: 'marmitaria',
   refeição: 'marmitaria',
   refeicao: 'marmitaria',
+  // Açaiteria
   açaí: 'acaiteria',
   acai: 'acaiteria',
+  // Pastelaria
   pastel: 'pastelaria',
   pastéis: 'pastelaria',
   pasteis: 'pastelaria',
+  // Japonesa
   sushi: 'japonesa',
   temaki: 'japonesa',
   japonês: 'japonesa',
   japones: 'japonesa',
+  // Pet Shop
+  pet: 'petshop',
+  banho: 'petshop',
+  tosa: 'petshop',
+  cachorro: 'petshop',
+  gato: 'petshop',
+  animal: 'petshop',
+  // Loja de Ração
+  ração: 'loja_racao',
+  racao: 'loja_racao',
+  agropecuária: 'loja_racao',
+  agropecuaria: 'loja_racao',
+  // Farmácia
+  farmácia: 'farmacia',
+  farmacia: 'farmacia',
+  medicamento: 'farmacia',
+  remédio: 'farmacia',
+  remedio: 'farmacia',
+  drogaria: 'farmacia',
+  // Depósito de Bebidas
+  bebida: 'deposito_bebidas',
+  bebidas: 'deposito_bebidas',
+  cerveja: 'deposito_bebidas',
+  refrigerante: 'deposito_bebidas',
+  depósito: 'deposito_bebidas',
+  deposito: 'deposito_bebidas',
+  // Sorveteria
+  sorvete: 'sorveteria',
+  sorvetes: 'sorveteria',
+  gelado: 'sorveteria',
+  geladinho: 'sorveteria',
+  picolé: 'sorveteria',
+  picole: 'sorveteria',
+  // Padaria
+  pão: 'padaria',
+  pao: 'padaria',
+  bolo: 'padaria',
+  bolos: 'padaria',
+  confeitaria: 'padaria',
+  padaria: 'padaria',
+  doce: 'padaria',
+  doces: 'padaria',
+  // Hortifrúti
+  fruta: 'hortifruti',
+  frutas: 'hortifruti',
+  verdura: 'hortifruti',
+  verduras: 'hortifruti',
+  legume: 'hortifruti',
+  legumes: 'hortifruti',
+  hortifruti: 'hortifruti',
+  hortifrúti: 'hortifruti',
 };
 
 /**

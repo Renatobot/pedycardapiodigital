@@ -1,10 +1,11 @@
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, Sparkles, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   PRO_PLUS_FEATURES, 
   ProPlusFeature, 
   FEATURE_LABELS,
+  PRO_PLUS_PRICE,
   generateProPlusUpgradeMessage 
 } from '@/lib/featureGating';
 import { openWhatsApp, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
@@ -74,6 +75,44 @@ export function ProPlusLockedOverlay({ feature }: ProPlusLockedOverlayProps) {
         <Button size="sm" onClick={handleUpgrade}>
           <Sparkles className="w-4 h-4 mr-1" />
           Ativar recursos avançados
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface ProPlusUpgradeCardProps {
+  feature: ProPlusFeature;
+}
+
+export function ProPlusUpgradeCard({ feature }: ProPlusUpgradeCardProps) {
+  const handleUpgrade = () => {
+    openWhatsApp(SUPPORT_WHATSAPP, 'Quero atualizar para o plano Pro+');
+  };
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm rounded-lg border-2 border-dashed border-primary/30 z-10">
+      <div className="text-center p-6 max-w-sm">
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <Sparkles className="w-6 h-6 text-primary" />
+        </div>
+        
+        <h3 className="font-semibold text-lg mb-1">Recurso Pro+</h3>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          {FEATURE_LABELS[feature]}
+        </p>
+        
+        <div className="bg-primary/5 rounded-lg p-3 mb-4">
+          <p className="text-xs text-muted-foreground">Plano Pro+</p>
+          <p className="text-2xl font-bold text-primary">
+            R$ {PRO_PLUS_PRICE},00<span className="text-sm font-normal text-muted-foreground">/mês</span>
+          </p>
+        </div>
+        
+        <Button onClick={handleUpgrade} className="w-full gap-2">
+          <MessageCircle className="w-4 h-4" />
+          Atualizar para Pro+
         </Button>
       </div>
     </div>
