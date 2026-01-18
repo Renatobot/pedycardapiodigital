@@ -12,6 +12,7 @@ export interface OptionGroupTemplate {
   isRequired?: boolean;
   minSelections?: number;
   maxSelections?: number;
+  priceRule?: 'highest' | 'average' | 'sum'; // Regra de preço para sabores
   options?: OptionTemplate[];
 }
 
@@ -26,7 +27,7 @@ export const NICHE_TEMPLATES: Record<string, NicheTemplate> = {
   pizzaria: {
     id: 'pizzaria',
     name: 'Pizzaria',
-    description: 'Tamanhos, sabores e bordas',
+    description: 'Tamanhos, sabores (meio a meio) e bordas',
     groups: [
       {
         name: 'Tamanho',
@@ -37,6 +38,23 @@ export const NICHE_TEMPLATES: Record<string, NicheTemplate> = {
           { name: 'Média (6 fatias)' },
           { name: 'Grande (8 fatias)' },
           { name: 'Gigante (12 fatias)' },
+        ],
+      },
+      {
+        name: 'Sabores da Pizza',
+        type: 'flavor',
+        isRequired: true,
+        minSelections: 1,
+        maxSelections: 2, // Meio a meio = 2 sabores
+        priceRule: 'highest', // Cobra pelo mais caro
+        options: [
+          { name: 'Mussarela', pricePerOption: 45 },
+          { name: 'Calabresa', pricePerOption: 48 },
+          { name: 'Portuguesa', pricePerOption: 52 },
+          { name: 'Frango com Catupiry', pricePerOption: 55 },
+          { name: 'Quatro Queijos', pricePerOption: 58 },
+          { name: 'Lombo Canadense', pricePerOption: 60 },
+          { name: 'Camarão', pricePerOption: 75 },
         ],
       },
       {

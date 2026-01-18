@@ -74,6 +74,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MenuAppearanceSettings } from '@/components/MenuAppearanceSettings';
 import { DashboardPWAPrompt } from '@/components/DashboardPWAPrompt';
 import { SplashScreen } from '@/components/SplashScreen';
+import { NicheSelectionModal } from '@/components/NicheSelectionModal';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -117,6 +118,8 @@ export default function DashboardPage() {
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings'>('menu');
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [nicheModalOpen, setNicheModalOpen] = useState(false);
+  const [hasShownNicheModal, setHasShownNicheModal] = useState(false);
 
   // Edit states
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
@@ -172,6 +175,24 @@ export default function DashboardPage() {
       setDeliveryFee((establishment as any).delivery_fee || 0);
     }
   }, [establishment]);
+
+  // Show niche modal for first-time users with no categories
+  useEffect(() => {
+    if (establishment && categories.length === 0 && !hasShownNicheModal && !dataLoading) {
+      const hasSeenNicheModal = localStorage.getItem(`pedy_niche_modal_${establishment.id}`);
+      if (!hasSeenNicheModal) {
+        setNicheModalOpen(true);
+        setHasShownNicheModal(true);
+      }
+    }
+  }, [establishment, categories, hasShownNicheModal, dataLoading]);
+
+  const handleNicheComplete = () => {
+    if (establishment) {
+      localStorage.setItem(`pedy_niche_modal_${establishment.id}`, 'true');
+    }
+    window.location.reload();
+  };
 
   const copyLink = () => {
     navigator.clipboard.writeText(menuUrl);
@@ -1517,6 +1538,16 @@ export default function DashboardPage() {
 
       {/* PWA Install Prompt específico para Dashboard */}
       <DashboardPWAPrompt />
+
+      {/* Modal de seleção de nicho para novos usuários */}
+      {establishment && (
+        <NicheSelectionModal
+          open={nicheModalOpen}
+          onOpenChange={setNicheModalOpen}
+          establishmentId={establishment.id}
+          onComplete={handleNicheComplete}
+        />
+      )}
     </div>
   );
 }
