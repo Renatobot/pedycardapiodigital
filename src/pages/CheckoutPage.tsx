@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isEstablishmentActive } from '@/lib/utils';
 import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage, getAvailableScheduleSlots, ScheduleSlot } from '@/lib/businessHours';
 import { hexToHsl } from '@/lib/colors';
+import { CustomerPushPrompt } from '@/components/CustomerPushPrompt';
 
 interface PublicEstablishment {
   id: string;
@@ -86,6 +87,10 @@ function CheckoutContent() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; value: number; type: string } | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  
+  // Push notification prompt state
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
+  const [orderEstablishmentId, setOrderEstablishmentId] = useState('');
   
   const [formData, setFormData] = useState({
     customerName: '',
@@ -585,6 +590,17 @@ function CheckoutContent() {
       description: 'Seu pedido foi enviado para o WhatsApp do estabelecimento.',
     });
 
+    // Show push notification prompt after successful order
+    if (formData.customerPhone && establishment) {
+      setOrderEstablishmentId(establishment.id);
+      setShowPushPrompt(true);
+    } else {
+      navigate(`/${slug || id}`);
+    }
+  };
+
+  const handlePushPromptClose = () => {
+    setShowPushPrompt(false);
     navigate(`/${slug || id}`);
   };
 
@@ -1220,6 +1236,15 @@ function CheckoutContent() {
           </Button>
         )}
       </div>
+
+      {/* Push Notification Prompt */}
+      <CustomerPushPrompt
+        isOpen={showPushPrompt}
+        onClose={handlePushPromptClose}
+        establishmentId={orderEstablishmentId}
+        establishmentName={establishment?.name || ''}
+        customerPhone={formData.customerPhone.replace(/\D/g, '')}
+      />
     </div>
   );
 }
