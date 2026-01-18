@@ -14,9 +14,14 @@ export function generateOrderMessage(
   referencePoint: string,
   paymentMethod: string,
   paymentDetails: string,
-  total: number,
+  subtotal: number,
+  deliveryFee: number = 0,
+  discountValue: number = 0,
+  discountCode: string | null = null,
   observations?: string
 ): string {
+  const total = subtotal + deliveryFee - discountValue;
+  
   let message = `🛒 *NOVO PEDIDO - ${establishmentName}*\n\n`;
   message += `📍 *Endereço:* ${address}\n`;
   message += `📌 *Ponto de referência:* ${referencePoint}\n\n`;
@@ -47,6 +52,17 @@ export function generateOrderMessage(
   message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
   message += `💳 *Pagamento:* ${paymentMethod}\n`;
   message += paymentDetails ? `${paymentDetails}\n` : '';
+  
+  message += `\n📦 *Subtotal:* ${formatCurrency(subtotal)}\n`;
+  
+  if (deliveryFee > 0) {
+    message += `🚗 *Taxa de entrega:* ${formatCurrency(deliveryFee)}\n`;
+  }
+  
+  if (discountValue > 0) {
+    message += `🎟️ *Desconto${discountCode ? ` (${discountCode})` : ''}:* -${formatCurrency(discountValue)}\n`;
+  }
+  
   message += `\n💰 *TOTAL: ${formatCurrency(total)}*\n`;
   
   if (observations) {

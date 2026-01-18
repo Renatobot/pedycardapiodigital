@@ -53,8 +53,9 @@ import { formatCurrency } from '@/lib/whatsapp';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useEstablishment, ProductAddition } from '@/hooks/useEstablishment';
-
 import { ImageUpload } from '@/components/ImageUpload';
+import { OrderManagement } from '@/components/OrderManagement';
+import { DeliverySettings } from '@/components/DeliverySettings';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -95,6 +96,8 @@ export default function DashboardPage() {
   const [slugModalOpen, setSlugModalOpen] = useState(false);
   const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings'>('menu');
+  const [deliveryFee, setDeliveryFee] = useState(0);
 
   // Edit states
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
@@ -129,6 +132,13 @@ export default function DashboardPage() {
   const menuUrl = establishment 
     ? `${window.location.origin}/${(establishment as any).slug || establishment.id}`
     : '';
+
+  // Initialize delivery fee from establishment data
+  useEffect(() => {
+    if (establishment) {
+      setDeliveryFee((establishment as any).delivery_fee || 0);
+    }
+  }, [establishment]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(menuUrl);
@@ -592,157 +602,206 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[
-            { label: 'Categorias', value: categories.length },
-            { label: 'Produtos', value: products.length },
-            { label: 'Disponíveis', value: products.filter(p => p.available).length },
-            { label: 'Pedidos hoje', value: 0 },
-          ].map((stat, i) => (
-            <Card key={i}>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Dashboard Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          <Button
+            variant={activeTab === 'menu' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('menu')}
+          >
+            <MenuIcon className="w-4 h-4 mr-1" />
+            Cardápio
+          </Button>
+          <Button
+            variant={activeTab === 'orders' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('orders')}
+          >
+            <ShoppingBag className="w-4 h-4 mr-1" />
+            Pedidos
+          </Button>
+          <Button
+            variant={activeTab === 'settings' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('settings')}
+          >
+            <Store className="w-4 h-4 mr-1" />
+            Configurações
+          </Button>
         </div>
 
-        {/* Categories and Products */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Seu Cardápio</h2>
-            <Button size="sm" onClick={openAddCategory}>
-              <Plus className="w-4 h-4 mr-1" />
-              Nova categoria
-            </Button>
-          </div>
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <OrderManagement establishmentId={establishment.id} />
+        )}
 
-          {categories.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MenuIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  Você ainda não tem categorias. Crie sua primeira categoria para começar!
-                </p>
-                <Button onClick={openAddCategory}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar categoria
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            categories.map((category) => {
-              const categoryProducts = products.filter(p => p.category_id === category.id);
-              
-              return (
-                <Card key={category.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{category.name}</CardTitle>
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => openEditCategory(category)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => openDeleteCategory(category)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {categoryProducts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          Nenhum produto nesta categoria ainda.
-                        </p>
-                      ) : (
-                        categoryProducts.map((product) => (
-                          <div 
-                            key={product.id}
-                            className={`flex items-center gap-4 p-3 rounded-xl bg-muted/50 ${
-                              !product.available ? 'opacity-60' : ''
-                            }`}
-                          >
-                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              {product.image_url ? (
-                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <h4 className="font-medium text-foreground">{product.name}</h4>
-                                  <p className="text-sm text-muted-foreground line-clamp-1">
-                                    {product.description}
-                                  </p>
-                                </div>
-                                <p className="font-semibold text-primary whitespace-nowrap">
-                                  {formatCurrency(Number(product.price))}
-                                </p>
-                              </div>
-                              {getProductAdditions(product.id).length > 0 && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {getProductAdditions(product.id).length} adicionais
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8"
-                                title={product.available ? 'Desativar' : 'Ativar'}
-                                onClick={() => toggleProductAvailability(product.id, product.available)}
-                              >
-                                {product.available ? (
-                                  <Eye className="w-4 h-4 text-secondary" />
-                                ) : (
-                                  <EyeOff className="w-4 h-4" />
-                                )}
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8"
-                                onClick={() => openEditProduct(product)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => openAddProduct(category.id)}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Adicionar produto
-                      </Button>
-                    </div>
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <DeliverySettings
+              establishmentId={establishment.id}
+              currentFee={deliveryFee}
+              onUpdate={setDeliveryFee}
+            />
+          </div>
+        )}
+
+        {/* Menu Tab */}
+        {activeTab === 'menu' && (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: 'Categorias', value: categories.length },
+                { label: 'Produtos', value: products.length },
+                { label: 'Disponíveis', value: products.filter(p => p.available).length },
+                { label: 'Taxa entrega', value: deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2).replace('.', ',')}` : 'Grátis' },
+              ].map((stat, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
                   </CardContent>
                 </Card>
-              );
-            })
-          )}
-        </div>
+              ))}
+            </div>
+
+            {/* Categories and Products */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-foreground">Seu Cardápio</h2>
+                <Button size="sm" onClick={openAddCategory}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Nova categoria
+                </Button>
+              </div>
+
+              {categories.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <MenuIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      Você ainda não tem categorias. Crie sua primeira categoria para começar!
+                    </p>
+                    <Button onClick={openAddCategory}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar categoria
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                categories.map((category) => {
+                  const categoryProducts = products.filter(p => p.category_id === category.id);
+                  
+                  return (
+                    <Card key={category.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{category.name}</CardTitle>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => openEditCategory(category)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => openDeleteCategory(category)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {categoryProducts.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              Nenhum produto nesta categoria ainda.
+                            </p>
+                          ) : (
+                            categoryProducts.map((product) => (
+                              <div 
+                                key={product.id}
+                                className={`flex items-center gap-4 p-3 rounded-xl bg-muted/50 ${
+                                  !product.available ? 'opacity-60' : ''
+                                }`}
+                              >
+                                <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {product.image_url ? (
+                                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <h4 className="font-medium text-foreground">{product.name}</h4>
+                                      <p className="text-sm text-muted-foreground line-clamp-1">
+                                        {product.description}
+                                      </p>
+                                    </div>
+                                    <p className="font-semibold text-primary whitespace-nowrap">
+                                      {formatCurrency(Number(product.price))}
+                                    </p>
+                                  </div>
+                                  {getProductAdditions(product.id).length > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {getProductAdditions(product.id).length} adicionais
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    title={product.available ? 'Desativar' : 'Ativar'}
+                                    onClick={() => toggleProductAvailability(product.id, product.available)}
+                                  >
+                                    {product.available ? (
+                                      <Eye className="w-4 h-4 text-secondary" />
+                                    ) : (
+                                      <EyeOff className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={() => openEditProduct(product)}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => openAddProduct(category.id)}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Adicionar produto
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
       </main>
 
       {/* Category Modal */}

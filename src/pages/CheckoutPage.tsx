@@ -20,6 +20,7 @@ interface PublicEstablishment {
   plan_status: string;
   trial_end_date: string;
   plan_expires_at: string | null;
+  delivery_fee: number | null;
 }
 
 interface EstablishmentContact {
@@ -146,7 +147,7 @@ function CheckoutContent() {
     return '';
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!establishment || !contact) return;
@@ -160,6 +161,53 @@ function CheckoutContent() {
       return;
     }
 
+    const deliveryFee = establishment.delivery_fee || 0;
+    const subtotal = total;
+    const grandTotal = subtotal + deliveryFee;
+
+    // Save order to database
+    const orderItems = items.map(item => ({
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+      },
+      quantity: item.quantity,
+      selectedAdditions: item.selectedAdditions.map(a => ({
+        id: a.id,
+        name: a.name,
+        price: a.price,
+      })),
+      observations: item.observations,
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          establishment_id: establishment.id,
+          customer_address: formData.address,
+          reference_point: formData.referencePoint || null,
+          payment_method: getPaymentMethodLabel(),
+          payment_details: getPaymentDetails() || null,
+          subtotal: subtotal,
+          delivery_fee: deliveryFee,
+          discount_value: 0,
+          discount_code: null,
+          total: grandTotal,
+          status: 'pending',
+          observations: formData.observations || null,
+          items: orderItems,
+        });
+
+      if (error) {
+        console.error('Error saving order:', error);
+        // Continue anyway - order will be sent via WhatsApp
+      }
+    } catch (err) {
+      console.error('Error saving order:', err);
+    }
+
     const message = generateOrderMessage(
       establishment.name || '',
       items,
@@ -167,7 +215,10 @@ function CheckoutContent() {
       formData.referencePoint,
       getPaymentMethodLabel(),
       getPaymentDetails(),
-      total,
+      subtotal,
+      deliveryFee,
+      0,
+      null,
       formData.observations
     );
 
@@ -485,9 +536,26 @@ function CheckoutContent() {
                     </span>
                   </div>
                 ))}
-                <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span className="text-primary text-lg">{formatCurrency(total)}</span>
+                
+                <div className="border-t border-border pt-2 mt-2 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatCurrency(total)}</span>
+                  </div>
+                  
+                  {(establishment?.delivery_fee || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Taxa de entrega</span>
+                      <span>{formatCurrency(establishment?.delivery_fee || 0)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between font-semibold text-lg pt-1">
+                    <span>Total</span>
+                    <span className="text-primary">
+                      {formatCurrency(total + (establishment?.delivery_fee || 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
