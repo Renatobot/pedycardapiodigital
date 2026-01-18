@@ -16,23 +16,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
     dedupe: [
       "react", 
       "react-dom", 
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
-      "@supabase/supabase-js",
-      "@tanstack/react-query",
-      "@radix-ui/react-tooltip",
-      "@radix-ui/react-dialog",
-      "@radix-ui/react-popover",
-      "@radix-ui/react-select",
-      "@radix-ui/react-dropdown-menu",
-      "@radix-ui/react-tabs",
-      "@radix-ui/react-checkbox",
-      "@radix-ui/react-label",
-      "@radix-ui/react-slot",
     ],
   },
   optimizeDeps: {
@@ -41,13 +32,8 @@ export default defineConfig(({ mode }) => ({
       "react-dom", 
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
-      "@supabase/supabase-js",
-      "@tanstack/react-query",
       "@radix-ui/react-tooltip",
     ],
     force: true,
-    esbuildOptions: {
-      target: 'esnext',
-    },
   },
 }));
