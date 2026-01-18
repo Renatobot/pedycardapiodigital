@@ -242,6 +242,7 @@ export type Database = {
           logo_url: string | null
           min_order_value: number | null
           name: string
+          notify_customer_on_status_change: boolean | null
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
@@ -268,6 +269,7 @@ export type Database = {
           logo_url?: string | null
           min_order_value?: number | null
           name: string
+          notify_customer_on_status_change?: boolean | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
@@ -294,6 +296,7 @@ export type Database = {
           logo_url?: string | null
           min_order_value?: number | null
           name?: string
+          notify_customer_on_status_change?: boolean | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string

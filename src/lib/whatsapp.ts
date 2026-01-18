@@ -144,3 +144,36 @@ export function generateWhatsAppLink(message: string): string {
   const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/55${SUPPORT_WHATSAPP}?text=${encodedMessage}`;
 }
+
+// Status notification templates for customer WhatsApp
+const STATUS_NOTIFICATION_TEMPLATES: Record<string, (establishmentName: string, orderId: string) => string> = {
+  pending: (name, id) => 
+    `Olá! 📦 Seu pedido #${id.slice(-6).toUpperCase()} foi *recebido* por ${name} e já estamos preparando tudo com carinho!`,
+  
+  preparing: (name, id) => 
+    `👨‍🍳 Seu pedido #${id.slice(-6).toUpperCase()} de ${name} já está *em preparo*! Em breve sai para entrega!`,
+  
+  'on-the-way': (name, id) => 
+    `🛵 Seu pedido #${id.slice(-6).toUpperCase()} de ${name} *saiu para entrega* e está a caminho!`,
+  
+  delivered: (name, id) => 
+    `✅ Pedido #${id.slice(-6).toUpperCase()} *entregue*! Esperamos que aproveite. Obrigado pela preferência! - ${name}`,
+};
+
+export function generateStatusNotificationMessage(
+  status: string,
+  establishmentName: string,
+  orderId: string
+): string | null {
+  const template = STATUS_NOTIFICATION_TEMPLATES[status];
+  return template ? template(establishmentName, orderId) : null;
+}
+
+export function generateWhatsAppLinkToCustomer(
+  customerPhone: string,
+  message: string
+): string {
+  const cleanPhone = customerPhone.replace(/\D/g, '');
+  const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+  return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+}
