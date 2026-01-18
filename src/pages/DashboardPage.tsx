@@ -150,12 +150,17 @@ export default function DashboardPage() {
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
   const isPro = establishment?.plan_status === 'active';
+  const isExpired = establishment?.plan_status === 'expired';
+  const isTrial = establishment?.plan_status === 'trial';
+  
   const relevantDate = isPro 
     ? (establishment as any)?.plan_expires_at 
-    : establishment?.trial_end_date;
+    : isTrial 
+      ? establishment?.trial_end_date
+      : null;
   const daysLeft = relevantDate 
     ? Math.ceil((new Date(relevantDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : 7;
+    : 0;
 
   const menuUrl = establishment 
     ? `${window.location.origin}/${(establishment as any).slug || establishment.id}`
@@ -729,6 +734,14 @@ export default function DashboardPage() {
                   <Crown className="w-3 h-3 mr-1" />
                   Plano Pro
                 </Badge>
+              ) : isExpired ? (
+                <Badge 
+                  variant="destructive" 
+                  className="text-xs bg-destructive/20 text-destructive border-destructive/30"
+                >
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Plano Expirado
+                </Badge>
               ) : (
                 <Badge 
                   variant="outline" 
@@ -750,8 +763,28 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Expired Plan Banner */}
+      {isExpired && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
+          <div className="container flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Seu plano expirou. Ative o Plano PRO para continuar recebendo pedidos.
+              </span>
+            </div>
+            <Link to="/upgrade">
+              <Button size="sm" variant="destructive">
+                <Crown className="w-4 h-4 mr-1" />
+                Ativar Plano PRO
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Trial Warning Banner */}
-      {!isPro && daysLeft <= 5 && (
+      {isTrial && daysLeft <= 5 && daysLeft > 0 && (
         <div className="bg-warning/10 border-b border-warning/20 px-4 py-3">
           <div className="container flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-warning">
