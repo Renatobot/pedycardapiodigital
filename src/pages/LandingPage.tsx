@@ -244,7 +244,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <img src={pedyLogo} alt="PEDY" className="h-8 object-contain" />
             <p className="text-sm text-muted-foreground">
-              © 2024 PEDY. Todos os direitos reservados.
+              © 2026 PEDY. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-4">
               <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
