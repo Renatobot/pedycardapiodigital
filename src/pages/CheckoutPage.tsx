@@ -125,7 +125,7 @@ function CheckoutContent() {
           return;
         }
         
-        setEstablishment(data as PublicEstablishment);
+        setEstablishment(data as unknown as PublicEstablishment);
         
         const status = isEstablishmentActive({
           plan_status: data.plan_status || 'trial',
@@ -161,13 +161,13 @@ function CheckoutContent() {
           setBusinessHours(hoursData);
           const bStatus = checkBusinessStatus(
             hoursData,
-            data.allow_orders_when_closed || false,
-            data.scheduled_orders_message
+            (data as any).allow_orders_when_closed || false,
+            (data as any).scheduled_orders_message
           );
           setBusinessStatus(bStatus);
           
           // Generate available slots for scheduling if closed and allows scheduled orders
-          if (!bStatus.isOpen && data.allow_orders_when_closed) {
+          if (!bStatus.isOpen && (data as any).allow_orders_when_closed) {
             const slots = getAvailableScheduleSlots(hoursData, 7);
             setAvailableSlots(slots);
             if (slots.length > 0 && slots[0].times.length > 0) {
@@ -176,8 +176,8 @@ function CheckoutContent() {
           }
         }
 
-        setAllowOrdersWhenClosed(data.allow_orders_when_closed || false);
-        setScheduledOrdersMessage(data.scheduled_orders_message);
+        setAllowOrdersWhenClosed((data as any).allow_orders_when_closed || false);
+        setScheduledOrdersMessage((data as any).scheduled_orders_message);
         
         if (status.active && establishmentId) {
           const { data: contactData, error: contactError } = await supabase

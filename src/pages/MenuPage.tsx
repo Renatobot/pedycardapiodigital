@@ -447,7 +447,7 @@ function MenuContent() {
         if (estError) {
           console.error('Erro ao buscar estabelecimento:', estError);
         } else if (estData) {
-          setEstablishment(estData);
+          setEstablishment(estData as unknown as PublicEstablishment);
         }
         
         const establishmentId = estData?.id;
@@ -545,8 +545,8 @@ function MenuContent() {
           setBusinessHours(hoursData);
           const status = checkBusinessStatus(
             hoursData,
-            estData.allow_orders_when_closed || false,
-            estData.scheduled_orders_message
+            (estData as any).allow_orders_when_closed || false,
+            (estData as any).scheduled_orders_message
           );
           setBusinessStatus(status);
           
