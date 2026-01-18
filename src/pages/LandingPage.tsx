@@ -1,4 +1,4 @@
-import pedyLogo from '@/assets/logo_pedy.jpg';
+import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
