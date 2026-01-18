@@ -242,7 +242,7 @@ export default function LandingPage() {
       <footer className="py-8 border-t border-border">
         <div className="container">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src={pedyLogo} alt="PEDY" className="h-14 md:h-16 object-contain" />
+            <img src={pedyLogo} alt="PEDY" className="h-20 md:h-24 object-contain" />
             <p className="text-sm text-muted-foreground">
               © 2026 PEDY. Todos os direitos reservados.
             </p>
