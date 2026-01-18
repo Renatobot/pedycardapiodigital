@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BusinessHour, BusinessStatus, checkBusinessStatus } from '@/lib/businessHours';
 import { ProductOptionSelector } from '@/components/ProductOptionSelector';
 import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGroupsManager';
+import { useToast } from '@/hooks/use-toast';
 
 interface PublicEstablishment {
   id: string;
@@ -43,6 +44,7 @@ interface ProductWithOptions extends Product {
 
 function ProductCard({ product }: { product: ProductWithOptions }) {
   const { addItem } = useCart();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedAdditions, setSelectedAdditions] = useState<ProductAddition[]>([]);
@@ -92,6 +94,12 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
     }
 
     addItem(product, quantity, selectedAdditions, observations, selectedOptions);
+    
+    toast({
+      title: "Item adicionado!",
+      description: `${quantity}x ${product.name} foi adicionado ao carrinho`,
+    });
+    
     setIsOpen(false);
     setQuantity(1);
     setSelectedAdditions([]);
@@ -248,20 +256,24 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
 function CartSheet() {
   const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { id, slug } = useParams();
-  
-  if (itemCount === 0) return null;
 
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button 
-          variant="hero" 
+          variant={itemCount > 0 ? "hero" : "outline"} 
           size="lg" 
           className="fixed bottom-4 left-4 right-4 z-50 shadow-xl"
         >
           <ShoppingCart className="w-5 h-5 mr-2" />
-          Ver carrinho ({itemCount})
-          <span className="ml-auto">{formatCurrency(total)}</span>
+          {itemCount > 0 ? (
+            <>
+              Ver carrinho ({itemCount})
+              <span className="ml-auto">{formatCurrency(total)}</span>
+            </>
+          ) : (
+            "Carrinho vazio"
+          )}
         </Button>
       </SheetTrigger>
       
@@ -269,112 +281,126 @@ function CartSheet() {
         <SheetHeader className="pb-4">
           <div className="flex items-center justify-between">
             <SheetTitle>Seu pedido</SheetTitle>
-            <Button variant="ghost" size="sm" onClick={clearCart}>
-              Limpar
-            </Button>
+            {itemCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearCart}>
+                Limpar
+              </Button>
+            )}
           </div>
         </SheetHeader>
         
-        <div className="space-y-4 overflow-auto max-h-[calc(85vh-200px)]">
-          {items.map((item, index) => {
-            const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
-            const optionsTotal = item.selectedOptions.reduce((sum, group) => 
-              sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
-            );
-            const itemTotal = (item.product.price + additionsTotal + optionsTotal) * item.quantity;
-            
-            return (
-              <div 
-                key={`${item.product.id}-${index}`}
-                className="flex gap-3 p-3 bg-muted rounded-xl"
-              >
-                <div className="w-16 h-16 bg-background rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {item.product.image ? (
-                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="w-6 h-6 text-muted-foreground" />
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-medium text-foreground text-sm">{item.product.name}</h4>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 -mr-2 -mt-1"
-                      onClick={() => removeItem(item.product.id)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Display selected options */}
-                  {item.selectedOptions.length > 0 && (
-                    <div className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
-                      {item.selectedOptions.map((group) => (
-                        <p key={group.groupId}>
-                          <span className="font-medium">{group.groupName}:</span>{' '}
-                          {group.options.map(o => o.name).join(', ')}
-                          {group.options.some(o => o.price > 0) && (
-                            <span className="text-secondary ml-1">
-                              (+{formatCurrency(group.options.reduce((sum, o) => sum + o.price, 0))})
-                            </span>
-                          )}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {item.selectedAdditions.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      + {item.selectedAdditions.map(a => a.name).join(', ')}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2 bg-background rounded-md p-0.5">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6"
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6"
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    <span className="font-semibold text-primary text-sm">
-                      {formatCurrency(itemTotal)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-muted-foreground">Total</span>
-            <span className="text-2xl font-bold text-foreground">{formatCurrency(total)}</span>
+        {itemCount === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[calc(85vh-200px)] text-center">
+            <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground">Seu carrinho está vazio</h3>
+            <p className="text-muted-foreground mt-2 max-w-xs">
+              Adicione itens do cardápio para começar seu pedido
+            </p>
           </div>
-          
-          <Link to={`/${slug || id}/checkout`}>
-            <Button variant="hero" size="lg" className="w-full">
-              Continuar para entrega
-              <ChevronRight className="w-5 h-5 ml-1" />
-            </Button>
-          </Link>
-        </div>
+        ) : (
+          <>
+            <div className="space-y-4 overflow-auto max-h-[calc(85vh-200px)]">
+              {items.map((item, index) => {
+                const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
+                const optionsTotal = item.selectedOptions.reduce((sum, group) => 
+                  sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
+                );
+                const itemTotal = (item.product.price + additionsTotal + optionsTotal) * item.quantity;
+                
+                return (
+                  <div 
+                    key={`${item.product.id}-${index}`}
+                    className="flex gap-3 p-3 bg-muted rounded-xl"
+                  >
+                    <div className="w-16 h-16 bg-background rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {item.product.image ? (
+                        <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Store className="w-6 h-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-medium text-foreground text-sm">{item.product.name}</h4>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 -mr-2 -mt-1"
+                          onClick={() => removeItem(item.product.id)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Display selected options */}
+                      {item.selectedOptions.length > 0 && (
+                        <div className="text-xs text-muted-foreground space-y-0.5 mt-0.5">
+                          {item.selectedOptions.map((group) => (
+                            <p key={group.groupId}>
+                              <span className="font-medium">{group.groupName}:</span>{' '}
+                              {group.options.map(o => o.name).join(', ')}
+                              {group.options.some(o => o.price > 0) && (
+                                <span className="text-secondary ml-1">
+                                  (+{formatCurrency(group.options.reduce((sum, o) => sum + o.price, 0))})
+                                </span>
+                              )}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {item.selectedAdditions.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          + {item.selectedAdditions.map(a => a.name).join(', ')}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-2 bg-background rounded-md p-0.5">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <span className="font-semibold text-primary text-sm">
+                          {formatCurrency(itemTotal)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-muted-foreground">Total</span>
+                <span className="text-2xl font-bold text-foreground">{formatCurrency(total)}</span>
+              </div>
+              
+              <Link to={`/${slug || id}/checkout`}>
+                <Button variant="hero" size="lg" className="w-full">
+                  Continuar para entrega
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
