@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, CheckCircle2, Send, MapPin } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSlug } from '@/lib/utils';
@@ -28,24 +25,12 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Email verification states
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [sendingCode, setSendingCode] = useState(false);
-  const [verifyingCode, setVerifyingCode] = useState(false);
-  
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // Reset email verification if email changes
-    if (name === 'email' && emailVerified) {
-      setEmailVerified(false);
-    }
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,102 +68,6 @@ export default function RegisterPage() {
     return publicUrl;
   };
 
-  const sendVerificationCode = async () => {
-    if (!formData.email) {
-      toast({
-        title: 'Erro',
-        description: 'Digite seu e-mail primeiro.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: 'Erro',
-        description: 'Digite um e-mail válido.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSendingCode(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { email: formData.email }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Código enviado!',
-        description: 'Verifique seu e-mail e digite o código de 6 dígitos.',
-      });
-      
-      setShowVerificationModal(true);
-      setVerificationCode('');
-    } catch (error: any) {
-      console.error('Error sending verification code:', error);
-      toast({
-        title: 'Erro ao enviar código',
-        description: error.message || 'Tente novamente em alguns instantes.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSendingCode(false);
-    }
-  };
-
-  const verifyCode = async () => {
-    if (verificationCode.length !== 6) {
-      toast({
-        title: 'Erro',
-        description: 'Digite o código completo de 6 dígitos.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setVerifyingCode(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-email-code', {
-        body: { 
-          email: formData.email,
-          code: verificationCode 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.valid) {
-        setEmailVerified(true);
-        setShowVerificationModal(false);
-        toast({
-          title: 'E-mail verificado!',
-          description: 'Agora você pode finalizar seu cadastro.',
-        });
-      } else {
-        toast({
-          title: 'Código inválido',
-          description: data.error || 'Verifique o código e tente novamente.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error verifying code:', error);
-      toast({
-        title: 'Erro ao verificar código',
-        description: error.message || 'Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setVerifyingCode(false);
-    }
-  };
-
   const sendWelcomeEmail = async (email: string, establishmentName: string) => {
     try {
       await supabase.functions.invoke('send-plan-notification', {
@@ -196,15 +85,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!emailVerified) {
-      toast({
-        title: 'Verificação necessária',
-        description: 'Por favor, verifique seu e-mail antes de continuar.',
-        variant: 'destructive',
-      });
-      return;
-    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -445,47 +325,21 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Email with Verification */}
+                {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail *</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="pl-10"
-                        required
-                        disabled={emailVerified}
-                      />
-                    </div>
-                    {emailVerified ? (
-                      <Badge variant="outline" className="h-10 px-3 bg-green-50 border-green-200 text-green-700 flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Verificado
-                      </Badge>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={sendVerificationCode}
-                        disabled={sendingCode || !formData.email}
-                        className="whitespace-nowrap"
-                      >
-                        {sendingCode ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-1" />
-                            Verificar
-                          </>
-                        )}
-                      </Button>
-                    )}
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="pl-10"
+                      required
+                    />
                   </div>
                 </div>
 
@@ -537,7 +391,7 @@ export default function RegisterPage() {
                   variant="hero" 
                   size="lg" 
                   className="w-full"
-                  disabled={isLoading || !emailVerified}
+                  disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
@@ -548,12 +402,6 @@ export default function RegisterPage() {
                     'Criar minha conta grátis'
                   )}
                 </Button>
-
-                {!emailVerified && (
-                  <p className="text-xs text-center text-amber-600">
-                    ⚠️ Verifique seu e-mail para habilitar o cadastro
-                  </p>
-                )}
 
                 <p className="text-xs text-center text-muted-foreground">
                   Ao criar sua conta, você concorda com nossos termos de uso e política de privacidade.
@@ -573,65 +421,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Verification Modal */}
-      <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-primary" />
-              Verifique seu e-mail
-            </DialogTitle>
-            <DialogDescription>
-              Enviamos um código de 6 dígitos para <strong>{formData.email}</strong>
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={verificationCode}
-                onChange={(value) => setVerificationCode(value)}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-            
-            <Button
-              onClick={verifyCode}
-              disabled={verifyingCode || verificationCode.length !== 6}
-              className="w-full"
-            >
-              {verifyingCode ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Verificando...
-                </>
-              ) : (
-                'Confirmar código'
-              )}
-            </Button>
-            
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={sendVerificationCode}
-                disabled={sendingCode}
-                className="text-sm text-primary hover:underline disabled:opacity-50"
-              >
-                {sendingCode ? 'Enviando...' : 'Não recebeu? Reenviar código'}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
