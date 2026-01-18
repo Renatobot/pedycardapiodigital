@@ -1,31 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
     <title>PEDY Cardápio digital</title>
     <meta name="description" content="O PEDY é uma plataforma de cardápio digital para negócios de delivery que desejam receber pedidos organizados pelo WhatsApp, reduzir dependência de marketplaces e vender sem comissões por pedido.">
     <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4A9BD9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PEDY" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+
+    <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/sHbkpzSD9eeIVXEnPX81oS9rbS23/social-images/social-1768600613083-logo pedy.jpg">
-
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/sHbkpzSD9eeIVXEnPX81oS9rbS23/social-images/social-1768600613083-logo pedy.jpg">
     <meta property="og:title" content="PEDY Cardápio digital">
-  <meta name="twitter:title" content="PEDY Cardápio digital">
-  <meta property="og:description" content="O PEDY é uma plataforma de cardápio digital para negócios de delivery que desejam receber pedidos organizados pelo WhatsApp, reduzir dependência de marketplaces e vender sem comissões por pedido.">
-  <meta name="twitter:description" content="O PEDY é uma plataforma de cardápio digital para negócios de delivery que desejam receber pedidos organizados pelo WhatsApp, reduzir dependência de marketplaces e vender sem comissões por pedido.">
-  <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/sHbkpzSD9eeIVXEnPX81oS9rbS23/uploads/1768600490848-logo pedy.jpg">
-</head>
+    <meta name="twitter:title" content="PEDY Cardápio digital">
+    <meta property="og:description" content="O PEDY é uma plataforma de cardápio digital para negócios de delivery que desejam receber pedidos organizados pelo WhatsApp, reduzir dependência de marketplaces e vender sem comissões por pedido.">
+    <meta name="twitter:description" content="O PEDY é uma plataforma de cardápio digital para negócios de delivery que desejam receber pedidos organizados pelo WhatsApp, reduzir dependência de marketplaces e vender sem comissões por pedido.">
+    <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/sHbkpzSD9eeIVXEnPX81oS9rbS23/uploads/1768600490848-logo pedy.jpg">
+  </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Register Service Worker for PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) {
+              console.log('[PWA] Service Worker registrado com sucesso');
+            })
+            .catch(function(err) {
+              console.error('[PWA] Erro ao registrar Service Worker:', err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
