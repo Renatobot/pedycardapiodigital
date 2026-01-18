@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -224,6 +224,31 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
 
   const counts = getOrderCounts();
 
+  // Daily summary calculation
+  const getTodaySummary = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysOrders = orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      orderDate.setHours(0, 0, 0, 0);
+      return orderDate.getTime() === today.getTime() && order.status !== 'cancelled';
+    });
+
+    const totalRevenue = todaysOrders.reduce((sum, order) => sum + order.total, 0);
+    const deliveryCount = todaysOrders.filter(o => (o as any).delivery_type !== 'pickup').length;
+    const pickupCount = todaysOrders.filter(o => (o as any).delivery_type === 'pickup').length;
+
+    return {
+      count: todaysOrders.length,
+      revenue: totalRevenue,
+      deliveries: deliveryCount,
+      pickups: pickupCount,
+    };
+  };
+
+  const todaySummary = getTodaySummary();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -327,6 +352,38 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
 
   return (
     <div className="space-y-4">
+      {/* Resumo do Dia */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              <span className="font-medium">
+                Hoje, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </span>
+            </div>
+            <Badge variant="secondary" className="text-lg font-bold px-3 py-1">
+              {formatCurrency(todaySummary.revenue)}
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-background/60 rounded-lg p-2">
+              <p className="text-2xl font-bold text-primary">{todaySummary.count}</p>
+              <p className="text-xs text-muted-foreground">pedidos</p>
+            </div>
+            <div className="bg-background/60 rounded-lg p-2">
+              <p className="text-2xl font-bold text-purple-600">{todaySummary.deliveries}</p>
+              <p className="text-xs text-muted-foreground">entregas</p>
+            </div>
+            <div className="bg-background/60 rounded-lg p-2">
+              <p className="text-2xl font-bold text-orange-600">{todaySummary.pickups}</p>
+              <p className="text-xs text-muted-foreground">retiradas</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="all" className="text-xs">
