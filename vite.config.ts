@@ -19,10 +19,17 @@ export default defineConfig(({ mode }) => ({
 
       // Force a single React instance everywhere (fixes "Invalid hook call" / useRef null)
       react: path.resolve(__dirname, "./node_modules/react"),
+      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
+      "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
+
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
       "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server"),
+
       scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
+
+      // Ensure Radix resolves from root node_modules
+      "@radix-ui/react-tooltip": path.resolve(__dirname, "./node_modules/@radix-ui/react-tooltip"),
     },
     dedupe: [
       "react",
@@ -31,6 +38,7 @@ export default defineConfig(({ mode }) => ({
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
       "scheduler",
+      "@radix-ui/react-tooltip",
     ],
   },
   optimizeDeps: {
