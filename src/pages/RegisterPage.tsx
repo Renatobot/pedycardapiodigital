@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import pedyLogo from '@/assets/logo_pedy.jpg';
+import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -335,7 +335,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center p-4 pb-8">
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-6">
-            <img src={pedyLogo} alt="PEDY" className="h-12 mx-auto mb-4" />
+            <img src={pedyLogo} alt="PEDY" className="h-28 md:h-32 mx-auto mb-6" />
             <h1 className="text-2xl font-bold text-foreground">Criar conta grátis</h1>
             <p className="text-muted-foreground mt-1">
               Comece seu teste de 7 dias agora
