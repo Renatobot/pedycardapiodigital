@@ -13,6 +13,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,6 +57,10 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<DiscountCode | null>(null);
+  const [deletingCouponId, setDeletingCouponId] = useState<string | null>(null);
+  const [togglingCouponId, setTogglingCouponId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [couponToDelete, setCouponToDelete] = useState<DiscountCode | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -167,26 +181,41 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
     }
   };
 
-  const handleDeleteCoupon = async (couponId: string) => {
+  const openDeleteConfirm = (coupon: DiscountCode) => {
+    setCouponToDelete(coupon);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteCoupon = async () => {
+    if (!couponToDelete || deletingCouponId) return;
+    
+    setDeletingCouponId(couponToDelete.id);
     try {
       const { error } = await supabase
         .from('discount_codes')
         .delete()
-        .eq('id', couponId);
+        .eq('id', couponToDelete.id);
 
       if (error) throw error;
-      setCoupons(prev => prev.filter(c => c.id !== couponId));
+      setCoupons(prev => prev.filter(c => c.id !== couponToDelete.id));
       toast({ title: 'Cupom removido!' });
+      setDeleteConfirmOpen(false);
+      setCouponToDelete(null);
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível remover o cupom.',
         variant: 'destructive',
       });
+    } finally {
+      setDeletingCouponId(null);
     }
   };
 
   const toggleCouponStatus = async (coupon: DiscountCode) => {
+    if (togglingCouponId) return; // Prevent multiple clicks
+    
+    setTogglingCouponId(coupon.id);
     try {
       const { error } = await supabase
         .from('discount_codes')
@@ -206,6 +235,8 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
         description: error.message || 'Não foi possível atualizar o cupom.',
         variant: 'destructive',
       });
+    } finally {
+      setTogglingCouponId(null);
     }
   };
 
@@ -301,6 +332,7 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
                   <div className="flex items-center gap-1">
                     <Switch
                       checked={coupon.is_active}
+                      disabled={togglingCouponId === coupon.id}
                       onCheckedChange={() => toggleCouponStatus(coupon)}
                     />
                     <Button 
@@ -315,9 +347,14 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 text-destructive"
-                      onClick={() => handleDeleteCoupon(coupon.id)}
+                      disabled={deletingCouponId === coupon.id}
+                      onClick={() => openDeleteConfirm(coupon)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingCouponId === coupon.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -434,6 +471,32 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover cupom?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover o cupom "{couponToDelete?.code}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingCouponId}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteCoupon}
+              disabled={!!deletingCouponId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingCouponId ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

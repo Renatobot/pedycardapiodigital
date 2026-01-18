@@ -108,6 +108,7 @@ export default function DashboardPage() {
   const [editingProduct, setEditingProduct] = useState<{ id: string } | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<{ id: string; name: string } | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [togglingProductId, setTogglingProductId] = useState<string | null>(null);
 
   // Form states
   const [categoryName, setCategoryName] = useState('');
@@ -467,6 +468,8 @@ export default function DashboardPage() {
   };
 
   const toggleProductAvailability = async (productId: string, currentAvailability: boolean) => {
+    if (togglingProductId) return; // Prevent multiple clicks
+    setTogglingProductId(productId);
     try {
       await updateProduct(productId, { available: !currentAvailability });
       toast({
@@ -479,6 +482,8 @@ export default function DashboardPage() {
         description: "Ocorreu um erro ao atualizar a disponibilidade.",
         variant: "destructive",
       });
+    } finally {
+      setTogglingProductId(null);
     }
   };
 
@@ -807,9 +812,12 @@ export default function DashboardPage() {
                                     size="icon" 
                                     className="h-8 w-8"
                                     title={product.available ? 'Desativar' : 'Ativar'}
+                                    disabled={togglingProductId === product.id}
                                     onClick={() => toggleProductAvailability(product.id, product.available)}
                                   >
-                                    {product.available ? (
+                                    {togglingProductId === product.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : product.available ? (
                                       <Eye className="w-4 h-4 text-secondary" />
                                     ) : (
                                       <EyeOff className="w-4 h-4" />
