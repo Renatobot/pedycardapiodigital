@@ -702,7 +702,7 @@ function MenuContent() {
           
           {/* Logo e Nome - Centralizados */}
           <div className="flex flex-col items-center text-center mt-2">
-            <div className="w-24 h-24 bg-card rounded-2xl flex items-center justify-center overflow-hidden shadow-xl border-2 border-white/20">
+            <div className="w-36 h-36 bg-card rounded-2xl flex items-center justify-center overflow-hidden shadow-xl border-2 border-white/20">
               {establishment.logo_url ? (
                 <img 
                   src={establishment.logo_url} 
@@ -710,7 +710,7 @@ function MenuContent() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Store className="w-10 h-10 text-muted-foreground" />
+                <Store className="w-14 h-14 text-muted-foreground" />
               )}
             </div>
             
