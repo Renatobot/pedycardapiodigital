@@ -50,6 +50,7 @@ import {
   Settings,
   Sparkles,
   Crown,
+  Menu,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -378,15 +379,21 @@ const AdminDashboardPage = () => {
     
     setPlanUpdateLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('establishments')
         .update({
           has_pro_plus: hasProPlus,
           pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null,
         })
-        .eq('id', selectedEstablishment.id);
+        .eq('id', selectedEstablishment.id)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
+      }
 
       toast({
         title: hasProPlus ? 'Pro+ ativado!' : 'Pro+ desativado',
@@ -396,11 +403,11 @@ const AdminDashboardPage = () => {
       // Update local state
       setSelectedEstablishment(prev => prev ? { ...prev, has_pro_plus: hasProPlus, pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null } : null);
       await fetchEstablishments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar Pro+:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar o plano.',
+        description: error.message || 'Não foi possível atualizar o plano.',
         variant: 'destructive',
       });
     }
@@ -437,15 +444,21 @@ const AdminDashboardPage = () => {
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('establishments')
         .update({
           plan_status: 'active',
           plan_expires_at: expiresAt.toISOString(),
         })
-        .eq('id', establishment.id);
+        .eq('id', establishment.id)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
+      }
 
       toast({
         title: 'Plano ativado!',
@@ -453,11 +466,11 @@ const AdminDashboardPage = () => {
       });
       
       await fetchEstablishments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao ativar plano:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível ativar o plano.',
+        description: error.message || 'Não foi possível ativar o plano.',
         variant: 'destructive',
       });
     }
@@ -466,15 +479,21 @@ const AdminDashboardPage = () => {
 
   const handleDeactivate = async (establishment: Establishment) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('establishments')
         .update({
           plan_status: 'expired',
           plan_expires_at: new Date().toISOString(),
         })
-        .eq('id', establishment.id);
+        .eq('id', establishment.id)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
+      }
 
       toast({
         title: 'Plano desativado',
@@ -483,11 +502,11 @@ const AdminDashboardPage = () => {
       });
       
       await fetchEstablishments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao desativar plano:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível desativar o plano.',
+        description: error.message || 'Não foi possível desativar o plano.',
         variant: 'destructive',
       });
     }
@@ -499,15 +518,21 @@ const AdminDashboardPage = () => {
       const currentEnd = new Date(establishment.trial_end_date);
       const newEnd = new Date(currentEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('establishments')
         .update({
           plan_status: 'trial',
           trial_end_date: newEnd.toISOString(),
         })
-        .eq('id', establishment.id);
+        .eq('id', establishment.id)
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
+      }
 
       toast({
         title: 'Trial estendido!',
@@ -515,11 +540,11 @@ const AdminDashboardPage = () => {
       });
       
       await fetchEstablishments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao estender trial:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível estender o trial.',
+        description: error.message || 'Não foi possível estender o trial.',
         variant: 'destructive',
       });
     }
@@ -769,11 +794,21 @@ const AdminDashboardPage = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
+                                  onClick={() => navigate(`/admin/dashboard/${establishment.id}`)}
+                                  className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/20"
+                                  title="Gerenciar Cardápio"
+                                >
+                                  <Menu className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   onClick={() => {
                                     setSelectedEstablishment(establishment);
                                     setDetailsModalOpen(true);
                                   }}
                                   className="text-slate-400 hover:text-white hover:bg-slate-700"
+                                  title="Ver Detalhes"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
@@ -795,6 +830,7 @@ const AdminDashboardPage = () => {
                                     variant="ghost"
                                     onClick={() => openActionModal(establishment, 'activate')}
                                     className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
+                                    title="Ativar Pro"
                                   >
                                     <Play className="w-4 h-4" />
                                   </Button>
@@ -805,6 +841,7 @@ const AdminDashboardPage = () => {
                                     variant="ghost"
                                     onClick={() => openActionModal(establishment, 'deactivate')}
                                     className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                                    title="Desativar"
                                   >
                                     <Pause className="w-4 h-4" />
                                   </Button>
@@ -815,6 +852,7 @@ const AdminDashboardPage = () => {
                                     variant="ghost"
                                     onClick={() => openActionModal(establishment, 'extend')}
                                     className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+                                    title="Estender Trial"
                                   >
                                     <Calendar className="w-4 h-4" />
                                   </Button>
