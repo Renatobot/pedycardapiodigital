@@ -10,7 +10,13 @@ import {
   Store,
   Menu as MenuIcon,
   CreditCard,
-  Users
+  Users,
+  Percent,
+  MapPin,
+  QrCode,
+  Package,
+  Tag,
+  Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -37,13 +43,48 @@ const features = [
   },
 ];
 
+const advancedFeatures = [
+  {
+    icon: Percent,
+    title: 'Cupons de Desconto',
+    description: 'Crie códigos promocionais com valores fixos ou percentuais para fidelizar clientes.',
+  },
+  {
+    icon: MapPin,
+    title: 'Taxa por Bairro',
+    description: 'Configure taxas de entrega diferentes para cada região da sua cidade.',
+  },
+  {
+    icon: Package,
+    title: 'Gestão de Pedidos',
+    description: 'Acompanhe cada pedido em tempo real: recebido, em preparo, a caminho e entregue.',
+  },
+  {
+    icon: QrCode,
+    title: 'QR Code do Cardápio',
+    description: 'Gere e imprima o QR Code do seu cardápio para colocar na mesa ou vitrine.',
+  },
+  {
+    icon: Tag,
+    title: 'Produtos em Promoção',
+    description: 'Destaque ofertas com preço original riscado e valor promocional.',
+  },
+  {
+    icon: Clock,
+    title: 'Endereços Salvos',
+    description: 'Seus clientes não precisam digitar o endereço toda vez. Salvamos automaticamente!',
+  },
+];
+
 const benefits = [
   'Teste grátis por 7 dias',
   'Sem taxa por pedido',
+  'Cupons de desconto ilimitados',
+  'Taxa de entrega por bairro',
+  'QR Code do cardápio',
+  'Gestão de pedidos em tempo real',
   'Suporte via WhatsApp',
   'Atualizações gratuitas',
-  'Funciona no celular',
-  'Fácil de usar',
 ];
 
 export default function LandingPage() {
@@ -163,6 +204,44 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
                 <p className="text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Advanced Features Section */}
+      <section className="py-16 bg-card">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Zap className="w-4 h-4" />
+              Novidades
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Recursos avançados para vender mais
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Funcionalidades que grandes plataformas cobram caro, aqui estão incluídas no seu plano
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {advancedFeatures.map((feature, index) => (
+              <div 
+                key={index}
+                className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-secondary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
