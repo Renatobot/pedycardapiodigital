@@ -26,7 +26,7 @@ import {
   requiresProPlusForFlavors,
   EstablishmentForGating 
 } from '@/lib/featureGating';
-import { ProPlusLockBadge } from './ProPlusLockBadge';
+import { ProPlusLockBadge, ProPlusUpgradeCard } from './ProPlusLockBadge';
 import { NICHE_TEMPLATES, suggestTemplateForCategory, NicheTemplate, OptionGroupTemplate } from '@/lib/nicheTemplates';
 import { formatCurrency } from '@/lib/whatsapp';
 
@@ -69,7 +69,11 @@ export function ProductOptionGroupsManager({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [suggestedTemplate, setSuggestedTemplate] = useState<NicheTemplate | null>(null);
 
-  // Check Pro+ access
+  // Check Pro+ access for product customization
+  const productCustomizationAccess = checkFeatureAccess(establishment, PRO_PLUS_FEATURES.PRODUCT_CUSTOMIZATION);
+  const hasProductCustomization = productCustomizationAccess.hasAccess;
+
+  // Check Pro+ access for 3-4 flavors
   const proPlusAccess = checkFeatureAccess(establishment, PRO_PLUS_FEATURES.PIZZA_3_4_FLAVORS);
   const canUseFlavors3Plus = proPlusAccess.hasAccess;
 
@@ -268,273 +272,283 @@ export function ProductOptionGroupsManager({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <Label className="text-base font-semibold">Personalização do Produto</Label>
-          <p className="text-xs text-muted-foreground">
-            Configure opções que o cliente poderá escolher. Opções desabilitadas não aparecem no cardápio.
-          </p>
-        </div>
-      </div>
-
-      {/* Template Suggestion */}
-      {suggestedTemplate && groups.length === 0 && (
-        <Card className="border-dashed border-primary/30 bg-primary/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">
-                  Usar template "{suggestedTemplate.name}"?
-                </span>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => applyTemplate(suggestedTemplate)}>
-                Aplicar
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {suggestedTemplate.description}
-            </p>
-          </CardContent>
-        </Card>
+    <div className="relative">
+      {/* Overlay de upgrade se não tem Pro+ */}
+      {!hasProductCustomization && (
+        <ProPlusUpgradeCard feature={PRO_PLUS_FEATURES.PRODUCT_CUSTOMIZATION} />
       )}
 
-      {/* Existing Groups */}
-      {groups.map((group, groupIndex) => (
-        <Collapsible 
-          key={group.id} 
-          open={expandedGroups.has(group.id)}
-          onOpenChange={() => toggleGroupExpanded(group.id)}
-        >
-          <Card>
-            <CardHeader className="p-3">
-              <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between cursor-pointer">
+      {/* Conteúdo - esmaecido se bloqueado mas PRESERVADO */}
+      <div className={!hasProductCustomization ? 'opacity-40 pointer-events-none select-none' : ''}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base font-semibold">Personalização do Produto</Label>
+              <p className="text-xs text-muted-foreground">
+                Configure opções que o cliente poderá escolher. Opções desabilitadas não aparecem no cardápio.
+              </p>
+            </div>
+          </div>
+
+          {/* Template Suggestion */}
+          {suggestedTemplate && groups.length === 0 && (
+            <Card className="border-dashed border-primary/30 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <span className="font-medium text-sm">
-                        {group.name || 'Novo grupo'}
-                      </span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Badge variant="outline" className="text-xs">
-                          {getTypeLabel(group.type)}
-                        </Badge>
-                        {group.is_required && (
-                          <Badge variant="secondary" className="text-xs">
-                            Obrigatório
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                          {group.options.length} opções
-                        </Badge>
-                      </div>
-                    </div>
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Usar template "{suggestedTemplate.name}"?
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeGroup(group.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    {expandedGroups.has(group.id) ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
-                </div>
-              </CollapsibleTrigger>
-            </CardHeader>
-            
-            <CollapsibleContent>
-              <CardContent className="p-3 pt-0 space-y-3">
-                {/* Group Settings */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Nome do grupo</Label>
-                    <Input
-                      placeholder="Ex: Tipo de Pão"
-                      value={group.name}
-                      onChange={(e) => updateGroup(group.id, { name: e.target.value })}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Tipo de seleção</Label>
-                    <Select
-                      value={group.type}
-                      onValueChange={(value: 'single' | 'multiple' | 'flavor') => 
-                        updateGroup(group.id, { type: value })
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="single">Escolha única</SelectItem>
-                        <SelectItem value="multiple">Múltipla escolha</SelectItem>
-                        <SelectItem value="flavor">Sabores (pizza)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id={`required-${group.id}`}
-                      checked={group.is_required}
-                      onCheckedChange={(checked) => 
-                        updateGroup(group.id, { is_required: !!checked })
-                      }
-                    />
-                    <Label htmlFor={`required-${group.id}`} className="text-xs cursor-pointer">
-                      Obrigatório
-                    </Label>
-                  </div>
-
-                  {group.type === 'multiple' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Máx:</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={group.max_selections}
-                        onChange={(e) => updateGroup(group.id, { 
-                          max_selections: parseInt(e.target.value) || 1 
-                        })}
-                        className="h-7 w-16 text-xs"
-                      />
-                    </div>
-                  )}
-
-                  {group.type === 'flavor' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Máx sabores:</Label>
-                      <Select
-                        value={group.max_selections.toString()}
-                        onValueChange={(value) => {
-                          const maxFlavors = parseInt(value);
-                          if (requiresProPlusForFlavors(maxFlavors) && !canUseFlavors3Plus) {
-                            return; // Block if trying to set > 2 without Pro+
-                          }
-                          updateGroup(group.id, { max_selections: maxFlavors });
-                        }}
-                      >
-                        <SelectTrigger className="h-7 w-20 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3" disabled={!canUseFlavors3Plus}>
-                            <span className="flex items-center gap-1">
-                              3 {!canUseFlavors3Plus && <Lock className="w-3 h-3" />}
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="4" disabled={!canUseFlavors3Plus}>
-                            <span className="flex items-center gap-1">
-                              4 {!canUseFlavors3Plus && <Lock className="w-3 h-3" />}
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {!canUseFlavors3Plus && (
-                        <ProPlusLockBadge feature={PRO_PLUS_FEATURES.PIZZA_3_4_FLAVORS} />
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Options List */}
-                <div className="space-y-2">
-                  <Label className="text-xs">Opções</Label>
-                  {group.options.map((option, optIndex) => (
-                    <div key={option.id} className="flex items-center gap-2">
-                      <Input
-                        placeholder="Nome da opção"
-                        value={option.name}
-                        onChange={(e) => updateOption(group.id, option.id, { name: e.target.value })}
-                        className="h-8 text-sm flex-1"
-                      />
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">R$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          value={option.price || ''}
-                          onChange={(e) => updateOption(group.id, option.id, { 
-                            price: parseFloat(e.target.value) || 0 
-                          })}
-                          className="h-8 w-20 text-sm"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => removeOption(group.id, option.id)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 text-xs"
-                    onClick={() => addOption(group.id)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Adicionar opção
+                  <Button size="sm" variant="outline" onClick={() => applyTemplate(suggestedTemplate)}>
+                    Aplicar
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {suggestedTemplate.description}
+                </p>
               </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      ))}
+            </Card>
+          )}
 
-      {/* Add Group Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full"
-        onClick={addGroup}
-      >
-        <Plus className="w-4 h-4 mr-1" />
-        Adicionar grupo de opções
-      </Button>
+          {/* Existing Groups */}
+          {groups.map((group, groupIndex) => (
+            <Collapsible 
+              key={group.id} 
+              open={expandedGroups.has(group.id)}
+              onOpenChange={() => toggleGroupExpanded(group.id)}
+            >
+              <Card>
+                <CardHeader className="p-3">
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <GripVertical className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium text-sm">
+                            {group.name || 'Novo grupo'}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Badge variant="outline" className="text-xs">
+                              {getTypeLabel(group.type)}
+                            </Badge>
+                            {group.is_required && (
+                              <Badge variant="secondary" className="text-xs">
+                                Obrigatório
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {group.options.length} opções
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeGroup(group.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        {expandedGroups.has(group.id) ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                
+                <CollapsibleContent>
+                  <CardContent className="p-3 pt-0 space-y-3">
+                    {/* Group Settings */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Nome do grupo</Label>
+                        <Input
+                          placeholder="Ex: Tipo de Pão"
+                          value={group.name}
+                          onChange={(e) => updateGroup(group.id, { name: e.target.value })}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Tipo de seleção</Label>
+                        <Select
+                          value={group.type}
+                          onValueChange={(value: 'single' | 'multiple' | 'flavor') => 
+                            updateGroup(group.id, { type: value })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="single">Escolha única</SelectItem>
+                            <SelectItem value="multiple">Múltipla escolha</SelectItem>
+                            <SelectItem value="flavor">Sabores (pizza)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-      {/* Quick Templates */}
-      {groups.length === 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Ou use um template:</Label>
-          <div className="flex flex-wrap gap-2">
-            {Object.values(NICHE_TEMPLATES).slice(0, 4).map(template => (
-              <Button
-                key={template.id}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={() => applyTemplate(template)}
-              >
-                {template.name}
-              </Button>
-            ))}
-          </div>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`required-${group.id}`}
+                          checked={group.is_required}
+                          onCheckedChange={(checked) => 
+                            updateGroup(group.id, { is_required: !!checked })
+                          }
+                        />
+                        <Label htmlFor={`required-${group.id}`} className="text-xs cursor-pointer">
+                          Obrigatório
+                        </Label>
+                      </div>
+
+                      {group.type === 'multiple' && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Máx:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={group.max_selections}
+                            onChange={(e) => updateGroup(group.id, { 
+                              max_selections: parseInt(e.target.value) || 1 
+                            })}
+                            className="h-7 w-16 text-xs"
+                          />
+                        </div>
+                      )}
+
+                      {group.type === 'flavor' && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Máx sabores:</Label>
+                          <Select
+                            value={group.max_selections.toString()}
+                            onValueChange={(value) => {
+                              const maxFlavors = parseInt(value);
+                              if (requiresProPlusForFlavors(maxFlavors) && !canUseFlavors3Plus) {
+                                return; // Block if trying to set > 2 without Pro+
+                              }
+                              updateGroup(group.id, { max_selections: maxFlavors });
+                            }}
+                          >
+                            <SelectTrigger className="h-7 w-20 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1</SelectItem>
+                              <SelectItem value="2">2</SelectItem>
+                              <SelectItem value="3" disabled={!canUseFlavors3Plus}>
+                                <span className="flex items-center gap-1">
+                                  3 {!canUseFlavors3Plus && <Lock className="w-3 h-3" />}
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="4" disabled={!canUseFlavors3Plus}>
+                                <span className="flex items-center gap-1">
+                                  4 {!canUseFlavors3Plus && <Lock className="w-3 h-3" />}
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!canUseFlavors3Plus && (
+                            <ProPlusLockBadge feature={PRO_PLUS_FEATURES.PIZZA_3_4_FLAVORS} />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Options List */}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Opções</Label>
+                      {group.options.map((option, optIndex) => (
+                        <div key={option.id} className="flex items-center gap-2">
+                          <Input
+                            placeholder="Nome da opção"
+                            value={option.name}
+                            onChange={(e) => updateOption(group.id, option.id, { name: e.target.value })}
+                            className="h-8 text-sm flex-1"
+                          />
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">R$</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0,00"
+                              value={option.price || ''}
+                              onChange={(e) => updateOption(group.id, option.id, { 
+                                price: parseFloat(e.target.value) || 0 
+                              })}
+                              className="h-8 w-20 text-sm"
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => removeOption(group.id, option.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        onClick={() => addOption(group.id)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Adicionar opção
+                      </Button>
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          ))}
+
+          {/* Add Group Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={addGroup}
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Adicionar grupo de opções
+          </Button>
+
+          {/* Quick Templates */}
+          {groups.length === 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Ou use um template:</Label>
+              <div className="flex flex-wrap gap-2">
+                {Object.values(NICHE_TEMPLATES).slice(0, 4).map(template => (
+                  <Button
+                    key={template.id}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => applyTemplate(template)}
+                  >
+                    {template.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
