@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Crown, CheckCircle2, MessageCircle, ArrowLeft, Clock } from 'lucide-react';
+import { Crown, CheckCircle2, MessageCircle, ArrowLeft, Clock, Sparkles } from 'lucide-react';
 import { openWhatsApp, generateUpgradeMessage, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 
 const trialFeatures = [
@@ -24,9 +24,20 @@ const benefits = [
   'Configuração de Pix',
 ];
 
+const proPlusExclusiveFeatures = [
+  'Pizza com 3 ou 4 sabores',
+  'Combos complexos (açaí, etc.)',
+  'Limites de seleção dinâmicos',
+  'Precificação avançada',
+];
+
 export default function UpgradePage() {
   const handleUpgrade = () => {
     openWhatsApp(SUPPORT_WHATSAPP, generateUpgradeMessage());
+  };
+
+  const handleProPlusUpgrade = () => {
+    openWhatsApp(SUPPORT_WHATSAPP, 'Olá! Tenho interesse no Plano Pro+ (R$ 57/mês) com recursos avançados.');
   };
 
   return (
@@ -119,6 +130,41 @@ export default function UpgradePage() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Seção Pro+ - Sutil */}
+          <div className="bg-muted/50 rounded-lg p-4 border border-muted">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-medium text-foreground">
+                Precisa de recursos avançados?
+              </span>
+            </div>
+            
+            <p className="text-xs text-muted-foreground mb-3">
+              O <span className="font-semibold text-foreground">Pro+</span> por{' '}
+              <span className="font-semibold text-foreground">R$ 57/mês</span> inclui 
+              tudo do Pro mais:
+            </p>
+            
+            <ul className="grid grid-cols-2 gap-1 mb-3">
+              {proPlusExclusiveFeatures.map((feature, index) => (
+                <li key={index} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CheckCircle2 className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs"
+              onClick={handleProPlusUpgrade}
+            >
+              <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+              Saber mais sobre Pro+
+            </Button>
+          </div>
 
           <div className="text-center pt-2">
             <img src={pedyLogo} alt="PEDY" className="h-8 mx-auto opacity-50" />
