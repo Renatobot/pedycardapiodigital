@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,8 @@ import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGro
 import { useToast } from '@/hooks/use-toast';
 import { hexToHsl } from '@/lib/colors';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { SplashScreen } from '@/components/SplashScreen';
+import { useDynamicManifest } from '@/hooks/useDynamicManifest';
 
 interface PublicEstablishment {
   id: string;
@@ -438,6 +440,29 @@ function MenuContent() {
   const [formattedHours, setFormattedHours] = useState<FormattedBusinessHours[]>([]);
   const [hoursOpen, setHoursOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Verificar se deve mostrar splash (PWA ou primeira visita)
+  const isPWA = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+  const isFirstVisit = typeof window !== 'undefined' && !sessionStorage.getItem('pedy-menu-visited');
+
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('pedy-menu-visited', 'true');
+    }
+  }, []);
+
+  // Manifest dinâmico com dados do estabelecimento
+  useDynamicManifest(establishment ? {
+    name: establishment.name || 'Cardápio',
+    shortName: (establishment.name || 'Cardápio').substring(0, 12),
+    description: `Cardápio digital de ${establishment.name}`,
+    startUrl: `/${establishment.slug || id}`,
+    iconUrl: establishment.logo_url || undefined,
+    themeColor: establishment.primary_color || '#4A9BD9',
+    backgroundColor: '#ffffff'
+  } : null);
 
   // Avoid hydration mismatch
   useEffect(() => {
@@ -612,6 +637,17 @@ function MenuContent() {
     
     fetchData();
   }, [id, slug]);
+
+  // Mostrar splash apenas em PWA ou primeira visita, enquanto carrega ou logo após
+  if ((isPWA || isFirstVisit) && showSplash) {
+    return (
+      <SplashScreen 
+        establishmentName={establishment?.name || undefined}
+        onComplete={handleSplashComplete}
+        duration={2500}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -805,3 +841,5 @@ function MenuContent() {
 export default function MenuPage() {
   return <MenuContent />;
 }
+
+// Splash screen logic is inside MenuContent

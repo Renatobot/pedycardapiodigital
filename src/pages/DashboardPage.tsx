@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,6 +73,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MenuAppearanceSettings } from '@/components/MenuAppearanceSettings';
 import { DashboardPWAPrompt } from '@/components/DashboardPWAPrompt';
+import { SplashScreen } from '@/components/SplashScreen';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -650,6 +651,25 @@ export default function DashboardPage() {
   const removeLocalAddition = (additionId: string) => {
     setProductAdditions(prev => prev.filter(a => a.id !== additionId));
   };
+
+  // Splash screen states para PWA
+  const [showSplash, setShowSplash] = useState(true);
+  const isPWA = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+  
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  // Mostrar splash apenas para PWA
+  if (isPWA && showSplash) {
+    return (
+      <SplashScreen 
+        establishmentName="Painel Administrativo"
+        onComplete={handleSplashComplete}
+        duration={2000}
+      />
+    );
+  }
 
   if (authLoading || dataLoading) {
     return (
