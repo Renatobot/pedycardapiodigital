@@ -553,20 +553,23 @@ export function ProductOptionGroupsManager({
           {/* Quick Templates */}
           {groups.length === 0 && (
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Ou use um template:</Label>
-              <div className="flex flex-wrap gap-2">
-                {Object.values(NICHE_TEMPLATES).slice(0, 4).map(template => (
+              <Label className="text-xs text-muted-foreground">Ou use um template pronto:</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {Object.values(NICHE_TEMPLATES).map(template => (
                   <Button
                     key={template.id}
                     variant="outline"
                     size="sm"
-                    className="text-xs"
+                    className="text-xs justify-start h-auto py-2"
                     onClick={() => applyTemplate(template)}
                   >
-                    {template.name}
+                    <span className="truncate">{template.name}</span>
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Clique para aplicar as opções padrão do nicho
+              </p>
             </div>
           )}
         </div>
