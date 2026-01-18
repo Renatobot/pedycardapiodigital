@@ -377,9 +377,16 @@ const AdminDashboardPage = () => {
   const handleUpdateProPlus = async (hasProPlus: boolean) => {
     if (!selectedEstablishment) return;
     
+    console.log('[Pro+ Toggle] Iniciando atualização:', {
+      establishmentId: selectedEstablishment.id,
+      establishmentName: selectedEstablishment.name,
+      currentValue: selectedEstablishment.has_pro_plus,
+      newValue: hasProPlus
+    });
+    
     setPlanUpdateLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('establishments')
         .update({
           has_pro_plus: hasProPlus,
@@ -389,22 +396,35 @@ const AdminDashboardPage = () => {
         .select()
         .single();
 
+      console.log('[Pro+ Toggle] Resultado do update:', { data, error, count });
+
       if (error) throw error;
       
       if (!data) {
         throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
       }
 
+      // Verificar se o valor realmente mudou
+      if (data.has_pro_plus !== hasProPlus) {
+        console.error('[Pro+ Toggle] ALERTA: Valor não foi atualizado!', {
+          expected: hasProPlus,
+          actual: data.has_pro_plus
+        });
+        throw new Error('O valor não foi atualizado corretamente no banco.');
+      }
+
+      console.log('[Pro+ Toggle] Sucesso! Novo valor:', data.has_pro_plus);
+
       toast({
         title: hasProPlus ? 'Pro+ ativado!' : 'Pro+ desativado',
         description: `Recursos avançados ${hasProPlus ? 'liberados' : 'bloqueados'} para ${selectedEstablishment.name}.`,
       });
 
-      // Update local state
-      setSelectedEstablishment(prev => prev ? { ...prev, has_pro_plus: hasProPlus, pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null } : null);
+      // Update local state com o valor retornado do banco
+      setSelectedEstablishment(prev => prev ? { ...prev, ...data } : null);
       await fetchEstablishments();
     } catch (error: any) {
-      console.error('Erro ao atualizar Pro+:', error);
+      console.error('[Pro+ Toggle] Erro:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível atualizar o plano.',
