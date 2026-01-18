@@ -16,41 +16,26 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-
-      // Force a single React instance everywhere (fixes "Invalid hook call" / useRef null)
-      react: path.resolve(__dirname, "./node_modules/react"),
-      "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
-      "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
-
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-      "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
-      "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server"),
-
-      scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
-
-      // Ensure Radix resolves from root node_modules
-      "@radix-ui/react-tooltip": path.resolve(__dirname, "./node_modules/@radix-ui/react-tooltip"),
     },
     dedupe: [
       "react",
       "react-dom",
-      "react-dom/client",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "scheduler",
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
       "@radix-ui/react-tooltip",
+      "@radix-ui/react-dialog",
     ],
   },
   optimizeDeps: {
     include: [
       "react",
       "react-dom",
-      "react-dom/client",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "scheduler",
-      "@radix-ui/react-tooltip",
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
     ],
     force: true,
+    esbuildOptions: {
+      target: "esnext",
+    },
   },
 }));
