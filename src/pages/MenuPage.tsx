@@ -55,6 +55,7 @@ interface PublicEstablishment {
   primary_color: string | null;
   secondary_color: string | null;
   menu_theme: string | null;
+  min_order_value: number | null;
 }
 
 interface ProductWithOptions extends Product {
@@ -634,11 +635,11 @@ function MenuContent() {
   
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="bg-menu-gradient text-white p-6 pt-8">
+      {/* Header - Redesigned */}
+      <div className="bg-menu-gradient text-white p-4 pb-6">
         <div className="container">
           {/* Theme Toggle in top right */}
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end">
             {mounted && (
               <Button
                 variant="ghost"
@@ -656,8 +657,9 @@ function MenuContent() {
             )}
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center overflow-hidden shadow-lg">
+          {/* Logo e Nome - Centralizados */}
+          <div className="flex flex-col items-center text-center mt-2">
+            <div className="w-24 h-24 bg-card rounded-2xl flex items-center justify-center overflow-hidden shadow-xl border-2 border-white/20">
               {establishment.logo_url ? (
                 <img 
                   src={establishment.logo_url} 
@@ -665,81 +667,86 @@ function MenuContent() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Store className="w-8 h-8 text-muted-foreground" />
+                <Store className="w-10 h-10 text-muted-foreground" />
               )}
             </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold">{establishment.name}</h1>
+            
+            <h1 className="text-2xl font-bold mt-3">{establishment.name}</h1>
+            
+            <Badge 
+              variant="outline" 
+              className={`mt-2 ${
+                businessStatus.isOpen 
+                  ? 'bg-green-500/20 text-white border-green-400/30' 
+                  : 'bg-red-500/20 text-white border-red-400/30'
+              }`}
+            >
+              <Clock className="w-3 h-3 mr-1" />
+              {businessStatus.message}
+            </Badge>
+          </div>
+          
+          {/* Informações Secundárias - Linha Compacta */}
+          <div className="flex items-center justify-center gap-3 mt-4 flex-wrap text-sm">
+            {/* Horários */}
+            {formattedHours.length > 0 && (
+              <Collapsible open={hoursOpen} onOpenChange={setHoursOpen}>
+                <CollapsibleTrigger className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-colors">
+                  <Clock className="w-3 h-3" />
+                  Ver horários
+                  <ChevronDown className={`w-4 h-4 transition-transform ${hoursOpen ? 'rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="mt-3">
+                  <div className="bg-white/10 rounded-lg p-3 text-sm space-y-1">
+                    {formattedHours.map((item, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-primary-foreground/80">{item.label}</span>
+                        <span className={item.isOpen ? 'text-white font-medium' : 'text-white/60'}>
+                          {item.isOpen ? item.hours : 'Fechado'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+            
+            {/* Badge retirada */}
+            {establishment.accept_pickup && (
               <Badge 
                 variant="outline" 
-                className={`mt-1 ${
-                  businessStatus.isOpen 
-                    ? 'bg-green-500/20 text-white border-green-400/30' 
-                    : 'bg-red-500/20 text-white border-red-400/30'
-                }`}
+                className="text-xs bg-green-500/20 text-white border-green-400/30"
               >
-                <Clock className="w-3 h-3 mr-1" />
-                {businessStatus.message}
+                <Package className="w-3 h-3 mr-1" />
+                Retirada
               </Badge>
-              
-              {/* Business Hours Collapsible */}
-              {formattedHours.length > 0 && (
-                <Collapsible open={hoursOpen} onOpenChange={setHoursOpen}>
-                  <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground mt-2 transition-colors">
-                    <Clock className="w-3 h-3" />
-                    Ver horários de funcionamento
-                    <ChevronDown className={`w-4 h-4 transition-transform ${hoursOpen ? 'rotate-180' : ''}`} />
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent className="mt-3">
-                    <div className="bg-white/10 rounded-lg p-3 text-sm space-y-1">
-                      {formattedHours.map((item, index) => (
-                        <div key={index} className="flex justify-between">
-                          <span className="text-primary-foreground/80">{item.label}</span>
-                          <span className={item.isOpen ? 'text-white font-medium' : 'text-white/60'}>
-                            {item.isOpen ? item.hours : 'Fechado'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* Pickup Address Section */}
-              {establishment.accept_pickup && establishment.show_address_on_menu && establishment.address_street && (
-                <div className="mt-3 bg-white/10 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium">Endereço para retirada</p>
-                      <p className="text-primary-foreground/80">
-                        {establishment.address_street}, {establishment.address_number}
-                        {establishment.address_complement && ` - ${establishment.address_complement}`}
-                        {' - '}{establishment.address_neighborhood}
-                        {establishment.city && `, ${establishment.city}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2 text-xs text-green-300">
-                    <Package className="w-3 h-3" />
-                    Aceitamos retirada no local
-                  </div>
-                </div>
-              )}
-
-              {/* Only pickup badge when address is hidden */}
-              {establishment.accept_pickup && !establishment.show_address_on_menu && (
-                <Badge 
-                  variant="outline" 
-                  className="mt-2 bg-green-500/20 text-white border-green-400/30"
-                >
-                  <Package className="w-3 h-3 mr-1" />
-                  Aceita retirada no local
-                </Badge>
-              )}
-            </div>
+            )}
           </div>
+          
+          {/* Pedido Mínimo */}
+          {establishment.min_order_value && establishment.min_order_value > 0 && (
+            <div className="text-center mt-3">
+              <span className="text-sm bg-white/10 rounded-full px-3 py-1 inline-flex items-center gap-1">
+                💰 Pedido mínimo: {formatCurrency(establishment.min_order_value)}
+              </span>
+            </div>
+          )}
+          
+          {/* Endereço - Compacto */}
+          {establishment.accept_pickup && establishment.show_address_on_menu && establishment.address_street && (
+            <div className="mt-3 text-center text-sm opacity-90">
+              <div className="inline-flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                <span>
+                  {establishment.address_street}, {establishment.address_number}
+                  {establishment.address_complement && ` - ${establishment.address_complement}`}
+                  {' - '}{establishment.address_neighborhood}
+                  {establishment.city && `, ${establishment.city}`}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
