@@ -21,7 +21,9 @@ export function generateOrderMessage(
   deliveryFee: number = 0,
   discountValue: number = 0,
   discountCode: string | null = null,
-  observations?: string
+  observations?: string,
+  isScheduledOrder: boolean = false,
+  scheduledOrderMessage?: string
 ): string {
   const total = subtotal + deliveryFee - discountValue;
   
@@ -80,6 +82,13 @@ export function generateOrderMessage(
   
   if (observations) {
     message += `\n📝 *Observações gerais:* ${observations}\n`;
+  }
+
+  if (isScheduledOrder) {
+    message += `\n⏰ *PEDIDO AGENDADO* (feito fora do horário)\n`;
+    if (scheduledOrderMessage) {
+      message += `📋 ${scheduledOrderMessage}\n`;
+    }
   }
   
   message += `\n✅ Pedido realizado via PEDY`;
