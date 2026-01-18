@@ -77,7 +77,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
-            <img src={pedyLogo} alt="PEDY" className="h-20 md:h-24 mx-auto mb-4" />
+            <img src={pedyLogo} alt="PEDY" className="h-28 md:h-32 mx-auto mb-6" />
             <h1 className="text-2xl font-bold text-foreground">Entrar na sua conta</h1>
             <p className="text-muted-foreground mt-1">
               Acesse o painel do seu estabelecimento
