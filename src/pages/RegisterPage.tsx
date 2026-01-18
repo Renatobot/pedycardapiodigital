@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, CheckCircle2, Send } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, CheckCircle2, Send, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSlug } from '@/lib/utils';
@@ -16,6 +16,7 @@ import { generateSlug } from '@/lib/utils';
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     establishmentName: '',
+    city: '',
     cpfCnpj: '',
     whatsapp: '',
     email: '',
@@ -272,6 +273,7 @@ export default function RegisterPage() {
           cpf_cnpj: formData.cpfCnpj,
           whatsapp: formData.whatsapp,
           email: formData.email,
+          city: formData.city,
           slug: slug,
         });
 
@@ -382,6 +384,24 @@ export default function RegisterPage() {
                       type="text"
                       placeholder="Ex: Lanchonete do João"
                       value={formData.establishmentName}
+                      onChange={handleChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* City */}
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade *</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="city"
+                      name="city"
+                      type="text"
+                      placeholder="Sua cidade"
+                      value={formData.city}
                       onChange={handleChange}
                       className="pl-10"
                       required

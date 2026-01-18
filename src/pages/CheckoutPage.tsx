@@ -6,7 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArrowLeft, MapPin, CreditCard, Banknote, QrCode, Copy, Check, MessageCircle, AlertTriangle, Loader2, User, Ticket, Package } from 'lucide-react';
 import { formatCurrency, generateOrderMessage, openWhatsApp, openPaymentWhatsApp } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
@@ -21,11 +29,28 @@ interface PublicEstablishment {
   trial_end_date: string;
   plan_expires_at: string | null;
   delivery_fee: number | null;
+  min_order_value: number | null;
+  free_delivery_min: number | null;
+  accept_pickup: boolean | null;
 }
 
 interface EstablishmentContact {
   whatsapp: string;
   pix_key: string | null;
+}
+
+interface DeliveryZone {
+  id: string;
+  neighborhood: string;
+  delivery_type: 'paid' | 'free';
+  delivery_fee: number;
+}
+
+interface SavedAddress {
+  id: string;
+  address: string;
+  neighborhood: string | null;
+  reference_point: string | null;
 }
 
 function CheckoutContent() {
@@ -39,7 +64,20 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(true);
   const [planStatus, setPlanStatus] = useState<{ active: boolean; reason: 'trial_expired' | 'plan_expired' | null }>({ active: true, reason: null });
   
+  // Delivery zones and saved addresses
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; value: number; type: string } | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  
   const [formData, setFormData] = useState({
+    customerName: '',
+    customerPhone: '',
+    deliveryType: 'delivery' as 'delivery' | 'pickup' | 'other',
+    neighborhood: '',
     address: '',
     referencePoint: '',
     paymentMethod: 'pix',
@@ -47,6 +85,7 @@ function CheckoutContent() {
     changeFor: '',
     pixPaidInAdvance: false,
     observations: '',
+    saveAddress: false,
   });
   const [copied, setCopied] = useState(false);
 
@@ -55,11 +94,9 @@ function CheckoutContent() {
       const identifier = slug || id;
       if (!identifier) return;
       
-      // Verificar se é UUID ou slug
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
       
       try {
-        // Fetch public establishment data (no sensitive info)
         const { data, error } = await supabase
           .from('public_establishments')
           .select('*')
@@ -79,7 +116,6 @@ function CheckoutContent() {
         
         setEstablishment(data as PublicEstablishment);
         
-        // Check plan status
         const status = isEstablishmentActive({
           plan_status: data.plan_status || 'trial',
           trial_end_date: data.trial_end_date,
@@ -89,7 +125,21 @@ function CheckoutContent() {
         
         const establishmentId = data.id;
         
-        // Fetch contact info securely via function (only if plan is active)
+        // Fetch delivery zones
+        const { data: zonesData } = await supabase
+          .from('delivery_zones')
+          .select('*')
+          .eq('establishment_id', establishmentId)
+          .eq('is_active', true)
+          .order('neighborhood');
+        
+        if (zonesData) {
+          setDeliveryZones(zonesData.map(z => ({
+            ...z,
+            delivery_type: z.delivery_type as 'paid' | 'free',
+          })));
+        }
+        
         if (status.active && establishmentId) {
           const { data: contactData, error: contactError } = await supabase
             .rpc('get_establishment_contact', { establishment_id: establishmentId });
@@ -108,6 +158,28 @@ function CheckoutContent() {
     fetchEstablishment();
   }, [id, slug, navigate, toast]);
 
+  // Load saved addresses when phone is entered
+  useEffect(() => {
+    const loadSavedAddresses = async () => {
+      if (formData.customerPhone.length >= 10 && establishment) {
+        const normalizedPhone = formData.customerPhone.replace(/\D/g, '');
+        const { data } = await supabase
+          .from('saved_addresses')
+          .select('*')
+          .eq('whatsapp', normalizedPhone)
+          .eq('establishment_id', establishment.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (data) {
+          setSavedAddresses(data);
+        }
+      }
+    };
+    
+    loadSavedAddresses();
+  }, [formData.customerPhone, establishment]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -117,12 +189,143 @@ function CheckoutContent() {
     setFormData((prev) => ({ ...prev, paymentMethod: value, needsChange: false, changeFor: '' }));
   };
 
+  const selectSavedAddress = (address: SavedAddress) => {
+    setFormData(prev => ({
+      ...prev,
+      address: address.address,
+      neighborhood: address.neighborhood || '',
+      referencePoint: address.reference_point || '',
+    }));
+  };
+
+  // Calculate delivery fee based on neighborhood and settings
+  const calculateDeliveryFee = (): { fee: number; message: string } => {
+    if (formData.deliveryType === 'pickup') {
+      return { fee: 0, message: 'Retirada no local' };
+    }
+
+    // Check if free delivery applies
+    const freeDeliveryMin = establishment?.free_delivery_min;
+    if (freeDeliveryMin && total >= freeDeliveryMin) {
+      return { fee: 0, message: `Entrega grátis (pedido acima de ${formatCurrency(freeDeliveryMin)})` };
+    }
+
+    // Check neighborhood-specific fee
+    if (formData.neighborhood && formData.neighborhood !== 'outros') {
+      const zone = deliveryZones.find(z => z.neighborhood === formData.neighborhood);
+      if (zone) {
+        if (zone.delivery_type === 'free') {
+          return { fee: 0, message: 'Entrega grátis neste bairro' };
+        }
+        return { fee: zone.delivery_fee, message: '' };
+      }
+    }
+
+    // "Outros" neighborhood
+    if (formData.neighborhood === 'outros') {
+      return { fee: 0, message: 'Taxa a confirmar pelo estabelecimento' };
+    }
+
+    // Default delivery fee
+    return { fee: establishment?.delivery_fee || 0, message: '' };
+  };
+
+  const deliveryInfo = calculateDeliveryFee();
+  const discountValue = appliedCoupon?.value || 0;
+  const grandTotal = total + deliveryInfo.fee - discountValue;
+
+  // Validate minimum order
+  const minOrderValue = establishment?.min_order_value || 0;
+  const isMinOrderMet = total >= minOrderValue;
+
   const copyPixKey = () => {
     if (contact?.pix_key) {
       navigator.clipboard.writeText(contact.pix_key);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim() || !establishment) return;
+    
+    setIsValidatingCoupon(true);
+    try {
+      const { data, error } = await supabase
+        .from('discount_codes')
+        .select('*')
+        .eq('establishment_id', establishment.id)
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        toast({
+          title: 'Cupom inválido',
+          description: 'Este cupom não existe ou está inativo.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check expiration
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({
+          title: 'Cupom expirado',
+          description: 'Este cupom já expirou.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check usage limit
+      if (data.max_uses && data.current_uses >= data.max_uses) {
+        toast({
+          title: 'Cupom esgotado',
+          description: 'Este cupom atingiu o limite de usos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check minimum order value
+      if (data.min_order_value && total < data.min_order_value) {
+        toast({
+          title: 'Valor mínimo não atingido',
+          description: `Este cupom requer um pedido mínimo de ${formatCurrency(data.min_order_value)}.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (data.discount_type === 'percentage') {
+        discountAmount = (total * data.discount_value) / 100;
+      } else {
+        discountAmount = data.discount_value;
+      }
+
+      setAppliedCoupon({
+        code: data.code,
+        value: discountAmount,
+        type: data.discount_type,
+      });
+
+      toast({
+        title: 'Cupom aplicado!',
+        description: `Desconto de ${formatCurrency(discountAmount)} aplicado.`,
+      });
+    } catch (err) {
+      console.error('Error applying coupon:', err);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
   };
 
   const getPaymentMethodLabel = () => {
@@ -152,7 +355,16 @@ function CheckoutContent() {
     
     if (!establishment || !contact) return;
     
-    if (!formData.address) {
+    if (!formData.customerName.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha seu nome.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.deliveryType === 'delivery' && !formData.address) {
       toast({
         title: 'Erro',
         description: 'Por favor, preencha o endereço de entrega.',
@@ -161,9 +373,34 @@ function CheckoutContent() {
       return;
     }
 
-    const deliveryFee = establishment.delivery_fee || 0;
-    const subtotal = total;
-    const grandTotal = subtotal + deliveryFee;
+    if (!isMinOrderMet) {
+      toast({
+        title: 'Valor mínimo não atingido',
+        description: `O pedido mínimo é de ${formatCurrency(minOrderValue)}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Save address if requested
+    if (formData.saveAddress && formData.customerPhone && formData.address) {
+      const normalizedPhone = formData.customerPhone.replace(/\D/g, '');
+      
+      // Check if we already have 3 addresses
+      if (savedAddresses.length >= 3) {
+        // Delete oldest
+        const oldest = savedAddresses[savedAddresses.length - 1];
+        await supabase.from('saved_addresses').delete().eq('id', oldest.id);
+      }
+
+      await supabase.from('saved_addresses').insert({
+        whatsapp: normalizedPhone,
+        establishment_id: establishment.id,
+        address: formData.address,
+        neighborhood: formData.neighborhood || null,
+        reference_point: formData.referencePoint || null,
+      });
+    }
 
     // Save order to database
     const orderItems = items.map(item => ({
@@ -186,14 +423,18 @@ function CheckoutContent() {
         .from('orders')
         .insert({
           establishment_id: establishment.id,
-          customer_address: formData.address,
+          customer_name: formData.customerName.trim(),
+          customer_phone: formData.customerPhone.replace(/\D/g, '') || null,
+          customer_address: formData.deliveryType === 'pickup' ? 'Retirada no local' : formData.address,
+          neighborhood: formData.neighborhood || null,
           reference_point: formData.referencePoint || null,
+          delivery_type: formData.deliveryType,
           payment_method: getPaymentMethodLabel(),
           payment_details: getPaymentDetails() || null,
-          subtotal: subtotal,
-          delivery_fee: deliveryFee,
-          discount_value: 0,
-          discount_code: null,
+          subtotal: total,
+          delivery_fee: deliveryInfo.fee,
+          discount_value: discountValue,
+          discount_code: appliedCoupon?.code || null,
           total: grandTotal,
           status: 'pending',
           observations: formData.observations || null,
@@ -202,7 +443,14 @@ function CheckoutContent() {
 
       if (error) {
         console.error('Error saving order:', error);
-        // Continue anyway - order will be sent via WhatsApp
+      }
+
+      // Update coupon usage
+      if (appliedCoupon) {
+        await supabase
+          .from('discount_codes')
+          .update({ current_uses: (appliedCoupon as any).current_uses + 1 })
+          .eq('code', appliedCoupon.code);
       }
     } catch (err) {
       console.error('Error saving order:', err);
@@ -211,14 +459,17 @@ function CheckoutContent() {
     const message = generateOrderMessage(
       establishment.name || '',
       items,
+      formData.customerName,
       formData.address,
+      formData.neighborhood || 'Não informado',
       formData.referencePoint,
+      formData.deliveryType,
       getPaymentMethodLabel(),
       getPaymentDetails(),
-      subtotal,
-      deliveryFee,
-      0,
-      null,
+      total,
+      deliveryInfo.fee,
+      discountValue,
+      appliedCoupon?.code || null,
       formData.observations
     );
 
@@ -242,7 +493,7 @@ function CheckoutContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -262,7 +513,6 @@ function CheckoutContent() {
     );
   }
 
-  // Plan expired/inactive - show blocking screen
   if (!planStatus.active) {
     const isTrialExpired = planStatus.reason === 'trial_expired';
     
@@ -340,37 +590,165 @@ function CheckoutContent() {
 
       <main className="container py-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Address */}
+          {/* Customer Info */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="w-5 h-5 text-primary" />
-                Endereço de entrega
+                <User className="w-5 h-5 text-primary" />
+                Seus dados
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="address">Endereço completo *</Label>
-                <Textarea
-                  id="address"
-                  name="address"
-                  placeholder="Rua, número, bairro, cidade..."
-                  value={formData.address}
+                <Label htmlFor="customerName">Seu nome *</Label>
+                <Input
+                  id="customerName"
+                  name="customerName"
+                  placeholder="Como podemos te chamar?"
+                  value={formData.customerName}
                   onChange={handleChange}
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="referencePoint">Ponto de referência</Label>
+                <Label htmlFor="customerPhone">WhatsApp (opcional)</Label>
                 <Input
-                  id="referencePoint"
-                  name="referencePoint"
-                  placeholder="Ex: Próximo ao mercado..."
-                  value={formData.referencePoint}
+                  id="customerPhone"
+                  name="customerPhone"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  value={formData.customerPhone}
                   onChange={handleChange}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Delivery Type */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Package className="w-5 h-5 text-primary" />
+                Tipo de entrega
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <RadioGroup
+                value={formData.deliveryType}
+                onValueChange={(value) => setFormData(prev => ({ 
+                  ...prev, 
+                  deliveryType: value as 'delivery' | 'pickup' | 'other' 
+                }))}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                  <RadioGroupItem value="delivery" id="delivery" />
+                  <Label htmlFor="delivery" className="flex-1 cursor-pointer">
+                    Entrega no meu endereço
+                  </Label>
+                </div>
+                
+                {establishment.accept_pickup && (
+                  <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                    <RadioGroupItem value="pickup" id="pickup" />
+                    <Label htmlFor="pickup" className="flex-1 cursor-pointer">
+                      Retirar no local
+                    </Label>
+                  </div>
+                )}
+              </RadioGroup>
+
+              {formData.deliveryType === 'delivery' && (
+                <div className="space-y-4 pt-2">
+                  {/* Saved addresses */}
+                  {savedAddresses.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Endereços salvos</Label>
+                      <div className="space-y-2">
+                        {savedAddresses.map((addr) => (
+                          <button
+                            key={addr.id}
+                            type="button"
+                            onClick={() => selectSavedAddress(addr)}
+                            className="w-full text-left p-3 bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                          >
+                            <p className="text-sm font-medium text-foreground">{addr.address}</p>
+                            {addr.neighborhood && (
+                              <p className="text-xs text-muted-foreground">{addr.neighborhood}</p>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Neighborhood selection */}
+                  {deliveryZones.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Select 
+                        value={formData.neighborhood} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, neighborhood: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o bairro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {deliveryZones.map((zone) => (
+                            <SelectItem key={zone.id} value={zone.neighborhood}>
+                              {zone.neighborhood} 
+                              {zone.delivery_type === 'free' 
+                                ? ' (Grátis)' 
+                                : ` (${formatCurrency(zone.delivery_fee)})`
+                              }
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="outros">Outros (taxa a confirmar)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Endereço completo *</Label>
+                    <Textarea
+                      id="address"
+                      name="address"
+                      placeholder="Rua, número, complemento..."
+                      value={formData.address}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="referencePoint">Ponto de referência</Label>
+                    <Input
+                      id="referencePoint"
+                      name="referencePoint"
+                      placeholder="Ex: Próximo ao mercado..."
+                      value={formData.referencePoint}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  {formData.customerPhone && (
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="saveAddress"
+                        checked={formData.saveAddress}
+                        onChange={(e) => setFormData(prev => ({ ...prev, saveAddress: e.target.checked }))}
+                        className="rounded border-border"
+                      />
+                      <Label htmlFor="saveAddress" className="text-sm cursor-pointer">
+                        Salvar endereço para próximos pedidos
+                      </Label>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -502,6 +880,50 @@ function CheckoutContent() {
             </CardContent>
           </Card>
 
+          {/* Coupon */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Ticket className="w-5 h-5 text-primary" />
+                Cupom de desconto
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg border border-secondary/20">
+                  <div>
+                    <p className="font-medium text-foreground">{appliedCoupon.code}</p>
+                    <p className="text-sm text-secondary">-{formatCurrency(appliedCoupon.value)}</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={removeCoupon}>
+                    Remover
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Digite o código"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={applyCoupon}
+                    disabled={isValidatingCoupon || !couponCode.trim()}
+                  >
+                    {isValidatingCoupon ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Aplicar'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Observations */}
           <Card>
             <CardHeader>
@@ -543,20 +965,39 @@ function CheckoutContent() {
                     <span>{formatCurrency(total)}</span>
                   </div>
                   
-                  {(establishment?.delivery_fee || 0) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Taxa de entrega</span>
-                      <span>{formatCurrency(establishment?.delivery_fee || 0)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Taxa de entrega</span>
+                    <span>
+                      {deliveryInfo.fee === 0 
+                        ? (deliveryInfo.message || 'Grátis')
+                        : formatCurrency(deliveryInfo.fee)
+                      }
+                    </span>
+                  </div>
+                  
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-secondary">
+                      <span>Desconto ({appliedCoupon.code})</span>
+                      <span>-{formatCurrency(appliedCoupon.value)}</span>
                     </div>
                   )}
                   
                   <div className="flex justify-between font-semibold text-lg pt-1">
                     <span>Total</span>
                     <span className="text-primary">
-                      {formatCurrency(total + (establishment?.delivery_fee || 0))}
+                      {formatCurrency(grandTotal)}
                     </span>
                   </div>
                 </div>
+
+                {/* Minimum order warning */}
+                {!isMinOrderMet && minOrderValue > 0 && (
+                  <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <p className="text-sm text-warning">
+                      Pedido mínimo: {formatCurrency(minOrderValue)}. Faltam {formatCurrency(minOrderValue - total)}.
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -570,6 +1011,7 @@ function CheckoutContent() {
           size="lg" 
           className="w-full"
           onClick={handleSubmit}
+          disabled={!isMinOrderMet}
         >
           <MessageCircle className="w-5 h-5 mr-2" />
           Enviar pedido via WhatsApp
