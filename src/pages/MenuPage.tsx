@@ -33,6 +33,7 @@ import { ProductOptionSelector } from '@/components/ProductOptionSelector';
 import { ProductOptionGroup, ProductOption } from '@/components/ProductOptionGroupsManager';
 import { useToast } from '@/hooks/use-toast';
 import { hexToHsl } from '@/lib/colors';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 interface PublicEstablishment {
   id: string;
@@ -782,6 +783,7 @@ function MenuContent() {
       </main>
       
       <CartSheet />
+      <PWAInstallPrompt />
     </div>
   );
 }

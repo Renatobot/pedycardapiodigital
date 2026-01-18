@@ -147,6 +147,23 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
         description: `Pedido alterado para "${STATUS_LABELS[newStatus]?.label || newStatus}"`,
       });
 
+      // Send push notification to customer
+      if (updatedOrder?.customer_phone) {
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              orderId,
+              newStatus,
+              establishmentId,
+              customerPhone: updatedOrder.customer_phone,
+              establishmentName,
+            },
+          });
+        } catch (pushError) {
+          console.log('Push notification failed (optional):', pushError);
+        }
+      }
+
       // Send WhatsApp notification to customer if enabled
       if (notifyCustomerEnabled && updatedOrder?.customer_phone) {
         const message = generateStatusNotificationMessage(
