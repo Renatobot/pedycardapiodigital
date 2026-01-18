@@ -179,8 +179,28 @@ export function DashboardPWAPrompt() {
     );
   }
 
-  // Prompt para iOS
+// Prompt para iOS
   if (showIOSPrompt && !isInstalled) {
+    // Salvar também no IndexedDB para persistência no iOS
+    try {
+      const request = indexedDB.open('pedy-pwa', 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('config')) {
+          db.createObjectStore('config');
+        }
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('config', 'readwrite');
+        const store = tx.objectStore('config');
+        store.put('/dashboard', 'start-url');
+        db.close();
+      };
+    } catch (e) {
+      // IndexedDB não disponível, ignorar
+    }
+
     return (
       <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
         <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
@@ -193,11 +213,11 @@ export function DashboardPWAPrompt() {
               <p className="text-xs text-muted-foreground mt-1">
                 {isSafari ? (
                   <>
-                    Toque no ícone <Share className="inline h-3.5 w-3.5 mx-0.5" /> de compartilhar e depois em <strong>"Adicionar à Tela de Início"</strong>
+                    <strong>Importante:</strong> Instale agora desta página! Toque no ícone <Share className="inline h-3.5 w-3.5 mx-0.5" /> de compartilhar e depois em <strong>"Adicionar à Tela de Início"</strong>
                   </>
                 ) : (
                   <>
-                    Toque no menu <MoreVertical className="inline h-3.5 w-3.5 mx-0.5" /> e depois em <strong>"Adicionar à Tela de Início"</strong>
+                    <strong>Importante:</strong> Instale agora desta página! Toque no menu <MoreVertical className="inline h-3.5 w-3.5 mx-0.5" /> e depois em <strong>"Adicionar à Tela de Início"</strong>
                   </>
                 )}
               </p>

@@ -595,6 +595,13 @@ function MenuContent() {
           const formatted = formatBusinessHoursForDisplay(hoursData);
           setFormattedHours(formatted);
         }
+
+        // Salvar slug/id no sessionStorage para fallback do PWA no iOS
+        const currentPath = window.location.pathname;
+        if (currentPath && currentPath !== '/') {
+          sessionStorage.setItem('pwa-last-menu', currentPath);
+          localStorage.setItem('pwa-start-url', currentPath);
+        }
         
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
