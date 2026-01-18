@@ -468,6 +468,7 @@ export type Database = {
           max_selections: number | null
           min_selections: number | null
           name: string
+          price_rule: string | null
           product_id: string
           sort_order: number | null
           type: string
@@ -479,6 +480,7 @@ export type Database = {
           max_selections?: number | null
           min_selections?: number | null
           name: string
+          price_rule?: string | null
           product_id: string
           sort_order?: number | null
           type?: string
@@ -490,6 +492,7 @@ export type Database = {
           max_selections?: number | null
           min_selections?: number | null
           name?: string
+          price_rule?: string | null
           product_id?: string
           sort_order?: number | null
           type?: string
