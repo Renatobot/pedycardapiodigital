@@ -93,6 +93,7 @@ const AdminDashboardPage = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | 'extend'>('activate');
+  const [customDays, setCustomDays] = useState<number>(30);
   
   // Plan management state
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -462,7 +463,7 @@ const AdminDashboardPage = () => {
   const handleActivatePro = async (establishment: Establishment) => {
     try {
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(now.getTime() + customDays * 24 * 60 * 60 * 1000);
       
       const { data, error } = await supabase
         .from('establishments')
@@ -482,10 +483,11 @@ const AdminDashboardPage = () => {
 
       toast({
         title: 'Plano ativado!',
-        description: `${establishment.name} agora tem plano Pro por 30 dias.`,
+        description: `${establishment.name} agora tem plano Pro por ${customDays} dias.`,
       });
       
       await fetchEstablishments();
+      setCustomDays(30);
     } catch (error: any) {
       console.error('Erro ao ativar plano:', error);
       toast({
@@ -536,7 +538,7 @@ const AdminDashboardPage = () => {
   const handleExtendTrial = async (establishment: Establishment) => {
     try {
       const currentEnd = new Date(establishment.trial_end_date);
-      const newEnd = new Date(currentEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const newEnd = new Date(currentEnd.getTime() + customDays * 24 * 60 * 60 * 1000);
       
       const { data, error } = await supabase
         .from('establishments')
@@ -556,10 +558,11 @@ const AdminDashboardPage = () => {
 
       toast({
         title: 'Trial estendido!',
-        description: `${establishment.name} ganhou +7 dias de trial.`,
+        description: `${establishment.name} ganhou +${customDays} dias de trial.`,
       });
       
       await fetchEstablishments();
+      setCustomDays(30);
     } catch (error: any) {
       console.error('Erro ao estender trial:', error);
       toast({
@@ -574,6 +577,7 @@ const AdminDashboardPage = () => {
   const openActionModal = (establishment: Establishment, action: 'activate' | 'deactivate' | 'extend') => {
     setSelectedEstablishment(establishment);
     setActionType(action);
+    setCustomDays(action === 'extend' ? 7 : 30);
     setActionModalOpen(true);
   };
 
@@ -1093,16 +1097,117 @@ const AdminDashboardPage = () => {
               {actionType === 'extend' && 'Estender Trial'}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              {actionType === 'activate' && 'Isso ativará o plano Pro por 30 dias para este estabelecimento.'}
+              {actionType === 'activate' && 'Escolha a duração do plano Pro para este estabelecimento.'}
               {actionType === 'deactivate' && 'Isso expirará o plano imediatamente. O estabelecimento perderá o acesso.'}
-              {actionType === 'extend' && 'Isso adicionará 7 dias ao período de trial.'}
+              {actionType === 'extend' && 'Escolha quantos dias deseja adicionar ao trial.'}
             </DialogDescription>
           </DialogHeader>
           {selectedEstablishment && (
-            <div className="py-4">
+            <div className="space-y-4 py-4">
               <p className="text-slate-300">
                 Estabelecimento: <span className="font-medium text-white">{selectedEstablishment.name}</span>
               </p>
+              
+              {/* Campo de dias - apenas para ativar e estender */}
+              {(actionType === 'activate' || actionType === 'extend') && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-300">
+                    Quantidade de dias
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(Number(e.target.value))}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                  
+                  {/* Atalhos rápidos */}
+                  <div className="flex flex-wrap gap-2">
+                    {actionType === 'activate' && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 30 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(30)}
+                          className={customDays === 30 ? "bg-green-600" : "border-slate-600 text-slate-300"}
+                        >
+                          Mensal (30)
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 90 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(90)}
+                          className={customDays === 90 ? "bg-green-600" : "border-slate-600 text-slate-300"}
+                        >
+                          Trimestral (90)
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 180 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(180)}
+                          className={customDays === 180 ? "bg-green-600" : "border-slate-600 text-slate-300"}
+                        >
+                          Semestral (180)
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 365 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(365)}
+                          className={customDays === 365 ? "bg-green-600" : "border-slate-600 text-slate-300"}
+                        >
+                          Anual (365)
+                        </Button>
+                      </>
+                    )}
+                    {actionType === 'extend' && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 1 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(1)}
+                          className={customDays === 1 ? "bg-blue-600" : "border-slate-600 text-slate-300"}
+                        >
+                          +1 dia
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 3 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(3)}
+                          className={customDays === 3 ? "bg-blue-600" : "border-slate-600 text-slate-300"}
+                        >
+                          +3 dias
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 7 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(7)}
+                          className={customDays === 7 ? "bg-blue-600" : "border-slate-600 text-slate-300"}
+                        >
+                          +7 dias
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 15 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(15)}
+                          className={customDays === 15 ? "bg-blue-600" : "border-slate-600 text-slate-300"}
+                        >
+                          +15 dias
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={customDays === 30 ? "default" : "outline"} 
+                          onClick={() => setCustomDays(30)}
+                          className={customDays === 30 ? "bg-blue-600" : "border-slate-600 text-slate-300"}
+                        >
+                          +30 dias
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">
@@ -1111,7 +1216,7 @@ const AdminDashboardPage = () => {
             </Button>
             {actionType === 'activate' && selectedEstablishment && (
               <Button onClick={() => handleActivatePro(selectedEstablishment)} className="bg-green-600 hover:bg-green-700">
-                Ativar Pro
+                Ativar Pro ({customDays} dias)
               </Button>
             )}
             {actionType === 'deactivate' && selectedEstablishment && (
@@ -1121,7 +1226,7 @@ const AdminDashboardPage = () => {
             )}
             {actionType === 'extend' && selectedEstablishment && (
               <Button onClick={() => handleExtendTrial(selectedEstablishment)} className="bg-blue-600 hover:bg-blue-700">
-                Estender Trial
+                Estender (+{customDays} dias)
               </Button>
             )}
           </DialogFooter>
