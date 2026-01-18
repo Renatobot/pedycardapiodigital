@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -45,11 +47,15 @@ import {
   Trash2,
   Loader2,
   Key,
+  Settings,
+  Sparkles,
+  Crown,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { FEATURE_LABELS, PRO_PLUS_FEATURES } from '@/lib/featureGating';
 
 interface Establishment {
   id: string;
@@ -64,6 +70,8 @@ interface Establishment {
   trial_start_date: string;
   trial_end_date: string;
   created_at: string;
+  has_pro_plus: boolean;
+  pro_plus_activated_at: string | null;
 }
 
 interface Admin {
@@ -84,6 +92,10 @@ const AdminDashboardPage = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | 'extend'>('activate');
+  
+  // Plan management state
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [planUpdateLoading, setPlanUpdateLoading] = useState(false);
   
   // Admin management state
   const [activeTab, setActiveTab] = useState('establishments');
@@ -344,6 +356,7 @@ const AdminDashboardPage = () => {
     total: establishments.length,
     trial: establishments.filter(e => e.plan_status === 'trial').length,
     active: establishments.filter(e => e.plan_status === 'active').length,
+    proPlus: establishments.filter(e => e.has_pro_plus).length,
     expired: establishments.filter(e => e.plan_status === 'expired').length,
   };
 
@@ -354,10 +367,69 @@ const AdminDashboardPage = () => {
       est.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       est.cpf_cnpj.includes(searchTerm);
     
-    const matchesStatus = statusFilter === 'all' || est.plan_status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    if (statusFilter === 'all') return matchesSearch;
+    if (statusFilter === 'pro_plus') return matchesSearch && est.has_pro_plus;
+    return matchesSearch && est.plan_status === statusFilter;
   });
+
+  // Handle Pro+ toggle
+  const handleUpdateProPlus = async (hasProPlus: boolean) => {
+    if (!selectedEstablishment) return;
+    
+    setPlanUpdateLoading(true);
+    try {
+      const { error } = await supabase
+        .from('establishments')
+        .update({
+          has_pro_plus: hasProPlus,
+          pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null,
+        })
+        .eq('id', selectedEstablishment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: hasProPlus ? 'Pro+ ativado!' : 'Pro+ desativado',
+        description: `Recursos avançados ${hasProPlus ? 'liberados' : 'bloqueados'} para ${selectedEstablishment.name}.`,
+      });
+
+      // Update local state
+      setSelectedEstablishment(prev => prev ? { ...prev, has_pro_plus: hasProPlus, pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null } : null);
+      await fetchEstablishments();
+    } catch (error) {
+      console.error('Erro ao atualizar Pro+:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o plano.',
+        variant: 'destructive',
+      });
+    }
+    setPlanUpdateLoading(false);
+  };
+
+  // Get plan badge
+  const getPlanBadge = (establishment: Establishment) => {
+    if (establishment.plan_status === 'trial') {
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Trial</Badge>;
+    }
+    if (establishment.plan_status === 'expired') {
+      return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Expirado</Badge>;
+    }
+    if (establishment.has_pro_plus) {
+      return (
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+          <Sparkles className="w-3 h-3 mr-1" />
+          Pro+
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+        <Crown className="w-3 h-3 mr-1" />
+        Pro
+      </Badge>
+    );
+  };
 
   // Ações do admin
   const handleActivatePro = async (establishment: Establishment) => {
@@ -551,7 +623,7 @@ const AdminDashboardPage = () => {
           {/* Estabelecimentos Tab */}
           <TabsContent value="establishments" className="space-y-6">
             {/* Estatísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Card className="bg-slate-800 border-slate-700">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
@@ -597,6 +669,20 @@ const AdminDashboardPage = () => {
               <Card className="bg-slate-800 border-slate-700">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stats.proPlus}</p>
+                      <p className="text-sm text-slate-400">Pro+</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
                       <XCircle className="w-6 h-6 text-red-400" />
                     </div>
@@ -637,6 +723,7 @@ const AdminDashboardPage = () => {
                       <SelectItem value="all" className="text-white hover:bg-slate-600">Todos</SelectItem>
                       <SelectItem value="trial" className="text-white hover:bg-slate-600">Trial</SelectItem>
                       <SelectItem value="active" className="text-white hover:bg-slate-600">Ativos</SelectItem>
+                      <SelectItem value="pro_plus" className="text-white hover:bg-slate-600">Pro+</SelectItem>
                       <SelectItem value="expired" className="text-white hover:bg-slate-600">Expirados</SelectItem>
                     </SelectContent>
                   </Select>
@@ -651,6 +738,7 @@ const AdminDashboardPage = () => {
                         <TableHead className="text-slate-300">CPF/CNPJ</TableHead>
                         <TableHead className="text-slate-300">Contato</TableHead>
                         <TableHead className="text-slate-300">Status</TableHead>
+                        <TableHead className="text-slate-300">Plano</TableHead>
                         <TableHead className="text-slate-300">Expiração</TableHead>
                         <TableHead className="text-slate-300 text-right">Ações</TableHead>
                       </TableRow>
@@ -658,7 +746,7 @@ const AdminDashboardPage = () => {
                     <TableBody>
                       {filteredEstablishments.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-slate-400 py-8">
+                          <TableCell colSpan={7} className="text-center text-slate-400 py-8">
                             Nenhum estabelecimento encontrado
                           </TableCell>
                         </TableRow>
@@ -674,6 +762,7 @@ const AdminDashboardPage = () => {
                             <TableCell className="text-slate-300">{establishment.cpf_cnpj}</TableCell>
                             <TableCell className="text-slate-300">{establishment.whatsapp}</TableCell>
                             <TableCell>{getStatusBadge(establishment.plan_status)}</TableCell>
+                            <TableCell>{getPlanBadge(establishment)}</TableCell>
                             <TableCell className="text-slate-300">{getExpirationInfo(establishment)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -687,6 +776,18 @@ const AdminDashboardPage = () => {
                                   className="text-slate-400 hover:text-white hover:bg-slate-700"
                                 >
                                   <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedEstablishment(establishment);
+                                    setPlanModalOpen(true);
+                                  }}
+                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/20"
+                                  title="Gerenciar Plano"
+                                >
+                                  <Settings className="w-4 h-4" />
                                 </Button>
                                 {establishment.plan_status !== 'active' && (
                                   <Button
@@ -1142,6 +1243,115 @@ const AdminDashboardPage = () => {
               ) : (
                 'Salvar Nova Senha'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Gerenciar Plano */}
+      <Dialog open={planModalOpen} onOpenChange={setPlanModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Gerenciar Plano
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Configure o tipo de plano e recursos avançados
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEstablishment && (
+            <div className="space-y-6 py-4">
+              {/* Establishment Info */}
+              <div className="p-3 bg-slate-700/50 rounded-lg">
+                <p className="text-sm text-slate-400">Estabelecimento</p>
+                <p className="font-medium text-white">{selectedEstablishment.name}</p>
+              </div>
+
+              {/* Current Plan Status */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-300">Status Atual</p>
+                <div className="flex items-center gap-3">
+                  {getStatusBadge(selectedEstablishment.plan_status)}
+                  {getPlanBadge(selectedEstablishment)}
+                </div>
+              </div>
+
+              {/* Plan Type Info */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-300">Tipos de Plano</p>
+                <div className="space-y-2">
+                  <div className="p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Crown className="w-4 h-4 text-green-400" />
+                      <span className="font-medium text-green-400">Plano Pro (R$ 37/mês)</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Recursos básicos + pizza até 2 sabores
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-700/30 rounded-lg border border-purple-500/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <span className="font-medium text-purple-400">Plano Pro+</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Todos os recursos avançados:
+                    </p>
+                    <ul className="text-xs text-slate-400 mt-1 ml-4 list-disc space-y-0.5">
+                      <li>Pizza com 3 ou 4 sabores</li>
+                      <li>Regras avançadas de montagem</li>
+                      <li>Limites dinâmicos de seleção</li>
+                      <li>Precificação avançada</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pro+ Toggle */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-300">Ativação Pro+</p>
+                <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className={`w-5 h-5 ${selectedEstablishment.has_pro_plus ? 'text-purple-400' : 'text-slate-500'}`} />
+                    <div>
+                      <p className="font-medium text-white">Recursos Avançados</p>
+                      <p className="text-xs text-slate-400">
+                        {selectedEstablishment.has_pro_plus ? 'Liberados' : 'Bloqueados'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={selectedEstablishment.has_pro_plus}
+                    onCheckedChange={handleUpdateProPlus}
+                    disabled={planUpdateLoading}
+                  />
+                </div>
+
+                {selectedEstablishment.pro_plus_activated_at && selectedEstablishment.has_pro_plus && (
+                  <p className="text-xs text-slate-500 text-center">
+                    Ativado em: {format(new Date(selectedEstablishment.pro_plus_activated_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                  </p>
+                )}
+              </div>
+
+              {/* Info Box */}
+              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p className="text-xs text-blue-300">
+                  <strong>Nota:</strong> A alteração é aplicada imediatamente. O estabelecimento não precisa recriar produtos ou cardápio.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPlanModalOpen(false)}
+              className="border-slate-600 text-slate-300"
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
