@@ -55,7 +55,7 @@ const features = [
   {
     icon: MessageCircle,
     title: 'Pedidos via WhatsApp',
-    description: 'Receba os pedidos organizados diretamente no WhatsApp do seu negócio.',
+    description: 'Sem áudios, sem conversas perdidas. O cliente monta o pedido no cardápio e você recebe tudo completo, organizado e pronto para preparar.',
   },
   {
     icon: CreditCard,
@@ -142,7 +142,7 @@ const testimonials = [
 const stats = [
   { value: '500+', label: 'Estabelecimentos ativos' },
   { value: '50.000+', label: 'Pedidos enviados' },
-  { value: 'R$ 0', label: 'Taxa por pedido' },
+  { value: 'R$ 0', label: 'Taxa por pedido · Sem comissão, sem surpresas' },
   { value: '5 min', label: 'Para criar seu cardápio' },
 ];
 
@@ -221,23 +221,23 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center animate-fade-in">
             <div className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
               <Zap className="w-4 h-4" />
-              Comece a vender mais hoje!
+              Sem taxas por pedido · Sem comissão
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Seu cardápio digital com{' '}
-              <span className="text-gradient">pedidos no WhatsApp</span>
+              Venda mais pelo WhatsApp{' '}
+              <span className="text-gradient">sem pagar taxa por pedido</span>
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Crie seu cardápio online em minutos. Seus clientes escolhem os produtos 
-              e enviam o pedido completo direto para o seu WhatsApp. Simples assim!
+              Chega de áudios confusos e pedidos bagunçados. Com o PEDY, seu cliente monta o pedido sozinho 
+              e você recebe tudo organizado no WhatsApp. Pronto em 5 minutos.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <Link to="/cadastro">
                 <Button variant="hero" size="xl" className="w-full sm:w-auto">
-                  Começar grátis
+                  Criar cardápio grátis agora
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
               </Link>
@@ -285,7 +285,7 @@ export default function LandingPage() {
               Tudo que você precisa para vender mais
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Ferramentas simples e poderosas para transformar seu delivery
+              Acabe com a confusão no WhatsApp, reduza erros nos pedidos e ganhe tempo para focar no que importa: seu negócio
             </p>
           </div>
           
@@ -323,7 +323,7 @@ export default function LandingPage() {
               Para quem é o PEDY?
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Ideal para qualquer negócio que faz entregas ou precisa de um cardápio digital
+              Não importa se você vende comida, produtos ou serviços. Se você recebe pedidos por WhatsApp, o PEDY foi feito para você.
             </p>
           </div>
           
@@ -466,7 +466,7 @@ export default function LandingPage() {
               PEDY vs Plataformas tradicionais
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Veja por que centenas de estabelecimentos estão migrando para o PEDY
+              Por que pagar até 27% de comissão por pedido quando você pode ter seu próprio cardápio digital por um valor fixo mensal?
             </p>
           </div>
           
@@ -555,7 +555,7 @@ export default function LandingPage() {
             <div className="bg-background rounded-3xl shadow-xl overflow-hidden border border-border">
               <div className="bg-gradient-hero p-6 text-center">
                 <h3 className="text-2xl font-bold text-primary-foreground mb-1">Plano Pro</h3>
-                <p className="text-primary-foreground/80 text-sm">Tudo liberado, sem limites</p>
+                <p className="text-primary-foreground/80 text-sm">Tudo incluso. Sem taxas escondidas. Sem surpresas.</p>
               </div>
               
               <div className="p-6">
@@ -566,7 +566,7 @@ export default function LandingPage() {
                     <span className="text-muted-foreground">/mês</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Comece com 7 dias grátis!
+                    Teste grátis por 7 dias. Sem cartão.
                   </p>
                 </div>
                 
@@ -581,7 +581,7 @@ export default function LandingPage() {
                 
                 <Link to="/cadastro" className="block">
                   <Button variant="hero" size="lg" className="w-full">
-                    Começar teste grátis
+                    Criar meu cardápio grátis
                   </Button>
                 </Link>
               </div>
@@ -634,15 +634,15 @@ export default function LandingPage() {
                 Junte-se a centenas de estabelecimentos
               </h2>
               <p className="text-primary-foreground/90 text-lg mb-6">
-                Restaurantes, lanchonetes, açaiterias, padarias e muito mais já usam o PEDY 
-                para receber pedidos de forma organizada.
+                Enquanto você lê isso, outros estabelecimentos já estão recebendo pedidos organizados pelo PEDY. 
+                Crie seu cardápio agora e veja a diferença.
               </p>
               <Link to="/cadastro">
                 <Button 
                   size="xl" 
                   className="bg-card text-foreground hover:bg-card/90 shadow-xl"
                 >
-                  Criar minha conta grátis
+                  Começar grátis em 5 minutos
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
               </Link>
