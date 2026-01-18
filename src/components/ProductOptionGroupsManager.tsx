@@ -553,8 +553,8 @@ export function ProductOptionGroupsManager({
           {/* Quick Templates */}
           {groups.length === 0 && (
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Ou use um template pronto:</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+              <Label className="text-xs text-muted-foreground">Ou use um template pronto ({Object.keys(NICHE_TEMPLATES).length} disponíveis):</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-1">
                 {Object.values(NICHE_TEMPLATES).map(template => (
                   <Button
                     key={template.id}
