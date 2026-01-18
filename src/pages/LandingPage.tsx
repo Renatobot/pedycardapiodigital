@@ -16,7 +16,9 @@ import {
   QrCode,
   Package,
   Tag,
-  Clock
+  Clock,
+  Quote,
+  Star
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -85,6 +87,37 @@ const benefits = [
   'Gestão de pedidos em tempo real',
   'Suporte via WhatsApp',
   'Atualizações gratuitas',
+];
+
+const testimonials = [
+  {
+    name: 'Carlos Silva',
+    business: 'Pizzaria Bella Napoli',
+    city: 'São Paulo, SP',
+    text: 'Antes eu anotava tudo no papel e sempre dava confusão. Com o PEDY, os pedidos chegam certinhos no WhatsApp. Meus clientes adoram!',
+    rating: 5,
+  },
+  {
+    name: 'Ana Paula Ferreira',
+    business: 'Açaí da Praia',
+    city: 'Rio de Janeiro, RJ',
+    text: 'Em uma semana já vi o resultado. Os clientes pedem sozinhos pelo cardápio e não preciso ficar respondendo um por um. Tempo é dinheiro!',
+    rating: 5,
+  },
+  {
+    name: 'Roberto Mendes',
+    business: 'Burger House',
+    city: 'Belo Horizonte, MG',
+    text: 'O sistema de cupons e taxa por bairro me ajudou a organizar as entregas. Recomendo para qualquer lanchonete que quer crescer.',
+    rating: 5,
+  },
+  {
+    name: 'Juliana Costa',
+    business: 'Marmitaria Sabor Caseiro',
+    city: 'Curitiba, PR',
+    text: 'Simples de usar e meus clientes aprenderam rápido. O QR Code na porta do restaurante traz pedidos todo dia!',
+    rating: 5,
+  },
 ];
 
 export default function LandingPage() {
@@ -242,6 +275,48 @@ export default function LandingPage() {
                 <p className="text-muted-foreground text-sm">
                   {feature.description}
                 </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-16">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Quote className="w-4 h-4" />
+              Depoimentos
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              O que nossos clientes dizem
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Veja como o PEDY está transformando o delivery de estabelecimentos por todo o Brasil
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {testimonials.map((testimonial, index) => (
+              <div 
+                key={index}
+                className="bg-card rounded-2xl p-6 shadow-soft border border-border animate-slide-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-foreground mb-4 italic">
+                  "{testimonial.text}"
+                </p>
+                <div className="border-t border-border pt-4">
+                  <p className="font-semibold text-foreground">{testimonial.name}</p>
+                  <p className="text-sm text-primary">{testimonial.business}</p>
+                  <p className="text-xs text-muted-foreground">{testimonial.city}</p>
+                </div>
               </div>
             ))}
           </div>
