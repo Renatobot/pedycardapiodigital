@@ -933,13 +933,21 @@ export default function AdminEstablishmentDashboard() {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && establishment && (
-          <OrderManagement establishmentId={establishment.id} />
+          <OrderManagement 
+            establishmentId={establishment.id}
+            establishmentName={establishment.name}
+            notifyCustomerEnabled={establishment.notify_customer_on_status_change || false}
+          />
         )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && establishment && (
           <div className="space-y-6">
-            <DeliverySettings establishmentId={establishment.id} />
+            <DeliverySettings 
+              establishmentId={establishment.id}
+              currentFee={establishment.delivery_fee || 0}
+              onUpdate={() => refetch()}
+            />
             <DeliveryZones establishmentId={establishment.id} />
             <CouponManagement establishmentId={establishment.id} />
             <BusinessHoursSettings establishmentId={establishment.id} />
@@ -1048,8 +1056,8 @@ export default function AdminEstablishmentDashboard() {
               <Label>Foto do Produto</Label>
               <div className="h-32 overflow-hidden rounded-lg">
                 <ImageUpload
-                  currentImage={productForm.image}
-                  onImageChange={(url) => setProductForm(prev => ({ ...prev, image: url || '' }))}
+                  value={productForm.image || undefined}
+                  onChange={(url) => setProductForm(prev => ({ ...prev, image: url || '' }))}
                   onUploadStart={() => setIsImageUploading(true)}
                   onUploadEnd={() => setIsImageUploading(false)}
                   folder="products"
@@ -1182,9 +1190,12 @@ export default function AdminEstablishmentDashboard() {
             {editingProduct && (
               <ProductOptionGroupsManager
                 productId={editingProduct.id}
+                establishment={{
+                  has_pro_plus: establishment.has_pro_plus || false,
+                  plan_status: establishment.plan_status,
+                  trial_end_date: establishment.trial_end_date
+                }}
                 categoryName={categories.find(c => c.id === selectedCategoryId)?.name || ''}
-                hasProPlus={establishment.has_pro_plus || false}
-                isInTrial={establishment.plan_status === 'trial'}
                 onGroupsChange={setProductOptionGroups}
               />
             )}
