@@ -20,22 +20,17 @@ export default defineConfig(({ mode }) => ({
     dedupe: [
       "react",
       "react-dom",
-      "@supabase/supabase-js",
-      "@tanstack/react-query",
-      "@radix-ui/react-tooltip",
-      "@radix-ui/react-dialog",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
     ],
   },
   optimizeDeps: {
     include: [
       "react",
       "react-dom",
-      "@supabase/supabase-js",
-      "@tanstack/react-query",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
     ],
     force: true,
-    esbuildOptions: {
-      target: "esnext",
-    },
   },
 }));
