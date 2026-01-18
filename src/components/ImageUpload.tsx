@@ -14,6 +14,50 @@ interface ImageUploadProps {
   onUploadEnd?: () => void;
 }
 
+// Compress and resize image before upload
+const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.8): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      
+      let { width, height } = img;
+      
+      // Resize maintaining aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Falha ao criar contexto do canvas'));
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('Falha na compressão da imagem')),
+        'image/jpeg',
+        quality
+      );
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Erro ao carregar imagem'));
+    };
+  });
+};
+
 export function ImageUpload({ 
   value, 
   onChange, 
@@ -41,11 +85,11 @@ export function ImageUpload({
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate original file size (max 10MB to prevent browser freeze)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: 'Erro',
-        description: 'A imagem deve ter no máximo 5MB.',
+        description: 'A imagem original deve ter no máximo 10MB.',
         variant: 'destructive',
       });
       return;
@@ -55,13 +99,20 @@ export function ImageUpload({
     onUploadStart?.();
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Compress image before upload
+      const compressedBlob = await compressImage(file);
+      
+      // Check size after compression (max 1MB)
+      if (compressedBlob.size > 1 * 1024 * 1024) {
+        throw new Error('Imagem muito grande mesmo após compressão. Tente outra imagem.');
+      }
+
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
       const filePath = `${folder}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -72,7 +123,7 @@ export function ImageUpload({
       onChange(publicUrl);
       toast({
         title: 'Imagem enviada!',
-        description: 'A imagem foi carregada com sucesso.',
+        description: 'A imagem foi otimizada e carregada com sucesso.',
       });
     } catch (error: any) {
       console.error('Upload error:', error);
