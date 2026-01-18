@@ -56,6 +56,10 @@ import { useEstablishment, ProductAddition } from '@/hooks/useEstablishment';
 import { ImageUpload } from '@/components/ImageUpload';
 import { OrderManagement } from '@/components/OrderManagement';
 import { DeliverySettings } from '@/components/DeliverySettings';
+import { DeliveryZones } from '@/components/DeliveryZones';
+import { CouponManagement } from '@/components/CouponManagement';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -112,6 +116,13 @@ export default function DashboardPage() {
     description: '',
     price: '',
     image: '',
+    unit_type: 'unidade',
+    is_promotional: false,
+    original_price: '',
+    promotional_price: '',
+    max_quantity: '',
+    subject_to_availability: false,
+    allow_observations: true,
   });
   const [productAdditions, setProductAdditions] = useState<{ id: string; name: string; price: number; image_url?: string }[]>([]);
   const [newAddition, setNewAddition] = useState({ name: '', price: '', image: '' });
@@ -327,10 +338,24 @@ export default function DashboardPage() {
   };
 
   // Product handlers
+  const getDefaultProductForm = () => ({
+    name: '',
+    description: '',
+    price: '',
+    image: '',
+    unit_type: 'unidade',
+    is_promotional: false,
+    original_price: '',
+    promotional_price: '',
+    max_quantity: '',
+    subject_to_availability: false,
+    allow_observations: true,
+  });
+
   const openAddProduct = (categoryId: string) => {
     setEditingProduct(null);
     setSelectedCategoryId(categoryId);
-    setProductForm({ name: '', description: '', price: '', image: '' });
+    setProductForm(getDefaultProductForm());
     setProductAdditions([]);
     setProductModalOpen(true);
   };
@@ -343,6 +368,13 @@ export default function DashboardPage() {
       description: product.description || '',
       price: product.price.toString(),
       image: product.image_url || '',
+      unit_type: product.unit_type || 'unidade',
+      is_promotional: product.is_promotional || false,
+      original_price: product.original_price?.toString() || '',
+      promotional_price: product.promotional_price?.toString() || '',
+      max_quantity: product.max_quantity?.toString() || '',
+      subject_to_availability: product.subject_to_availability || false,
+      allow_observations: product.allow_observations !== false,
     });
     const additions = getProductAdditions(product.id);
     setProductAdditions(additions);
@@ -371,13 +403,26 @@ export default function DashboardPage() {
 
     setIsSaving(true);
     try {
+      const productData = {
+        name: productForm.name.trim(),
+        description: productForm.description.trim() || null,
+        price,
+        image_url: productForm.image.trim() || null,
+        unit_type: productForm.unit_type,
+        is_promotional: productForm.is_promotional,
+        original_price: productForm.is_promotional && productForm.original_price 
+          ? parseFloat(productForm.original_price.replace(',', '.')) 
+          : null,
+        promotional_price: productForm.is_promotional && productForm.promotional_price 
+          ? parseFloat(productForm.promotional_price.replace(',', '.')) 
+          : null,
+        max_quantity: productForm.max_quantity ? parseInt(productForm.max_quantity) : null,
+        subject_to_availability: productForm.subject_to_availability,
+        allow_observations: productForm.allow_observations,
+      };
+
       if (editingProduct) {
-        await updateProduct(editingProduct.id, {
-          name: productForm.name.trim(),
-          description: productForm.description.trim() || null,
-          price,
-          image_url: productForm.image.trim() || null,
-        });
+        await updateProduct(editingProduct.id, productData);
         toast({
           title: "Produto atualizado!",
           description: `O produto "${productForm.name}" foi atualizado.`,
@@ -385,10 +430,7 @@ export default function DashboardPage() {
       } else {
         const newProduct = await createProduct({
           category_id: selectedCategoryId,
-          name: productForm.name.trim(),
-          description: productForm.description.trim() || undefined,
-          price,
-          image_url: productForm.image.trim() || undefined,
+          ...productData,
         });
 
         // Create additions for new product
@@ -410,7 +452,7 @@ export default function DashboardPage() {
       }
 
       setProductModalOpen(false);
-      setProductForm({ name: '', description: '', price: '', image: '' });
+      setProductForm(getDefaultProductForm());
       setProductAdditions([]);
       setEditingProduct(null);
     } catch (error: any) {
@@ -643,6 +685,8 @@ export default function DashboardPage() {
               currentFee={deliveryFee}
               onUpdate={setDeliveryFee}
             />
+            <DeliveryZones establishmentId={establishment.id} />
+            <CouponManagement establishmentId={establishment.id} />
           </div>
         )}
 
@@ -885,14 +929,107 @@ export default function DashboardPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="productPrice">Preço *</Label>
-              <Input
-                id="productPrice"
-                placeholder="0,00"
-                value={productForm.price}
-                onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="productPrice">Preço *</Label>
+                <Input
+                  id="productPrice"
+                  placeholder="0,00"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="productUnit">Unidade de venda</Label>
+                <Select
+                  value={productForm.unit_type}
+                  onValueChange={(value) => setProductForm(prev => ({ ...prev, unit_type: value }))}
+                >
+                  <SelectTrigger id="productUnit">
+                    <SelectValue placeholder="Unidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unidade">Unidade</SelectItem>
+                    <SelectItem value="kg">Kg</SelectItem>
+                    <SelectItem value="grama">Grama</SelectItem>
+                    <SelectItem value="litro">Litro</SelectItem>
+                    <SelectItem value="mililitro">Mililitro</SelectItem>
+                    <SelectItem value="pacote">Pacote</SelectItem>
+                    <SelectItem value="caixa">Caixa</SelectItem>
+                    <SelectItem value="saco">Saco</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Promotional Product */}
+            <div className="space-y-3 p-3 border border-border rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isPromotional"
+                  checked={productForm.is_promotional}
+                  onCheckedChange={(checked) => setProductForm(prev => ({ ...prev, is_promotional: !!checked }))}
+                />
+                <Label htmlFor="isPromotional" className="cursor-pointer">Produto em promoção</Label>
+              </div>
+              
+              {productForm.is_promotional && (
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="originalPrice">Preço original</Label>
+                    <Input
+                      id="originalPrice"
+                      placeholder="0,00"
+                      value={productForm.original_price}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, original_price: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="promotionalPrice">Preço promocional</Label>
+                    <Input
+                      id="promotionalPrice"
+                      placeholder="0,00"
+                      value={productForm.promotional_price}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, promotional_price: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Advanced Options */}
+            <div className="space-y-3 p-3 border border-border rounded-lg">
+              <Label className="text-sm font-medium">Opções avançadas</Label>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="subjectToAvailability"
+                  checked={productForm.subject_to_availability}
+                  onCheckedChange={(checked) => setProductForm(prev => ({ ...prev, subject_to_availability: !!checked }))}
+                />
+                <Label htmlFor="subjectToAvailability" className="cursor-pointer text-sm">Sujeito à disponibilidade</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="allowObservations"
+                  checked={productForm.allow_observations}
+                  onCheckedChange={(checked) => setProductForm(prev => ({ ...prev, allow_observations: !!checked }))}
+                />
+                <Label htmlFor="allowObservations" className="cursor-pointer text-sm">Permitir observações do cliente</Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxQuantity" className="text-sm">Limite por pedido (opcional)</Label>
+                <Input
+                  id="maxQuantity"
+                  type="number"
+                  placeholder="Sem limite"
+                  value={productForm.max_quantity}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, max_quantity: e.target.value }))}
+                  className="w-32"
+                />
+              </div>
             </div>
 
             {/* Additions */}

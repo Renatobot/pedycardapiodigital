@@ -32,21 +32,9 @@ interface DeliveryZone {
 
 interface DeliveryZonesProps {
   establishmentId: string;
-  currentSettings: {
-    delivery_fee: number;
-    min_order_value: number;
-    free_delivery_min: number | null;
-    accept_pickup: boolean;
-  };
-  onSettingsUpdate: (settings: {
-    delivery_fee?: number;
-    min_order_value?: number;
-    free_delivery_min?: number | null;
-    accept_pickup?: boolean;
-  }) => void;
 }
 
-export function DeliveryZones({ establishmentId, currentSettings, onSettingsUpdate }: DeliveryZonesProps) {
+export function DeliveryZones({ establishmentId }: DeliveryZonesProps) {
   const { toast } = useToast();
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,35 +51,53 @@ export function DeliveryZones({ establishmentId, currentSettings, onSettingsUpda
 
   // Settings state
   const [settings, setSettings] = useState({
-    defaultFee: currentSettings.delivery_fee.toString(),
-    minOrderValue: currentSettings.min_order_value.toString(),
-    freeDeliveryMin: currentSettings.free_delivery_min?.toString() || '',
-    acceptPickup: currentSettings.accept_pickup,
+    defaultFee: '0',
+    minOrderValue: '0',
+    freeDeliveryMin: '',
+    acceptPickup: false,
   });
 
   useEffect(() => {
-    fetchZones();
+    fetchData();
   }, [establishmentId]);
 
-  const fetchZones = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch establishment settings
+      const { data: estData } = await supabase
+        .from('establishments')
+        .select('delivery_fee, min_order_value, free_delivery_min, accept_pickup')
+        .eq('id', establishmentId)
+        .single();
+
+      if (estData) {
+        setSettings({
+          defaultFee: (estData.delivery_fee || 0).toString(),
+          minOrderValue: (estData.min_order_value || 0).toString(),
+          freeDeliveryMin: estData.free_delivery_min?.toString() || '',
+          acceptPickup: estData.accept_pickup || false,
+        });
+      }
+
+      // Fetch zones
+      const { data: zonesData, error } = await supabase
         .from('delivery_zones')
         .select('*')
         .eq('establishment_id', establishmentId)
         .order('neighborhood');
 
       if (error) throw error;
-      setZones((data || []).map(z => ({
+      setZones((zonesData || []).map(z => ({
         ...z,
         delivery_type: z.delivery_type as 'paid' | 'free',
       })));
     } catch (error) {
-      console.error('Error fetching delivery zones:', error);
+      console.error('Error fetching delivery data:', error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -112,7 +118,6 @@ export function DeliveryZones({ establishmentId, currentSettings, onSettingsUpda
 
       if (error) throw error;
 
-      onSettingsUpdate(updates);
       toast({
         title: 'Configurações salvas!',
         description: 'As configurações de entrega foram atualizadas.',

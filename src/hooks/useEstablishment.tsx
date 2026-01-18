@@ -36,6 +36,14 @@ export interface Product {
   image_url: string | null;
   available: boolean;
   created_at: string;
+  // Advanced fields
+  unit_type: string | null;
+  is_promotional: boolean | null;
+  original_price: number | null;
+  promotional_price: number | null;
+  max_quantity: number | null;
+  subject_to_availability: boolean | null;
+  allow_observations: boolean | null;
 }
 
 export interface ProductAddition {
@@ -171,6 +179,13 @@ export function useEstablishment() {
     description?: string;
     price: number;
     image_url?: string;
+    unit_type?: string;
+    is_promotional?: boolean;
+    original_price?: number;
+    promotional_price?: number;
+    max_quantity?: number;
+    subject_to_availability?: boolean;
+    allow_observations?: boolean;
   }) => {
     if (!establishment) return null;
 
