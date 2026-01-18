@@ -2,18 +2,15 @@ import { Link } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Crown, CheckCircle2, MessageCircle, ArrowLeft, Clock, X } from 'lucide-react';
+import { Crown, CheckCircle2, MessageCircle, ArrowLeft, Clock } from 'lucide-react';
 import { openWhatsApp, generateUpgradeMessage, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 
 const trialFeatures = [
-  'Cardápio digital',
-  'Até 5 categorias',
-  'Até 10 produtos',
+  'Cardápio digital ilimitado',
+  'Produtos e categorias ilimitados',
+  'Todas as configurações liberadas',
   'Pedidos via WhatsApp',
-];
-
-const trialLimitations = [
-  'Sem configurações avançadas',
+  'Acesso completo por 7 dias',
 ];
 
 const benefits = [
@@ -69,14 +66,8 @@ export default function UpgradePage() {
               <ul className="space-y-2 mb-4">
                 {trialFeatures.map((feature, index) => (
                   <li key={index} className="flex items-center gap-3 text-foreground">
-                    <CheckCircle2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-secondary flex-shrink-0" />
                     <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-                {trialLimitations.map((limitation, index) => (
-                  <li key={index} className="flex items-center gap-3 text-muted-foreground">
-                    <X className="w-4 h-4 text-destructive/60 flex-shrink-0" />
-                    <span className="text-sm">{limitation}</span>
                   </li>
                 ))}
               </ul>
