@@ -15,6 +15,21 @@
     <meta name="apple-mobile-web-app-title" content="PEDY" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
 
+    <!-- PWA Redirect - Runs BEFORE React for iOS/Mac -->
+    <script>
+      (function() {
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                           window.navigator.standalone === true;
+        
+        if (isStandalone && window.location.pathname === '/') {
+          var savedUrl = localStorage.getItem('pwa-start-url');
+          if (savedUrl && savedUrl !== '/') {
+            window.location.replace(savedUrl);
+          }
+        }
+      })();
+    </script>
+
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/sHbkpzSD9eeIVXEnPX81oS9rbS23/social-images/social-1768600613083-logo pedy.jpg">

@@ -31,13 +31,37 @@ const isMacSafari = (): boolean => {
          !/Chrome|CriOS|Chromium|Edg/.test(navigator.userAgent);
 };
 
-export function PWAInstallPrompt() {
+interface PWAInstallPromptProps {
+  establishmentName?: string | null;
+  establishmentLogo?: string | null;
+}
+
+export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAInstallPromptProps = {}) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [showMacSafariPrompt, setShowMacSafariPrompt] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
+
+  // Atualizar meta tags quando dados do estabelecimento chegarem
+  useEffect(() => {
+    if (establishmentName) {
+      // Atualizar apple-mobile-web-app-title para iOS
+      const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appleTitle) {
+        appleTitle.setAttribute('content', establishmentName);
+      }
+      
+      // Atualizar apple-touch-icon se tiver logo
+      if (establishmentLogo) {
+        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleIcon) {
+          appleIcon.setAttribute('href', establishmentLogo);
+        }
+      }
+    }
+  }, [establishmentName, establishmentLogo]);
 
   useEffect(() => {
     // Verificar se já está instalado

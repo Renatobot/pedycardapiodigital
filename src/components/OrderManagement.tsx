@@ -139,6 +139,40 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     }
   };
 
+  const testPushNotification = async () => {
+    try {
+      toast({
+        title: '🔔 Enviando teste...',
+        description: 'Aguarde a notificação chegar.',
+      });
+
+      const { data, error } = await supabase.functions.invoke('send-store-push-notification', {
+        body: {
+          order_id: 'test-' + Date.now(),
+          establishment_id: establishmentId,
+          customer_name: 'Teste de Notificação',
+          total: 99.90,
+        },
+      });
+
+      if (error) throw error;
+
+      console.log('Push test result:', data);
+      
+      toast({
+        title: '✅ Teste enviado!',
+        description: 'Se configurado corretamente, você receberá uma notificação.',
+      });
+    } catch (error) {
+      console.error('Push test failed:', error);
+      toast({
+        title: 'Erro no teste',
+        description: 'Não foi possível enviar. Verifique os logs.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
@@ -207,7 +241,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [establishmentId, toast]);
+  }, [establishmentId, toast, soundEnabled]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(orderId);
@@ -473,6 +507,20 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                 <BellOff className="h-4 w-4" />
               )}
               <span className="hidden sm:inline">{pushEnabled ? 'Push ativo' : 'Ativar Push'}</span>
+            </Button>
+          )}
+          
+          {/* Test Push Button - only when push is enabled */}
+          {pushEnabled && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={testPushNotification}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+              title="Testar notificação push"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Testar</span>
             </Button>
           )}
           
