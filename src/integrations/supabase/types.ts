@@ -241,6 +241,7 @@ export type Database = {
           delivery_fee: number | null
           email: string
           free_delivery_min: number | null
+          has_completed_onboarding: boolean | null
           has_pro_plus: boolean | null
           id: string
           logo_url: string | null
@@ -276,6 +277,7 @@ export type Database = {
           delivery_fee?: number | null
           email: string
           free_delivery_min?: number | null
+          has_completed_onboarding?: boolean | null
           has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
@@ -311,6 +313,7 @@ export type Database = {
           delivery_fee?: number | null
           email?: string
           free_delivery_min?: number | null
+          has_completed_onboarding?: boolean | null
           has_pro_plus?: boolean | null
           id?: string
           logo_url?: string | null
