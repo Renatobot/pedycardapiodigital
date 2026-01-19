@@ -22,6 +22,8 @@ interface UseStorePushNotificationsResult {
   permission: NotificationPermission | 'default';
   isSubscribed: boolean;
   isLoading: boolean;
+  isIOS: boolean;
+  isPWAInstalled: boolean;
   subscribe: (establishmentId: string) => Promise<boolean>;
   unsubscribe: () => Promise<boolean>;
 }
@@ -31,9 +33,22 @@ export function useStorePushNotifications(): UseStorePushNotificationsResult {
   const [permission, setPermission] = useState<NotificationPermission | 'default'>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isPWAInstalled, setIsPWAInstalled] = useState(false);
 
   useEffect(() => {
-    // Check browser support
+    // Detect iOS
+    const userAgent = navigator.userAgent;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+    
+    // Check if running as installed PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as any).standalone === true;
+    setIsPWAInstalled(isStandalone);
+    
+    // Check browser support for push notifications
+    // Note: iOS Safari only supports Push in installed PWAs (iOS 16.4+)
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
 
@@ -180,6 +195,8 @@ export function useStorePushNotifications(): UseStorePushNotificationsResult {
     permission,
     isSubscribed,
     isLoading,
+    isIOS,
+    isPWAInstalled,
     subscribe,
     unsubscribe,
   };

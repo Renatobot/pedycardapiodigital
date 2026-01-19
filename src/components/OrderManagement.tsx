@@ -105,7 +105,15 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [loadingHistory, setLoadingHistory] = useState(false);
   
   const { toast } = useToast();
-  const { isSupported: pushSupported, isSubscribed: pushEnabled, isLoading: pushLoading, subscribe: subscribePush, unsubscribe: unsubscribePush } = useStorePushNotifications();
+  const { 
+    isSupported: pushSupported, 
+    isSubscribed: pushEnabled, 
+    isLoading: pushLoading, 
+    isIOS,
+    isPWAInstalled,
+    subscribe: subscribePush, 
+    unsubscribe: unsubscribePush 
+  } = useStorePushNotifications();
   
   // Audio ref for new order notification
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -697,8 +705,8 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">Pedidos</h2>
         <div className="flex items-center gap-2">
-          {/* Push Notification Button */}
-          {pushSupported && (
+          {/* Push Notification Button - shows if supported OR if iOS without PWA (to show warning) */}
+          {pushSupported ? (
             <Button
               variant={pushEnabled ? "outline" : "default"}
               size="sm"
@@ -729,7 +737,23 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
               )}
               <span className="hidden sm:inline">{pushEnabled ? 'Push ativo' : 'Ativar Push'}</span>
             </Button>
-          )}
+          ) : isIOS && !isPWAInstalled ? (
+            /* iOS without PWA installed - show informative button */
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                toast({
+                  title: '📱 Instale o app primeiro',
+                  description: 'No iPhone/iPad, toque no ícone de compartilhar ⬆️ e depois "Adicionar à Tela de Início" para receber notificações.',
+                });
+              }}
+              className="gap-2 border-amber-400 text-amber-600 hover:bg-amber-50"
+            >
+              <BellOff className="h-4 w-4" />
+              <span className="hidden sm:inline">Push (instale o app)</span>
+            </Button>
+          ) : null}
           
           {/* Test Push Button - only when push is enabled */}
           {pushEnabled && (
@@ -766,6 +790,17 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
           </Button>
         </div>
       </div>
+      
+      {/* iOS PWA Warning Banner */}
+      {isIOS && !isPWAInstalled && (
+        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+          <Bell className="h-4 w-4 flex-shrink-0" />
+          <span>
+            📱 <strong>iPhone/iPad:</strong> Para receber notificações push, instale o app na tela inicial. 
+            Toque no ícone de compartilhar ⬆️ e depois em "Adicionar à Tela de Início".
+          </span>
+        </div>
+      )}
 
       {/* Resumo do Dia */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">

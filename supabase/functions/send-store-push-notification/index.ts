@@ -42,7 +42,7 @@ function toArrayBuffer(arr: Uint8Array): ArrayBuffer {
   return buffer;
 }
 
-// Gerar JWT para autenticação VAPID
+// Gerar JWT para autenticação VAPID usando JWK
 async function generateVapidJwt(endpoint: string, vapidPrivateKeyBase64: string): Promise<string> {
   const audience = new URL(endpoint).origin;
   const expiration = Math.floor(Date.now() / 1000) + 12 * 60 * 60;
@@ -58,16 +58,32 @@ async function generateVapidJwt(endpoint: string, vapidPrivateKeyBase64: string)
   const payloadEncoded = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${headerEncoded}.${payloadEncoded}`;
 
+  // Decode private key and convert to base64url for JWK
   const privateKeyBytes = base64UrlDecode(vapidPrivateKeyBase64);
-  const pkcs8Key = createPkcs8FromRaw(privateKeyBytes);
+  // Ensure we only use the first 32 bytes (raw private key)
+  const rawPrivateKey = privateKeyBytes.length > 32 ? privateKeyBytes.slice(0, 32) : privateKeyBytes;
+  const privateKeyB64 = base64UrlEncode(rawPrivateKey);
   
+  console.log('[Push] Importing private key via JWK, raw key length:', rawPrivateKey.length);
+  
+  // Import private key using JWK format (much simpler and more compatible)
   const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    toArrayBuffer(pkcs8Key),
+    'jwk',
+    {
+      kty: 'EC',
+      crv: 'P-256',
+      d: privateKeyB64,
+      // x and y are required for JWK but we can derive them or use placeholders
+      // For signing, we only need d (private key scalar)
+      x: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // Placeholder - not used for signing
+      y: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // Placeholder - not used for signing
+    },
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
   );
+
+  console.log('[Push] Private key imported successfully');
 
   const signature = await crypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
@@ -78,63 +94,9 @@ async function generateVapidJwt(endpoint: string, vapidPrivateKeyBase64: string)
   const signatureRaw = derToRaw(new Uint8Array(signature));
   const signatureEncoded = base64UrlEncode(signatureRaw);
 
-  return `${unsignedToken}.${signatureEncoded}`;
-}
+  console.log('[Push] JWT signed successfully');
 
-// Converter chave privada raw para formato PKCS8 completo
-function createPkcs8FromRaw(rawKey: Uint8Array): Uint8Array {
-  // Se já está em formato PKCS8 (começa com SEQUENCE tag e tem tamanho adequado), retornar como está
-  if (rawKey[0] === 0x30 && rawKey.length > 32) {
-    console.log('[Push] Key already in PKCS8 format, length:', rawKey.length);
-    return rawKey;
-  }
-  
-  // Garantir que temos apenas os 32 bytes da chave privada
-  let keyBytes = rawKey;
-  if (rawKey.length > 32) {
-    keyBytes = rawKey.slice(0, 32);
-  }
-  
-  console.log('[Push] Converting raw key to PKCS8, input length:', rawKey.length);
-  
-  // PKCS8 header correto para EC P-256 (inclui estrutura completa)
-  // Estrutura:
-  // SEQUENCE {
-  //   INTEGER 0 (version)
-  //   SEQUENCE { OID ecPublicKey, OID P-256 }
-  //   OCTET STRING {
-  //     SEQUENCE {
-  //       INTEGER 1 (version)
-  //       OCTET STRING (32 bytes private key)
-  //       [1] OPTIONAL BIT STRING (public key placeholder)
-  //     }
-  //   }
-  // }
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x81, 0x87, // SEQUENCE, 135 bytes total
-    0x02, 0x01, 0x00, // INTEGER 0 (version)
-    0x30, 0x13, // SEQUENCE, 19 bytes (AlgorithmIdentifier)
-      0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // OID 1.2.840.10045.2.1 (ecPublicKey)
-      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // OID 1.2.840.10045.3.1.7 (P-256)
-    0x04, 0x6d, // OCTET STRING, 109 bytes
-      0x30, 0x6b, // SEQUENCE, 107 bytes (ECPrivateKey)
-        0x02, 0x01, 0x01, // INTEGER 1 (version)
-        0x04, 0x20, // OCTET STRING, 32 bytes (private key follows)
-  ]);
-  
-  // Footer com placeholder para chave pública (necessário para compatibilidade)
-  const pkcs8Footer = new Uint8Array([
-    0xa1, 0x44, // [1] EXPLICIT, 68 bytes
-      0x03, 0x42, 0x00, 0x04, // BIT STRING, 66 bytes, 0 unused bits, uncompressed point
-  ]);
-  
-  // Placeholder para chave pública (64 bytes de zeros - não usado para assinatura)
-  const publicKeyPlaceholder = new Uint8Array(64).fill(0);
-  
-  const result = concatUint8Arrays(pkcs8Header, keyBytes, pkcs8Footer, publicKeyPlaceholder);
-  console.log('[Push] PKCS8 key created, output length:', result.length);
-  
-  return result;
+  return `${unsignedToken}.${signatureEncoded}`;
 }
 
 // Converter assinatura DER para formato raw
