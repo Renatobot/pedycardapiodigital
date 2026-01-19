@@ -117,8 +117,6 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   
   // Audio ref for new order notification
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Ref for continuous alert interval
-  const alertIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Wake Lock ref
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   
@@ -126,6 +124,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   useEffect(() => {
     audioRef.current = new Audio('/sounds/new-order.mp3');
     audioRef.current.volume = 1.0; // VOLUME MÁXIMO
+    audioRef.current.loop = true; // SOM EM LOOP CONTÍNUO
     
     // Check if sound was previously enabled
     const storedSoundEnabled = localStorage.getItem('orderSoundEnabled');
@@ -134,9 +133,10 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     }
 
     return () => {
-      // Cleanup interval on unmount
-      if (alertIntervalRef.current) {
-        clearInterval(alertIntervalRef.current);
+      // Stop audio on unmount
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
       // Release wake lock on unmount
       if (wakeLockRef.current) {
@@ -145,37 +145,45 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     };
   }, []);
 
-  // Play sound helper function
-  const playNotificationSound = () => {
+  // Stop continuous sound
+  const stopContinuousSound = () => {
     if (audioRef.current) {
-      audioRef.current.volume = 1.0; // VOLUME MÁXIMO
+      audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+      console.log('[OrderManagement] Continuous sound stopped');
     }
   };
 
-  // Manage continuous alert for unviewed orders
+  // Start continuous sound
+  const startContinuousSound = () => {
+    if (audioRef.current && soundEnabled && soundUnlocked) {
+      audioRef.current.volume = 1.0;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+      console.log('[OrderManagement] Continuous sound started');
+    }
+  };
+
+  // Manage continuous sound for unviewed pending orders
   useEffect(() => {
-    const hasUnviewedOrders = unviewedOrderIds.length > 0;
+    // Check for unviewed PENDING orders only
+    const hasUnviewedPendingOrders = orders.some(
+      order => order.status === 'pending' && unviewedOrderIds.includes(order.id)
+    );
     
-    // Start/stop continuous alert interval
-    if (hasUnviewedOrders && soundEnabled && !alertIntervalRef.current) {
-      console.log('[OrderManagement] Starting continuous alert for', unviewedOrderIds.length, 'unviewed orders');
-      alertIntervalRef.current = setInterval(() => {
-        if (soundEnabled && unviewedOrderIds.length > 0) {
-          console.log('[OrderManagement] Playing alert sound (unviewed orders:', unviewedOrderIds.length, ')');
-          playNotificationSound();
-        }
-      }, 15000); // 15 seconds
-    } else if (!hasUnviewedOrders && alertIntervalRef.current) {
-      console.log('[OrderManagement] Stopping continuous alert - all orders viewed');
-      clearInterval(alertIntervalRef.current);
-      alertIntervalRef.current = null;
+    console.log('[OrderManagement] Unviewed pending orders:', hasUnviewedPendingOrders, 'Sound enabled:', soundEnabled, 'Unlocked:', soundUnlocked);
+    
+    if (hasUnviewedPendingOrders && soundEnabled && soundUnlocked) {
+      // Start continuous loop sound
+      startContinuousSound();
+    } else {
+      // Stop sound
+      stopContinuousSound();
     }
 
     // Manage Wake Lock
     const manageWakeLock = async () => {
-      if (hasUnviewedOrders && 'wakeLock' in navigator) {
+      if (hasUnviewedPendingOrders && 'wakeLock' in navigator) {
         try {
           if (!wakeLockRef.current) {
             wakeLockRef.current = await navigator.wakeLock.request('screen');
@@ -184,7 +192,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
         } catch (err) {
           console.log('[OrderManagement] Wake Lock failed:', err);
         }
-      } else if (!hasUnviewedOrders && wakeLockRef.current) {
+      } else if (!hasUnviewedPendingOrders && wakeLockRef.current) {
         await wakeLockRef.current.release().catch(console.error);
         wakeLockRef.current = null;
         console.log('[OrderManagement] Wake Lock released');
@@ -192,7 +200,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     };
     manageWakeLock();
 
-  }, [unviewedOrderIds, soundEnabled]);
+  }, [orders, unviewedOrderIds, soundEnabled, soundUnlocked]);
 
   // Mark order as viewed (removes from unviewed list)
   const markOrderAsViewed = (orderId: string) => {
@@ -404,11 +412,10 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             setUnviewedOrderIds(prev => [...prev, newOrderId]);
           }
           
-          // Play notification sound immediately (only if enabled)
-          if (soundEnabled) {
-            playNotificationSound();
-          }
+          // The continuous sound will start automatically via useEffect
+          // when unviewedOrderIds updates and orders are fetched
           
+
           // Show toast notification
           toast({
             title: '🔔 Novo Pedido!',
