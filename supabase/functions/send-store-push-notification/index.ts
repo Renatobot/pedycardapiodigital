@@ -81,32 +81,41 @@ async function generateVapidJwt(endpoint: string, vapidPrivateKeyBase64: string)
   return `${unsignedToken}.${signatureEncoded}`;
 }
 
-// Converter chave privada raw para formato PKCS8
+// Converter chave privada raw para formato PKCS8 (sem chave pública - mais simples)
 function createPkcs8FromRaw(rawKey: Uint8Array): Uint8Array {
+  // Se já está em formato PKCS8 (começa com SEQUENCE tag), retornar como está
   if (rawKey[0] === 0x30 && rawKey.length > 32) {
     return rawKey;
   }
   
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13,
-    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
-    0x03, 0x01, 0x07, 0x04, 0x6d, 0x30, 0x6b, 0x02,
-    0x01, 0x01, 0x04, 0x20
+  // Pegar apenas os primeiros 32 bytes da chave privada
+  const keyBytes = rawKey.length > 32 ? rawKey.slice(0, 32) : rawKey;
+  
+  // Estrutura PKCS8 simplificada para EC P-256 SEM chave pública (65 bytes total)
+  // SEQUENCE (0x30) + comprimento total
+  // ├── INTEGER 0 (version)
+  // ├── SEQUENCE (AlgorithmIdentifier)
+  // │   ├── OID 1.2.840.10045.2.1 (ecPublicKey)
+  // │   └── OID 1.2.840.10045.3.1.7 (prime256v1/P-256)
+  // └── OCTET STRING (privateKeyInfo)
+  //     └── SEQUENCE (ECPrivateKey)
+  //         ├── INTEGER 1 (version)
+  //         └── OCTET STRING (32 bytes private key)
+  
+  const pkcs8 = new Uint8Array([
+    0x30, 0x41, // SEQUENCE, 65 bytes
+    0x02, 0x01, 0x00, // INTEGER 0 (version)
+    0x30, 0x13, // SEQUENCE, 19 bytes (AlgorithmIdentifier)
+      0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // OID ecPublicKey
+      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // OID P-256
+    0x04, 0x27, // OCTET STRING, 39 bytes
+      0x30, 0x25, // SEQUENCE, 37 bytes (ECPrivateKey)
+        0x02, 0x01, 0x01, // INTEGER 1 (version)
+        0x04, 0x20, // OCTET STRING, 32 bytes (private key follows)
   ]);
   
-  let keyBytes = rawKey;
-  if (rawKey.length > 32) {
-    keyBytes = rawKey.slice(0, 32);
-  }
-  
-  const pkcs8Footer = new Uint8Array([
-    0xa1, 0x44, 0x03, 0x42, 0x00, 0x04
-  ]);
-  
-  const publicKeyPlaceholder = new Uint8Array(64).fill(0);
-  
-  return concatUint8Arrays(pkcs8Header, keyBytes, pkcs8Footer, publicKeyPlaceholder);
+  // Concatenar estrutura + chave privada
+  return concatUint8Arrays(pkcs8, keyBytes);
 }
 
 // Converter assinatura DER para formato raw
