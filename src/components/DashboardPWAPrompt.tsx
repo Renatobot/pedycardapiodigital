@@ -31,6 +31,26 @@ const isMacSafari = (): boolean => {
          !/Chrome|CriOS|Chromium|Edg/.test(navigator.userAgent);
 };
 
+// Função para salvar URL no Cache API (compartilhado Safari <-> PWA no iOS)
+const saveStartUrlToCacheAPI = (url: string) => {
+  // Salvar via Service Worker
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SET_START_URL',
+      url: url
+    });
+  }
+  
+  // Também salvar diretamente via Cache API (mais confiável no iOS)
+  if ('caches' in window) {
+    caches.open('pedy-pwa-config').then((cache) => {
+      const response = new Response(JSON.stringify({ startUrl: url }));
+      cache.put('start-url', response);
+      console.log('[PWA] Start URL saved to Cache API:', url);
+    }).catch(() => {});
+  }
+};
+
 export function DashboardPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -50,6 +70,7 @@ export function DashboardPWAPrompt() {
     if (isIOS()) {
       // Salvar URL atual para redirecionamento após instalação manual
       localStorage.setItem('pwa-start-url', '/dashboard');
+      saveStartUrlToCacheAPI('/dashboard'); // Salvar também no Cache API para iOS
       
       setIsSafari(isIOSSafari());
       const dismissed = localStorage.getItem('pwa-dashboard-ios-dismissed');
@@ -63,6 +84,7 @@ export function DashboardPWAPrompt() {
     if (isMacSafari()) {
       // Salvar URL atual para redirecionamento após instalação manual
       localStorage.setItem('pwa-start-url', '/dashboard');
+      saveStartUrlToCacheAPI('/dashboard'); // Salvar também no Cache API
       
       const dismissed = localStorage.getItem('pwa-dashboard-mac-safari-dismissed');
       if (!dismissed || Date.now() - parseInt(dismissed, 10) > 7 * 24 * 60 * 60 * 1000) {
@@ -107,6 +129,7 @@ export function DashboardPWAPrompt() {
 
     // Salvar que deve abrir no dashboard
     localStorage.setItem('pwa-start-url', '/dashboard');
+    saveStartUrlToCacheAPI('/dashboard');
 
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;

@@ -3,6 +3,7 @@
 // Service Worker para Push Notifications do PEDY
 
 const CACHE_NAME = 'pedy-v1';
+const PWA_CONFIG_CACHE = 'pedy-pwa-config';
 
 // Instalar service worker
 self.addEventListener('install', (event) => {
@@ -14,6 +15,29 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(clients.claim());
+});
+
+// Mensagens do cliente (para salvar/recuperar start-url)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SET_START_URL') {
+    caches.open(PWA_CONFIG_CACHE).then((cache) => {
+      const response = new Response(JSON.stringify({ startUrl: event.data.url }));
+      cache.put('start-url', response);
+      console.log('[SW] Start URL saved:', event.data.url);
+    });
+  }
+  
+  if (event.data && event.data.type === 'GET_START_URL') {
+    caches.open(PWA_CONFIG_CACHE).then((cache) => {
+      cache.match('start-url').then((response) => {
+        if (response) {
+          response.json().then((data) => {
+            event.source.postMessage({ type: 'START_URL', url: data.startUrl });
+          });
+        }
+      });
+    });
+  }
 });
 
 // Receber push notification
