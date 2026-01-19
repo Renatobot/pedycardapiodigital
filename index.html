@@ -22,26 +22,37 @@
                            window.navigator.standalone === true;
         
         if (isStandalone && window.location.pathname === '/') {
+          console.log('[PWA Pre-React] Standalone mode detected, checking for redirect...');
+          
           // Tentar localStorage primeiro (funciona em Android/Desktop)
           var savedUrl = localStorage.getItem('pwa-start-url');
           if (savedUrl && savedUrl !== '/') {
+            console.log('[PWA Pre-React] Redirecting from localStorage:', savedUrl);
             window.location.replace(savedUrl);
             return;
           }
           
           // Para iOS: tentar buscar do Cache API (compartilhado Safari <-> PWA)
+          // Usar Promise com retry para garantir que o cache esteja pronto
           if ('caches' in window) {
-            caches.open('pedy-pwa-config').then(function(cache) {
-              cache.match('start-url').then(function(response) {
-                if (response) {
-                  response.json().then(function(data) {
-                    if (data.startUrl && data.startUrl !== '/') {
-                      window.location.replace(data.startUrl);
-                    }
-                  });
-                }
-              });
-            }).catch(function() {});
+            var tryRedirect = function(attempt) {
+              caches.open('pedy-pwa-config').then(function(cache) {
+                cache.match('start-url').then(function(response) {
+                  if (response) {
+                    response.json().then(function(data) {
+                      if (data.startUrl && data.startUrl !== '/' && window.location.pathname === '/') {
+                        console.log('[PWA Pre-React] Redirecting from Cache API:', data.startUrl);
+                        window.location.replace(data.startUrl);
+                      }
+                    });
+                  } else if (attempt < 2) {
+                    // Retry após 200ms se não encontrou na primeira tentativa
+                    setTimeout(function() { tryRedirect(attempt + 1); }, 200);
+                  }
+                });
+              }).catch(function() {});
+            };
+            tryRedirect(0);
           }
         }
       })();
