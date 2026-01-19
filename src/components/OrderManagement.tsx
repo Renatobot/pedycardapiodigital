@@ -78,34 +78,103 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(false);
+  const [unviewedOrderIds, setUnviewedOrderIds] = useState<string[]>([]);
   const { toast } = useToast();
   const { isSupported: pushSupported, isSubscribed: pushEnabled, isLoading: pushLoading, subscribe: subscribePush, unsubscribe: unsubscribePush } = useStorePushNotifications();
   
   // Audio ref for new order notification
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Ref for continuous alert interval
+  const alertIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Wake Lock ref
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   
   // Initialize audio on mount and check stored preference
   useEffect(() => {
     audioRef.current = new Audio('/sounds/new-order.mp3');
-    audioRef.current.volume = 0.7;
+    audioRef.current.volume = 1.0; // VOLUME MÁXIMO
     
     // Check if sound was previously enabled
     const storedSoundEnabled = localStorage.getItem('orderSoundEnabled');
     if (storedSoundEnabled === 'true') {
       setSoundEnabled(true);
     }
+
+    return () => {
+      // Cleanup interval on unmount
+      if (alertIntervalRef.current) {
+        clearInterval(alertIntervalRef.current);
+      }
+      // Release wake lock on unmount
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(console.error);
+      }
+    };
   }, []);
+
+  // Play sound helper function
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.volume = 1.0; // VOLUME MÁXIMO
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+    }
+  };
+
+  // Manage continuous alert for unviewed orders
+  useEffect(() => {
+    const hasUnviewedOrders = unviewedOrderIds.length > 0;
+    
+    // Start/stop continuous alert interval
+    if (hasUnviewedOrders && soundEnabled && !alertIntervalRef.current) {
+      console.log('[OrderManagement] Starting continuous alert for', unviewedOrderIds.length, 'unviewed orders');
+      alertIntervalRef.current = setInterval(() => {
+        if (soundEnabled && unviewedOrderIds.length > 0) {
+          console.log('[OrderManagement] Playing alert sound (unviewed orders:', unviewedOrderIds.length, ')');
+          playNotificationSound();
+        }
+      }, 15000); // 15 seconds
+    } else if (!hasUnviewedOrders && alertIntervalRef.current) {
+      console.log('[OrderManagement] Stopping continuous alert - all orders viewed');
+      clearInterval(alertIntervalRef.current);
+      alertIntervalRef.current = null;
+    }
+
+    // Manage Wake Lock
+    const manageWakeLock = async () => {
+      if (hasUnviewedOrders && 'wakeLock' in navigator) {
+        try {
+          if (!wakeLockRef.current) {
+            wakeLockRef.current = await navigator.wakeLock.request('screen');
+            console.log('[OrderManagement] Wake Lock acquired');
+          }
+        } catch (err) {
+          console.log('[OrderManagement] Wake Lock failed:', err);
+        }
+      } else if (!hasUnviewedOrders && wakeLockRef.current) {
+        await wakeLockRef.current.release().catch(console.error);
+        wakeLockRef.current = null;
+        console.log('[OrderManagement] Wake Lock released');
+      }
+    };
+    manageWakeLock();
+
+  }, [unviewedOrderIds, soundEnabled]);
+
+  // Mark order as viewed (removes from unviewed list)
+  const markOrderAsViewed = (orderId: string) => {
+    setUnviewedOrderIds(prev => prev.filter(id => id !== orderId));
+  };
 
   const enableSound = async () => {
     if (audioRef.current) {
       try {
-        audioRef.current.volume = 0.3;
+        audioRef.current.volume = 1.0; // VOLUME MÁXIMO
         audioRef.current.currentTime = 0;
         await audioRef.current.play();
         
         setSoundUnlocked(true);
         setSoundEnabled(true);
-        audioRef.current.volume = 0.7;
         localStorage.setItem('orderSoundEnabled', 'true');
         
         toast({
@@ -208,11 +277,18 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
           table: 'orders',
           filter: `establishment_id=eq.${establishmentId}`,
         },
-        () => {
-          // Play notification sound for new orders (only if enabled)
-          if (soundEnabled && audioRef.current) {
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(err => console.log('Audio play failed:', err));
+        (payload: any) => {
+          const newOrderId = payload.new?.id;
+          console.log('[OrderManagement] New order received:', newOrderId);
+          
+          // Add to unviewed orders list
+          if (newOrderId) {
+            setUnviewedOrderIds(prev => [...prev, newOrderId]);
+          }
+          
+          // Play notification sound immediately (only if enabled)
+          if (soundEnabled) {
+            playNotificationSound();
           }
           
           // Show toast notification
@@ -261,6 +337,9 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
           order.id === orderId ? { ...order, status: newStatus } : order
         )
       );
+
+      // Mark order as viewed when status is changed (stops alert)
+      markOrderAsViewed(orderId);
 
       toast({
         title: 'Status atualizado!',
@@ -315,6 +394,8 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsOpen(true);
+    // Mark order as viewed when details are opened
+    markOrderAsViewed(order.id);
   };
 
   const formatTimeAgo = (dateString: string) => {

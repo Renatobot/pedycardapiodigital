@@ -188,6 +188,7 @@ export default function DashboardPage() {
   useEffect(() => {
     audioRef.current = new Audio('/sounds/new-order.mp3');
     audioRef.current.preload = 'auto';
+    audioRef.current.volume = 1.0; // VOLUME MÁXIMO
   }, []);
 
   // Global Realtime listener for new orders (works on ANY tab)
@@ -207,8 +208,9 @@ export default function DashboardPage() {
         (payload: any) => {
           console.log('[Dashboard Global] Novo pedido recebido:', payload);
           
-          // Play sound if enabled
+          // Play sound if enabled - VOLUME MÁXIMO
           if (soundEnabled && audioRef.current) {
+            audioRef.current.volume = 1.0; // Garantir volume máximo
             audioRef.current.currentTime = 0;
             audioRef.current.play().catch(console.error);
           }
