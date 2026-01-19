@@ -16,7 +16,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar, Volume2, VolumeX, Bell, BellOff } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar as CalendarIcon, Volume2, VolumeX, Bell, BellOff, Trash2, History } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +71,7 @@ interface Order {
   observations: string | null;
   items: OrderItem[];
   created_at: string;
+  delivery_type?: string;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -79,6 +97,13 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(false);
   const [unviewedOrderIds, setUnviewedOrderIds] = useState<string[]>([]);
+  const [deletingOrder, setDeletingOrder] = useState<string | null>(null);
+  
+  // History tab states
+  const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
+  const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  
   const { toast } = useToast();
   const { isSupported: pushSupported, isSubscribed: pushEnabled, isLoading: pushLoading, subscribe: subscribePush, unsubscribe: unsubscribePush } = useStorePushNotifications();
   
@@ -242,12 +267,22 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     }
   };
 
+  // Fetch orders for today only (default)
   const fetchOrders = async () => {
     try {
+      // Início do dia atual (00:00:00)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('establishment_id', establishmentId)
+        .gte('created_at', today.toISOString())
+        .lte('created_at', endOfToday.toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -260,6 +295,81 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch orders for a specific date (history)
+  const fetchHistoryOrders = async (date: Date) => {
+    setLoadingHistory(true);
+    try {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('establishment_id', establishmentId)
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setHistoryOrders((data || []).map((order: any) => ({
+        ...order,
+        items: order.items as OrderItem[],
+      })));
+    } catch (error) {
+      console.error('Error fetching history orders:', error);
+      toast({
+        title: 'Erro ao carregar histórico',
+        description: 'Não foi possível buscar os pedidos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Delete an order
+  const deleteOrder = async (orderId: string) => {
+    setDeletingOrder(orderId);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      // Remove from local state (today's orders or history)
+      setOrders(prev => prev.filter(order => order.id !== orderId));
+      setHistoryOrders(prev => prev.filter(order => order.id !== orderId));
+      
+      // Remove from unviewed list if exists
+      markOrderAsViewed(orderId);
+      
+      // Close dialog if this order was open
+      if (selectedOrder?.id === orderId) {
+        setDetailsOpen(false);
+      }
+      
+      toast({
+        title: '🗑️ Pedido excluído',
+        description: 'O pedido foi removido com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Não foi possível excluir o pedido.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingOrder(null);
     }
   };
 
@@ -425,20 +535,13 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
 
   const counts = getOrderCounts();
 
-  // Daily summary calculation
+  // Daily summary calculation (from today's orders)
   const getTodaySummary = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todaysOrders = orders.filter(order => {
-      const orderDate = new Date(order.created_at);
-      orderDate.setHours(0, 0, 0, 0);
-      return orderDate.getTime() === today.getTime() && order.status !== 'cancelled';
-    });
+    const todaysOrders = orders.filter(order => order.status !== 'cancelled');
 
     const totalRevenue = todaysOrders.reduce((sum, order) => sum + order.total, 0);
-    const deliveryCount = todaysOrders.filter(o => (o as any).delivery_type !== 'pickup').length;
-    const pickupCount = todaysOrders.filter(o => (o as any).delivery_type === 'pickup').length;
+    const deliveryCount = todaysOrders.filter(o => o.delivery_type !== 'pickup').length;
+    const pickupCount = todaysOrders.filter(o => o.delivery_type === 'pickup').length;
 
     return {
       count: todaysOrders.length,
@@ -458,7 +561,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     );
   }
 
-  const OrderCard = ({ order }: { order: Order }) => {
+  const OrderCard = ({ order, showDeleteButton = false }: { order: Order; showDeleteButton?: boolean }) => {
     const statusInfo = STATUS_LABELS[order.status] || STATUS_LABELS.pending;
     const StatusIcon = statusInfo.icon;
 
@@ -545,6 +648,43 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             >
               <Eye className="w-4 h-4" />
             </Button>
+            
+            {/* Delete Button with confirmation */}
+            {showDeleteButton && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                    disabled={deletingOrder === order.id}
+                  >
+                    {deletingOrder === order.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação não pode ser desfeita. O pedido será removido permanentemente do sistema.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-500 hover:bg-red-600"
+                      onClick={() => deleteOrder(order.id)}
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -632,7 +772,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+              <CalendarIcon className="w-5 h-5 text-primary" />
               <span className="font-medium">
                 Hoje, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
               </span>
@@ -660,9 +800,9 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
       </Card>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="all" className="text-xs">
-            Todos ({orders.length})
+            Hoje ({orders.length})
           </TabsTrigger>
           <TabsTrigger value="pending" className="text-xs">
             Recebidos ({counts.pending})
@@ -673,6 +813,10 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
           <TabsTrigger value="on-the-way" className="text-xs">
             A caminho ({counts['on-the-way']})
           </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs flex items-center gap-1">
+            <History className="w-3 h-3" />
+            <span className="hidden sm:inline">Histórico</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
@@ -680,14 +824,14 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             <Card>
               <CardContent className="p-8 text-center">
                 <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nenhum pedido ainda.</p>
+                <p className="text-muted-foreground">Nenhum pedido hoje.</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Os pedidos aparecerão aqui quando os clientes finalizarem pelo cardápio.
                 </p>
               </CardContent>
             </Card>
           ) : (
-            orders.map(order => <OrderCard key={order.id} order={order} />)
+            orders.map(order => <OrderCard key={order.id} order={order} showDeleteButton />)
           )}
         </TabsContent>
 
@@ -703,11 +847,75 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
               </Card>
             ) : (
               getFilteredOrders(status).map(order => (
-                <OrderCard key={order.id} order={order} />
+                <OrderCard key={order.id} order={order} showDeleteButton />
               ))
             )}
           </TabsContent>
         ))}
+
+        {/* History Tab */}
+        <TabsContent value="history" className="mt-4 space-y-4">
+          {/* Date Picker */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {historyDate
+                    ? historyDate.toLocaleDateString('pt-BR')
+                    : 'Selecionar data'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={historyDate}
+                  onSelect={(date) => {
+                    setHistoryDate(date);
+                    if (date) fetchHistoryOrders(date);
+                  }}
+                  disabled={(date) => date > new Date()}
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {historyDate && (
+              <span className="text-sm text-muted-foreground">
+                {loadingHistory ? 'Carregando...' : `${historyOrders.length} pedido(s) encontrado(s)`}
+              </span>
+            )}
+          </div>
+
+          {/* History Orders List */}
+          {loadingHistory ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : !historyDate ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Selecione uma data para ver os pedidos anteriores.
+                </p>
+              </CardContent>
+            </Card>
+          ) : historyOrders.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Nenhum pedido em {historyDate.toLocaleDateString('pt-BR')}.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            historyOrders.map(order => (
+              <OrderCard key={order.id} order={order} showDeleteButton />
+            ))
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Order Details Dialog */}
@@ -869,24 +1077,60 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                 </Card>
               )}
 
-              <Select
-                value={selectedOrder.status}
-                onValueChange={(value) => {
-                  updateOrderStatus(selectedOrder.id, value);
-                  setSelectedOrder({ ...selectedOrder, status: value });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alterar status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pedido recebido</SelectItem>
-                  <SelectItem value="preparing">Em preparo</SelectItem>
-                  <SelectItem value="on-the-way">A caminho</SelectItem>
-                  <SelectItem value="delivered">Entregue</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={selectedOrder.status}
+                  onValueChange={(value) => {
+                    updateOrderStatus(selectedOrder.id, value);
+                    setSelectedOrder({ ...selectedOrder, status: value });
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Alterar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pedido recebido</SelectItem>
+                    <SelectItem value="preparing">Em preparo</SelectItem>
+                    <SelectItem value="on-the-way">A caminho</SelectItem>
+                    <SelectItem value="delivered">Entregue</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Delete button in details dialog */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      disabled={deletingOrder === selectedOrder.id}
+                    >
+                      {deletingOrder === selectedOrder.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. O pedido será removido permanentemente do sistema.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={() => deleteOrder(selectedOrder.id)}
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           )}
         </DialogContent>
