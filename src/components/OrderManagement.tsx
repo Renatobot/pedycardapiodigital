@@ -33,7 +33,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar as CalendarIcon, Volume2, VolumeX, Bell, BellOff, Trash2, History } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar as CalendarIcon, Volume2, VolumeX, Bell, BellOff, Trash2, History, Check } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -579,9 +579,15 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const OrderCard = ({ order, showDeleteButton = false }: { order: Order; showDeleteButton?: boolean }) => {
     const statusInfo = STATUS_LABELS[order.status] || STATUS_LABELS.pending;
     const StatusIcon = statusInfo.icon;
+    const isPending = order.status === 'pending';
+    const isUnviewed = unviewedOrderIds.includes(order.id);
 
     return (
-      <Card className="mb-3">
+      <Card className={`mb-3 transition-all ${
+        isPending && isUnviewed 
+          ? 'ring-2 ring-green-500 ring-offset-2 shadow-lg shadow-green-100 animate-pulse' 
+          : ''
+      }`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
@@ -638,6 +644,23 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             ))}
             {order.items.length > 2 && ` +${order.items.length - 2} itens`}
           </div>
+
+          {/* ACEITAR PEDIDO button - only for pending orders */}
+          {isPending && (
+            <Button
+              onClick={() => updateOrderStatus(order.id, 'preparing')}
+              disabled={updatingStatus === order.id}
+              className="w-full mb-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 text-base gap-2 shadow-lg"
+              size="lg"
+            >
+              {updatingStatus === order.id ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Check className="w-5 h-5" />
+              )}
+              ACEITAR PEDIDO
+            </Button>
+          )}
 
           <div className="flex items-center gap-2">
             <Select
