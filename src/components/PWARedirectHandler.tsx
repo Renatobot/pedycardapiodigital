@@ -6,8 +6,9 @@ export function PWARedirectHandler() {
   const location = useLocation();
 
   useEffect(() => {
-    // Verificar se está em modo standalone (PWA instalado)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    // Verificar se está em modo standalone (PWA instalado) - inclui iOS
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         (window.navigator as any).standalone === true;
     
     if (isStandalone && location.pathname === '/') {
       let redirectUrl: string | null = null;

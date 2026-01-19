@@ -531,6 +531,20 @@ function CheckoutContent() {
 
       if (error) {
         console.error('Error saving order:', error);
+      } else {
+        // Enviar push notification para o lojista
+        try {
+          await supabase.functions.invoke('send-store-push-notification', {
+            body: {
+              order_id: `order-${Date.now()}`,
+              establishment_id: establishment.id,
+              customer_name: formData.customerName.trim(),
+              total: grandTotal,
+            },
+          });
+        } catch (pushError) {
+          console.log('Push to store failed (optional):', pushError);
+        }
       }
 
       // Update coupon usage

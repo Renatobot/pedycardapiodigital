@@ -833,7 +833,10 @@ function MenuContent() {
       </main>
       
       <CartSheet />
-      <PWAInstallPrompt />
+      <PWAInstallPrompt 
+        establishmentName={establishment?.name}
+        establishmentLogo={establishment?.logo_url}
+      />
     </div>
   );
 }
