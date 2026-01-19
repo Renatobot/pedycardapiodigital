@@ -50,7 +50,9 @@ import {
   Settings2,
   Sparkles,
   Moon,
-  Sun
+  Sun,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -120,6 +122,12 @@ export default function DashboardPage() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [nicheModalOpen, setNicheModalOpen] = useState(false);
   const [hasShownNicheModal, setHasShownNicheModal] = useState(false);
+  
+  // Global sound control for new orders
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('pedy-sound-enabled') === 'true';
+  });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Edit states
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
@@ -175,6 +183,60 @@ export default function DashboardPage() {
       setDeliveryFee((establishment as any).delivery_fee || 0);
     }
   }, [establishment]);
+
+  // Initialize audio for new order notifications
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/new-order.mp3');
+    audioRef.current.preload = 'auto';
+  }, []);
+
+  // Global Realtime listener for new orders (works on ANY tab)
+  useEffect(() => {
+    if (!establishment?.id) return;
+
+    const channel = supabase
+      .channel(`dashboard-global-orders-${establishment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `establishment_id=eq.${establishment.id}`,
+        },
+        (payload: any) => {
+          console.log('[Dashboard Global] Novo pedido recebido:', payload);
+          
+          // Play sound if enabled
+          if (soundEnabled && audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(console.error);
+          }
+          
+          // Show toast notification
+          const customerName = payload.new?.customer_name || 'Cliente';
+          toast({
+            title: '🔔 Novo Pedido!',
+            description: `Pedido de ${customerName} recebido`,
+          });
+          
+          // If not on orders tab, suggest navigating there
+          if (activeTab !== 'orders') {
+            setTimeout(() => {
+              toast({
+                title: '📋 Novo pedido aguardando',
+                description: 'Clique em "Pedidos" para visualizar',
+              });
+            }, 1000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [establishment?.id, soundEnabled, toast, activeTab]);
 
   // Show niche modal for first-time users with no categories
   useEffect(() => {
@@ -783,6 +845,29 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant={soundEnabled ? "default" : "outline"}
+              size="icon"
+              onClick={() => {
+                const newValue = !soundEnabled;
+                setSoundEnabled(newValue);
+                localStorage.setItem('pedy-sound-enabled', String(newValue));
+                // Play test sound when enabling
+                if (newValue && audioRef.current) {
+                  audioRef.current.currentTime = 0;
+                  audioRef.current.play().catch(console.error);
+                }
+                toast({
+                  title: newValue ? '🔊 Som ativado' : '🔇 Som desativado',
+                  description: newValue 
+                    ? 'Você receberá alertas sonoros de novos pedidos' 
+                    : 'Alertas sonoros desativados',
+                });
+              }}
+              title={soundEnabled ? 'Desativar som' : 'Ativar som de notificações'}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="w-4 h-4" />
