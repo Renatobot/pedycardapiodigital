@@ -16,10 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar, Volume2, VolumeX } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar, Volume2, VolumeX, Bell, BellOff } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useStorePushNotifications } from '@/hooks/useStorePushNotifications';
 
 interface OrderItem {
   product: {
@@ -78,6 +79,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(false);
   const { toast } = useToast();
+  const { isSupported: pushSupported, isSubscribed: pushEnabled, isLoading: pushLoading, subscribe: subscribePush, unsubscribe: unsubscribePush } = useStorePushNotifications();
   
   // Audio ref for new order notification
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -436,27 +438,64 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
 
   return (
     <div className="space-y-4">
-      {/* Sound Notification Control */}
-      <div className="flex items-center justify-between">
+      {/* Notification Controls */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">Pedidos</h2>
-        <Button
-          variant={soundEnabled ? "outline" : "default"}
-          size="sm"
-          onClick={toggleSound}
-          className={`gap-2 ${!soundEnabled && !soundUnlocked ? 'animate-pulse bg-yellow-500 hover:bg-yellow-600 text-white' : ''} ${soundEnabled ? 'border-green-500 text-green-600 hover:bg-green-50' : ''}`}
-        >
-          {soundEnabled ? (
-            <>
-              <Volume2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Som ativado</span>
-            </>
-          ) : (
-            <>
-              <VolumeX className="h-4 w-4" />
-              <span className="hidden sm:inline">Ativar som</span>
-            </>
+        <div className="flex items-center gap-2">
+          {/* Push Notification Button */}
+          {pushSupported && (
+            <Button
+              variant={pushEnabled ? "outline" : "default"}
+              size="sm"
+              onClick={async () => {
+                if (pushEnabled) {
+                  const success = await unsubscribePush();
+                  if (success) {
+                    toast({ title: '🔕 Push desativado', description: 'Você não receberá mais notificações push.' });
+                  }
+                } else {
+                  const success = await subscribePush(establishmentId);
+                  if (success) {
+                    toast({ title: '🔔 Push ativado!', description: 'Você receberá notificações mesmo com o navegador fechado.' });
+                  } else {
+                    toast({ title: 'Erro', description: 'Não foi possível ativar as notificações.', variant: 'destructive' });
+                  }
+                }
+              }}
+              disabled={pushLoading}
+              className={`gap-2 ${pushEnabled ? 'border-green-500 text-green-600 hover:bg-green-50' : ''}`}
+            >
+              {pushLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : pushEnabled ? (
+                <Bell className="h-4 w-4" />
+              ) : (
+                <BellOff className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{pushEnabled ? 'Push ativo' : 'Ativar Push'}</span>
+            </Button>
           )}
-        </Button>
+          
+          {/* Sound Button */}
+          <Button
+            variant={soundEnabled ? "outline" : "default"}
+            size="sm"
+            onClick={toggleSound}
+            className={`gap-2 ${!soundEnabled && !soundUnlocked ? 'animate-pulse bg-yellow-500 hover:bg-yellow-600 text-white' : ''} ${soundEnabled ? 'border-green-500 text-green-600 hover:bg-green-50' : ''}`}
+          >
+            {soundEnabled ? (
+              <>
+                <Volume2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Som ativado</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="h-4 w-4" />
+                <span className="hidden sm:inline">Ativar som</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Resumo do Dia */}
