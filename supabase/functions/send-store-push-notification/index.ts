@@ -81,41 +81,60 @@ async function generateVapidJwt(endpoint: string, vapidPrivateKeyBase64: string)
   return `${unsignedToken}.${signatureEncoded}`;
 }
 
-// Converter chave privada raw para formato PKCS8 (sem chave pública - mais simples)
+// Converter chave privada raw para formato PKCS8 completo
 function createPkcs8FromRaw(rawKey: Uint8Array): Uint8Array {
-  // Se já está em formato PKCS8 (começa com SEQUENCE tag), retornar como está
+  // Se já está em formato PKCS8 (começa com SEQUENCE tag e tem tamanho adequado), retornar como está
   if (rawKey[0] === 0x30 && rawKey.length > 32) {
+    console.log('[Push] Key already in PKCS8 format, length:', rawKey.length);
     return rawKey;
   }
   
-  // Pegar apenas os primeiros 32 bytes da chave privada
-  const keyBytes = rawKey.length > 32 ? rawKey.slice(0, 32) : rawKey;
+  // Garantir que temos apenas os 32 bytes da chave privada
+  let keyBytes = rawKey;
+  if (rawKey.length > 32) {
+    keyBytes = rawKey.slice(0, 32);
+  }
   
-  // Estrutura PKCS8 simplificada para EC P-256 SEM chave pública (65 bytes total)
-  // SEQUENCE (0x30) + comprimento total
-  // ├── INTEGER 0 (version)
-  // ├── SEQUENCE (AlgorithmIdentifier)
-  // │   ├── OID 1.2.840.10045.2.1 (ecPublicKey)
-  // │   └── OID 1.2.840.10045.3.1.7 (prime256v1/P-256)
-  // └── OCTET STRING (privateKeyInfo)
-  //     └── SEQUENCE (ECPrivateKey)
-  //         ├── INTEGER 1 (version)
-  //         └── OCTET STRING (32 bytes private key)
+  console.log('[Push] Converting raw key to PKCS8, input length:', rawKey.length);
   
-  const pkcs8 = new Uint8Array([
-    0x30, 0x41, // SEQUENCE, 65 bytes
+  // PKCS8 header correto para EC P-256 (inclui estrutura completa)
+  // Estrutura:
+  // SEQUENCE {
+  //   INTEGER 0 (version)
+  //   SEQUENCE { OID ecPublicKey, OID P-256 }
+  //   OCTET STRING {
+  //     SEQUENCE {
+  //       INTEGER 1 (version)
+  //       OCTET STRING (32 bytes private key)
+  //       [1] OPTIONAL BIT STRING (public key placeholder)
+  //     }
+  //   }
+  // }
+  const pkcs8Header = new Uint8Array([
+    0x30, 0x81, 0x87, // SEQUENCE, 135 bytes total
     0x02, 0x01, 0x00, // INTEGER 0 (version)
     0x30, 0x13, // SEQUENCE, 19 bytes (AlgorithmIdentifier)
-      0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // OID ecPublicKey
-      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // OID P-256
-    0x04, 0x27, // OCTET STRING, 39 bytes
-      0x30, 0x25, // SEQUENCE, 37 bytes (ECPrivateKey)
+      0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // OID 1.2.840.10045.2.1 (ecPublicKey)
+      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // OID 1.2.840.10045.3.1.7 (P-256)
+    0x04, 0x6d, // OCTET STRING, 109 bytes
+      0x30, 0x6b, // SEQUENCE, 107 bytes (ECPrivateKey)
         0x02, 0x01, 0x01, // INTEGER 1 (version)
         0x04, 0x20, // OCTET STRING, 32 bytes (private key follows)
   ]);
   
-  // Concatenar estrutura + chave privada
-  return concatUint8Arrays(pkcs8, keyBytes);
+  // Footer com placeholder para chave pública (necessário para compatibilidade)
+  const pkcs8Footer = new Uint8Array([
+    0xa1, 0x44, // [1] EXPLICIT, 68 bytes
+      0x03, 0x42, 0x00, 0x04, // BIT STRING, 66 bytes, 0 unused bits, uncompressed point
+  ]);
+  
+  // Placeholder para chave pública (64 bytes de zeros - não usado para assinatura)
+  const publicKeyPlaceholder = new Uint8Array(64).fill(0);
+  
+  const result = concatUint8Arrays(pkcs8Header, keyBytes, pkcs8Footer, publicKeyPlaceholder);
+  console.log('[Push] PKCS8 key created, output length:', result.length);
+  
+  return result;
 }
 
 // Converter assinatura DER para formato raw
