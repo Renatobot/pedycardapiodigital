@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar, Volume2, VolumeX } from 'lucide-react';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -75,16 +75,67 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundUnlocked, setSoundUnlocked] = useState(false);
   const { toast } = useToast();
   
   // Audio ref for new order notification
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Initialize audio on mount
+  // Initialize audio on mount and check stored preference
   useEffect(() => {
     audioRef.current = new Audio('/sounds/new-order.mp3');
     audioRef.current.volume = 0.7;
+    
+    // Check if sound was previously enabled
+    const storedSoundEnabled = localStorage.getItem('orderSoundEnabled');
+    if (storedSoundEnabled === 'true') {
+      setSoundEnabled(true);
+    }
   }, []);
+
+  const enableSound = async () => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.volume = 0.3;
+        audioRef.current.currentTime = 0;
+        await audioRef.current.play();
+        
+        setSoundUnlocked(true);
+        setSoundEnabled(true);
+        audioRef.current.volume = 0.7;
+        localStorage.setItem('orderSoundEnabled', 'true');
+        
+        toast({
+          title: '🔊 Som ativado!',
+          description: 'Você será notificado quando novos pedidos chegarem.',
+        });
+      } catch (error) {
+        console.error('Failed to enable sound:', error);
+        toast({
+          title: 'Erro ao ativar som',
+          description: 'Clique novamente para tentar.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const toggleSound = () => {
+    if (!soundUnlocked) {
+      enableSound();
+    } else {
+      const newValue = !soundEnabled;
+      setSoundEnabled(newValue);
+      localStorage.setItem('orderSoundEnabled', String(newValue));
+      toast({
+        title: newValue ? '🔊 Som ativado' : '🔇 Som desativado',
+        description: newValue 
+          ? 'Você receberá notificações sonoras.' 
+          : 'As notificações sonoras foram desativadas.',
+      });
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -122,8 +173,8 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
           filter: `establishment_id=eq.${establishmentId}`,
         },
         () => {
-          // Play notification sound for new orders
-          if (audioRef.current) {
+          // Play notification sound for new orders (only if enabled)
+          if (soundEnabled && audioRef.current) {
             audioRef.current.currentTime = 0;
             audioRef.current.play().catch(err => console.log('Audio play failed:', err));
           }
@@ -385,6 +436,29 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
 
   return (
     <div className="space-y-4">
+      {/* Sound Notification Control */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Pedidos</h2>
+        <Button
+          variant={soundEnabled ? "outline" : "default"}
+          size="sm"
+          onClick={toggleSound}
+          className={`gap-2 ${!soundEnabled && !soundUnlocked ? 'animate-pulse bg-yellow-500 hover:bg-yellow-600 text-white' : ''} ${soundEnabled ? 'border-green-500 text-green-600 hover:bg-green-50' : ''}`}
+        >
+          {soundEnabled ? (
+            <>
+              <Volume2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Som ativado</span>
+            </>
+          ) : (
+            <>
+              <VolumeX className="h-4 w-4" />
+              <span className="hidden sm:inline">Ativar som</span>
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Resumo do Dia */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardContent className="p-4">
