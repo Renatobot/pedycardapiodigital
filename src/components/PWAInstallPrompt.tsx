@@ -63,6 +63,26 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
     }
   }, [establishmentName, establishmentLogo]);
 
+  // Função para salvar URL no Cache API (compartilhado Safari <-> PWA no iOS)
+  const saveStartUrlToCacheAPI = (url: string) => {
+    // Salvar via Service Worker
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SET_START_URL',
+        url: url
+      });
+    }
+    
+    // Também salvar diretamente via Cache API (mais confiável no iOS)
+    if ('caches' in window) {
+      caches.open('pedy-pwa-config').then((cache) => {
+        const response = new Response(JSON.stringify({ startUrl: url }));
+        cache.put('start-url', response);
+        console.log('[PWA] Start URL saved to Cache API:', url);
+      }).catch(() => {});
+    }
+  };
+
   useEffect(() => {
     // Verificar se já está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -76,6 +96,7 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
       const currentPath = window.location.pathname;
       if (currentPath && currentPath !== '/') {
         localStorage.setItem('pwa-start-url', currentPath);
+        saveStartUrlToCacheAPI(currentPath); // Salvar também no Cache API para iOS
       }
       
       setIsSafari(isIOSSafari());
@@ -92,6 +113,7 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
       const currentPath = window.location.pathname;
       if (currentPath && currentPath !== '/') {
         localStorage.setItem('pwa-start-url', currentPath);
+        saveStartUrlToCacheAPI(currentPath); // Salvar também no Cache API
       }
       
       const dismissed = localStorage.getItem('pwa-mac-safari-dismissed');
@@ -139,6 +161,7 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
     const currentPath = window.location.pathname;
     if (currentPath && currentPath !== '/') {
       localStorage.setItem('pwa-start-url', currentPath);
+      saveStartUrlToCacheAPI(currentPath);
     }
 
     await deferredPrompt.prompt();
