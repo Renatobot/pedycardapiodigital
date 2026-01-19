@@ -80,6 +80,12 @@ export function NicheSelectionModal({
         }
       }
 
+      // Marcar onboarding como completo
+      await supabase
+        .from('establishments')
+        .update({ has_completed_onboarding: true })
+        .eq('id', establishmentId);
+
       toast.success(`Cardápio de ${template.name} criado com sucesso!`, {
         description: 'Agora você pode personalizar os produtos com suas fotos e preços.',
       });
@@ -95,7 +101,13 @@ export function NicheSelectionModal({
     }
   };
 
-  const handleStartFromScratch = () => {
+  const handleStartFromScratch = async () => {
+    // Marcar onboarding como completo mesmo começando do zero
+    await supabase
+      .from('establishments')
+      .update({ has_completed_onboarding: true })
+      .eq('id', establishmentId);
+      
     toast.info('Você pode criar suas categorias e produtos do zero!');
     onComplete();
     onOpenChange(false);

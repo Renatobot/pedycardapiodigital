@@ -178,18 +178,25 @@ export default function DashboardPage() {
 
   // Show niche modal for first-time users with no categories
   useEffect(() => {
-    if (establishment && categories.length === 0 && !hasShownNicheModal && !dataLoading) {
-      const hasSeenNicheModal = localStorage.getItem(`pedy_niche_modal_${establishment.id}`);
-      if (!hasSeenNicheModal) {
-        setNicheModalOpen(true);
-        setHasShownNicheModal(true);
-      }
+    if (
+      establishment && 
+      !(establishment as any).has_completed_onboarding && 
+      categories.length === 0 && 
+      !hasShownNicheModal && 
+      !dataLoading
+    ) {
+      setNicheModalOpen(true);
+      setHasShownNicheModal(true);
     }
   }, [establishment, categories, hasShownNicheModal, dataLoading]);
 
-  const handleNicheComplete = () => {
+  const handleNicheComplete = async () => {
     if (establishment) {
-      localStorage.setItem(`pedy_niche_modal_${establishment.id}`, 'true');
+      // Marcar onboarding como completo no banco
+      await supabase
+        .from('establishments')
+        .update({ has_completed_onboarding: true })
+        .eq('id', establishment.id);
     }
     window.location.reload();
   };
