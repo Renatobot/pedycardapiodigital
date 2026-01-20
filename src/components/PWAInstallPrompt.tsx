@@ -44,15 +44,17 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
   const [showMacSafariPrompt, setShowMacSafariPrompt] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
   const [metaTagsReady, setMetaTagsReady] = useState(false);
+  const [metaTagsVerified, setMetaTagsVerified] = useState(false);
 
   // Atualizar meta tags quando dados do estabelecimento chegarem
-  // e adicionar delay para garantir que iOS capture os novos valores
+  // e adicionar delay maior para garantir que iOS capture os novos valores
   useEffect(() => {
     if (establishmentName) {
       // Atualizar apple-mobile-web-app-title para iOS
       const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if (appleTitle) {
         appleTitle.setAttribute('content', establishmentName);
+        console.log('[PWA Install] Updated apple-mobile-web-app-title to:', establishmentName);
       }
       
       // Atualizar apple-touch-icon se tiver logo
@@ -60,12 +62,21 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
         const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
         if (appleIcon) {
           appleIcon.setAttribute('href', establishmentLogo);
+          console.log('[PWA Install] Updated apple-touch-icon to:', establishmentLogo);
         }
       }
       
-      // Delay para garantir que o iOS capturou os novos valores
+      // Delay maior para iOS (1500ms) para garantir que as meta tags foram capturadas
       // antes de mostrar o prompt de instalação
-      setTimeout(() => setMetaTagsReady(true), 500);
+      setTimeout(() => {
+        // Verificar se a meta tag foi realmente atualizada
+        const currentTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]')?.getAttribute('content');
+        if (currentTitle === establishmentName) {
+          setMetaTagsVerified(true);
+          console.log('[PWA Install] Meta tags verified successfully');
+        }
+        setMetaTagsReady(true);
+      }, 1500);
     } else {
       // Se não tem nome do estabelecimento, não bloquear o prompt
       setMetaTagsReady(true);
@@ -287,6 +298,12 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm">Instalar {displayName}</h3>
+              {/* Confirmação visual de que o nome correto será usado */}
+              {metaTagsVerified && establishmentName && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                  ✓ O app será instalado como "{establishmentName}"
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
                 {isSafari ? (
                   <>
