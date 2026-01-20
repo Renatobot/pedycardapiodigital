@@ -52,24 +52,24 @@ export function AdminStatsCard({
 
   return (
     <Card className="bg-slate-800 border-slate-700 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/50 group">
-      <CardContent className="pt-6">
-        <div className="flex items-center gap-4">
+      <CardContent className="p-3 sm:pt-6 sm:p-6">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className={cn(
-            "w-12 h-12 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+            "w-8 h-8 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shrink-0",
             iconBgColor
           )}>
-            <div className={iconColor}>
+            <div className={cn(iconColor, "[&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-6 sm:[&>svg]:h-6")}>
               {icon}
             </div>
           </div>
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-white tabular-nums">
+          <div className="flex-1 min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-white tabular-nums">
               {displayValue}
             </p>
-            <p className="text-sm text-slate-400">{label}</p>
+            <p className="text-xs sm:text-sm text-slate-400 truncate">{label}</p>
             {trend && (
               <p className={cn(
-                "text-xs mt-1 font-medium",
+                "text-xs mt-1 font-medium hidden sm:block",
                 trend.isPositive !== false ? "text-green-400" : "text-red-400"
               )}>
                 {trend.isPositive !== false ? '↑' : '↓'} {trend.value} {trend.label}

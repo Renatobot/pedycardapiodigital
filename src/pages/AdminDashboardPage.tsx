@@ -77,6 +77,7 @@ import { AdminQuickActions } from '@/components/AdminQuickActions';
 import { AdminReports } from '@/components/AdminReports';
 import { ResellerManagement } from '@/components/ResellerManagement';
 import { AdminNotifications } from '@/components/AdminNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
 import logoPedy from '@/assets/logo_pedy.png';
 
 interface Establishment {
@@ -658,32 +659,34 @@ const AdminDashboardPage = () => {
     return <AdminDashboardSkeleton />;
   }
 
+  const isMobile = useIsMobile();
+
   return (
     <div className="min-h-screen bg-slate-900">
-      {/* Enhanced Header */}
-      <header className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-800/95 border-b border-slate-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
-              <Shield className="w-6 h-6 text-white" />
+      {/* Enhanced Header - Responsive */}
+      <header className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-800/95 border-b border-slate-700 px-3 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25 shrink-0">
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-white">PEDY Admin</h1>
-                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                <h1 className="text-lg sm:text-xl font-bold text-white truncate">PEDY Admin</h1>
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs shrink-0">
                   Master
                 </Badge>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-2">
+              <p className="text-xs text-slate-400 hidden sm:flex items-center gap-2">
                 <span>Painel de Administração</span>
                 <span className="text-slate-600">•</span>
                 <span>{format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}</span>
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             {adminEmail && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-xs text-slate-300">{adminEmail}</span>
               </div>
@@ -693,57 +696,59 @@ const AdminDashboardPage = () => {
               variant="outline"
               size="sm"
               onClick={() => setChangePasswordModalOpen(true)}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 px-2 sm:px-3"
             >
-              <Key className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Alterar Senha</span>
+              <Key className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Alterar Senha</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-red-400 hover:border-red-500/50"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-red-400 hover:border-red-500/50 px-2 sm:px-3"
             >
-              <LogOut className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Sair</span>
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Tabs */}
+      <main className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Tabs - Responsive */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-slate-800 border border-slate-700">
-            <TabsTrigger 
-              value="establishments" 
-              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
-            >
-              <Building2 className="w-4 h-4 mr-2" />
-              Estabelecimentos
-            </TabsTrigger>
-            <TabsTrigger 
-              value="reports"
-              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Relatórios
-            </TabsTrigger>
-            <TabsTrigger 
-              value="resellers"
-              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Revendedores
-            </TabsTrigger>
-            <TabsTrigger 
-              value="admins"
-              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Administradores
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+            <TabsList className="bg-slate-800 border border-slate-700 w-full sm:w-auto inline-flex whitespace-nowrap">
+              <TabsTrigger 
+                value="establishments" 
+                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400 px-2 sm:px-4"
+              >
+                <Building2 className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Estabelecimentos</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="reports"
+                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400 px-2 sm:px-4"
+              >
+                <FileText className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Relatórios</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="resellers"
+                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400 px-2 sm:px-4"
+              >
+                <Users className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Revendedores</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="admins"
+                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400 px-2 sm:px-4"
+              >
+                <Shield className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Administradores</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Estabelecimentos Tab */}
           <TabsContent value="establishments" className="space-y-6">

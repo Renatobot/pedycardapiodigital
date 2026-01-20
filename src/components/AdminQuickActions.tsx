@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Download, RefreshCw, Calendar } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -93,41 +92,41 @@ export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: Adm
   const totalAlerts = expiringTrials.length + expiringPlans.length;
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
         {/* Alerts Section */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           {expiringTrials.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span className="text-sm text-amber-300">
-                <strong>{expiringTrials.length}</strong> {expiringTrials.length === 1 ? 'trial expira' : 'trials expiram'} em até 3 dias
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-xs sm:text-sm text-amber-300">
+                <strong>{expiringTrials.length}</strong> <span className="hidden sm:inline">{expiringTrials.length === 1 ? 'trial expira' : 'trials expiram'} em até 3 dias</span><span className="sm:hidden">trials</span>
               </span>
             </div>
           )}
           
           {expiringPlans.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-              <Calendar className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-orange-300">
-                <strong>{expiringPlans.length}</strong> {expiringPlans.length === 1 ? 'plano vence' : 'planos vencem'} em até 7 dias
+              <Calendar className="w-4 h-4 text-orange-400 shrink-0" />
+              <span className="text-xs sm:text-sm text-orange-300">
+                <strong>{expiringPlans.length}</strong> <span className="hidden sm:inline">{expiringPlans.length === 1 ? 'plano vence' : 'planos vencem'} em até 7 dias</span><span className="sm:hidden">planos</span>
               </span>
             </div>
           )}
 
           {totalAlerts === 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <span className="text-sm text-green-300">
-                ✓ Nenhum alerta no momento
+              <span className="text-xs sm:text-sm text-green-300">
+                ✓ <span className="hidden sm:inline">Nenhum alerta no momento</span><span className="sm:hidden">OK</span>
               </span>
             </div>
           )}
         </div>
 
         {/* Actions Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2 sm:pt-0 border-t border-slate-700 sm:border-t-0">
           {lastUpdate && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 hidden sm:block">
               Atualizado: {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
@@ -136,10 +135,10 @@ export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: Adm
             variant="outline"
             size="sm"
             onClick={exportToCSV}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700 flex-1 sm:flex-none"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
           
           <Button
@@ -147,10 +146,10 @@ export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: Adm
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700 flex-1 sm:flex-none"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+            <RefreshCw className={`w-4 h-4 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </Button>
         </div>
       </div>
