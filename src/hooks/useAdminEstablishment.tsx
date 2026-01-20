@@ -13,6 +13,7 @@ export interface Establishment {
   trial_start_date: string;
   trial_end_date: string;
   plan_status: string;
+  plan_type: string | null;
   plan_expires_at: string | null;
   created_at: string;
   has_pro_plus: boolean | null;

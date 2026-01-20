@@ -162,11 +162,21 @@ export default function DashboardPage() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
-  const isPro = establishment?.plan_status === 'active';
-  const isExpired = establishment?.plan_status === 'expired';
-  const isTrial = establishment?.plan_status === 'trial';
+  // Plan status flags - respecting plan_type for proper feature gating
+  const planType = (establishment as any)?.plan_type;
+  const planStatus = establishment?.plan_status;
   
-  const relevantDate = isPro 
+  const isActive = planStatus === 'active';
+  const isTrial = planStatus === 'trial';
+  const isExpired = planStatus === 'expired';
+  
+  // Determine actual plan tier
+  const isBasic = isActive && planType === 'basic';
+  // isPro: active with pro/pro_plus OR active without plan_type (legacy fallback)
+  const isPro = isActive && (planType === 'pro' || planType === 'pro_plus' || (!planType && !isBasic));
+  const isProPlus = isActive && (planType === 'pro_plus' || (establishment as any)?.has_pro_plus);
+  
+  const relevantDate = isActive 
     ? (establishment as any)?.plan_expires_at 
     : isTrial 
       ? establishment?.trial_end_date

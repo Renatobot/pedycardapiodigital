@@ -152,8 +152,21 @@ export default function AdminEstablishmentDashboard() {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
-  const isPro = establishment?.plan_status === 'active';
-  const relevantDate = isPro 
+  // Plan status flags - respecting plan_type for proper feature gating
+  const planType = establishment?.plan_type;
+  const planStatus = establishment?.plan_status;
+  
+  const isActive = planStatus === 'active';
+  const isTrial = planStatus === 'trial';
+  const isExpired = planStatus === 'expired';
+  
+  // Determine actual plan tier
+  const isBasic = isActive && planType === 'basic';
+  // isPro: active with pro/pro_plus OR active without plan_type (legacy fallback)
+  const isPro = isActive && (planType === 'pro' || planType === 'pro_plus' || (!planType && !isBasic));
+  const isProPlus = isActive && (planType === 'pro_plus' || establishment?.has_pro_plus);
+  
+  const relevantDate = isActive 
     ? establishment?.plan_expires_at 
     : establishment?.trial_end_date;
   const daysLeft = relevantDate 

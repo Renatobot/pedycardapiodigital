@@ -95,19 +95,25 @@ export function checkProFeatureAccess(
   }
   
   // Check plan type
-  const planType = establishment.plan_type || 'basic';
+  const planType = establishment.plan_type;
   
+  // Pro or Pro+ plan has access
   if (planType === 'pro' || planType === 'pro_plus') {
     return { hasAccess: true, reason: planType as 'pro' | 'pro_plus' };
   }
   
-  // Fallback: If plan_status is 'active' but plan_type wasn't set correctly,
-  // assume it's Pro (retroactive compatibility for old activations)
-  if (establishment.plan_status === 'active') {
+  // Basic plan does NOT have Pro features
+  if (planType === 'basic') {
+    return { hasAccess: false, reason: 'locked' };
+  }
+  
+  // Fallback: If plan_status is 'active' but plan_type is null/undefined,
+  // assume it's Pro (retroactive compatibility for old activations before plan_type was added)
+  if (establishment.plan_status === 'active' && !planType) {
     return { hasAccess: true, reason: 'pro' };
   }
   
-  // Basic plan doesn't have Pro features
+  // Otherwise, feature is locked
   return { hasAccess: false, reason: 'locked' };
 }
 
