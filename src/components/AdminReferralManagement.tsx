@@ -37,6 +37,9 @@ import {
   Wallet,
   Users,
   ArrowRight,
+  Ticket,
+  Tag,
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -277,6 +280,28 @@ export function AdminReferralManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Info Banner - Discount Type */}
+      <Card className="bg-purple-500/10 border-purple-500/30">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center shrink-0">
+              <Ticket className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-purple-300 flex items-center gap-2">
+                🎫 INDICAÇÕES ENTRE LOJISTAS
+              </h3>
+              <p className="text-sm text-purple-200/80 mt-1">
+                <strong>Ação:</strong> DAR DESCONTO NA PRÓXIMA MENSALIDADE
+              </p>
+              <p className="text-xs text-purple-200/60 mt-1">
+                O valor é creditado como desconto na renovação do plano, <strong>NÃO é pago em dinheiro</strong>.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <AdminStatsCard
@@ -313,11 +338,11 @@ export function AdminReferralManagement() {
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
-            <Gift className="w-5 h-5 text-purple-400" />
-            Indicações entre Estabelecimentos
+            <Ticket className="w-5 h-5 text-purple-400" />
+            Indicações de Lojistas (Crédito para Mensalidade)
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Gerencie os créditos de indicação dos lojistas
+            Gerencie os créditos de indicação - o valor vira desconto na próxima mensalidade
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -413,9 +438,10 @@ export function AdminReferralManagement() {
                                 setSelectedReferral(referral);
                                 setApplyModalOpen(true);
                               }}
-                              className="bg-green-600 hover:bg-green-700 text-xs"
+                              className="bg-purple-600 hover:bg-purple-700 text-xs"
                             >
-                              Aplicar
+                              <Tag className="w-3 h-3 mr-1" />
+                              Dar Desconto
                             </Button>
                             <Button
                               size="sm"
@@ -447,17 +473,28 @@ export function AdminReferralManagement() {
       <Dialog open={applyModalOpen} onOpenChange={setApplyModalOpen}>
         <DialogContent className="bg-slate-800 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="text-white">Aplicar Crédito de Indicação</DialogTitle>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Tag className="w-5 h-5 text-purple-400" />
+              Dar Desconto na Mensalidade
+            </DialogTitle>
             <DialogDescription className="text-slate-400">
-              Confirme a aplicação do crédito para o indicador
+              Confirme a aplicação do desconto para o indicador
             </DialogDescription>
           </DialogHeader>
 
           {selectedReferral && (
             <div className="space-y-4">
+              {/* Warning Banner */}
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-purple-200">
+                  Ao confirmar, o valor será adicionado como <strong>crédito para desconto</strong> na próxima mensalidade de <strong>{selectedReferral.referrer_name}</strong>. Este valor <strong>NÃO é pago em dinheiro</strong>.
+                </p>
+              </div>
+
               <div className="bg-slate-700/50 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Indicador:</span>
+                  <span className="text-slate-400">Indicador (receberá desconto):</span>
                   <span className="text-white font-medium">{selectedReferral.referrer_name}</span>
                 </div>
                 <div className="flex justify-between">
@@ -469,20 +506,20 @@ export function AdminReferralManagement() {
                   {getPlanBadge(selectedReferral.plan_type)}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Valor do crédito:</span>
-                  <span className="text-green-400 font-bold text-lg">
+                  <span className="text-slate-400">Valor do desconto:</span>
+                  <span className="text-purple-400 font-bold text-lg">
                     R$ {Number(selectedReferral.plan_value).toFixed(2).replace('.', ',')}
                   </span>
                 </div>
                 <div className="border-t border-slate-600 pt-3 flex justify-between">
-                  <span className="text-slate-400">Saldo atual do indicador:</span>
+                  <span className="text-slate-400">Saldo atual de desconto:</span>
                   <span className="text-white">
                     R$ {(selectedReferral.referrer_credit || 0).toFixed(2).replace('.', ',')}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Novo saldo após aplicação:</span>
-                  <span className="text-green-400 font-bold">
+                  <span className="text-purple-400 font-bold">
                     R$ {((selectedReferral.referrer_credit || 0) + Number(selectedReferral.plan_value)).toFixed(2).replace('.', ',')}
                   </span>
                 </div>
@@ -501,14 +538,14 @@ export function AdminReferralManagement() {
             <Button
               onClick={handleApplyCredit}
               disabled={actionLoading}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-purple-600 hover:bg-purple-700"
             >
               {actionLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
-                <CheckCircle className="w-4 h-4 mr-2" />
+                <Tag className="w-4 h-4 mr-2" />
               )}
-              Confirmar Aplicação
+              Confirmar Desconto
             </Button>
           </DialogFooter>
         </DialogContent>
