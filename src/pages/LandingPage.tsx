@@ -1,5 +1,6 @@
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Accordion,
   AccordionContent,
@@ -560,6 +561,54 @@ export default function LandingPage() {
               ))}
             </Accordion>
           </div>
+        </div>
+      </section>
+
+      {/* Templates de Nicho */}
+      <section className="py-16 bg-background">
+        <div className="container">
+          <div className="text-center mb-10">
+            <Badge className="mb-4 bg-secondary/10 text-secondary hover:bg-secondary/20">
+              Templates Prontos
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Templates prontos para seu negócio
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Escolha seu nicho e comece com um cardápio pré-montado, 
+              com categorias e produtos de exemplo. Personalize como quiser!
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4 max-w-4xl mx-auto">
+            {[
+              { icon: '🍕', name: 'Pizzaria' },
+              { icon: '🍔', name: 'Hamburgueria' },
+              { icon: '🍱', name: 'Marmitaria' },
+              { icon: '🫐', name: 'Açaiteria' },
+              { icon: '🥟', name: 'Pastelaria' },
+              { icon: '🍣', name: 'Japonesa' },
+              { icon: '🐾', name: 'Pet Shop' },
+              { icon: '🦴', name: 'Ração' },
+              { icon: '💊', name: 'Farmácia' },
+              { icon: '🍺', name: 'Bebidas' },
+              { icon: '🍦', name: 'Sorveteria' },
+              { icon: '🥐', name: 'Padaria' },
+              { icon: '🥬', name: 'Hortifrúti' },
+            ].map((template, index) => (
+              <div 
+                key={index}
+                className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/50 hover:shadow-md transition-all duration-200"
+              >
+                <span className="text-3xl md:text-4xl mb-2 block">{template.icon}</span>
+                <span className="text-xs md:text-sm font-medium text-foreground">{template.name}</span>
+              </div>
+            ))}
+          </div>
+          
+          <p className="text-center text-muted-foreground mt-6 text-sm">
+            E se seu nicho não estiver na lista, você pode criar do zero!
+          </p>
         </div>
       </section>
 
