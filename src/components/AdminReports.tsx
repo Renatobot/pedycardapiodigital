@@ -198,93 +198,93 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-emerald-400" />
             Relatórios e Métricas
           </h2>
-          <p className="text-xs md:text-sm text-slate-400">
+          <p className="text-sm text-slate-400">
             {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
       </div>
 
       {/* Métricas Financeiras */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-700/50">
-          <CardContent className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs md:text-sm text-emerald-300/80 truncate">MRR</p>
-                <p className="text-lg md:text-2xl font-bold text-emerald-400 truncate">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-emerald-300/80">MRR Estimado</p>
+                <p className="text-2xl font-bold text-emerald-400">
                   {formatCurrency(metrics.estimatedMRR)}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5 md:mt-1 hidden sm:block">
-                  {metrics.actives} ativos
+                <p className="text-xs text-slate-400 mt-1">
+                  {metrics.actives} estabelecimentos ativos
                 </p>
               </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-emerald-500/20 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 self-end md:self-auto">
-                <DollarSign className="w-4 h-4 md:w-6 md:h-6 text-emerald-400" />
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-emerald-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700/50">
-          <CardContent className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs md:text-sm text-blue-300/80 truncate">Potencial</p>
-                <p className="text-lg md:text-2xl font-bold text-blue-400 truncate">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-300/80">Receita Potencial</p>
+                <p className="text-2xl font-bold text-blue-400">
                   {formatCurrency(metrics.potentialMRR)}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5 md:mt-1 hidden sm:block">
+                <p className="text-xs text-slate-400 mt-1">
                   se todos convertessem
                 </p>
               </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-500/20 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 self-end md:self-auto">
-                <Target className="w-4 h-4 md:w-6 md:h-6 text-blue-400" />
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-blue-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700/50">
-          <CardContent className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs md:text-sm text-purple-300/80 truncate">Pro+</p>
-                <p className="text-lg md:text-2xl font-bold text-purple-400 truncate">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-300/80">Receita Pro+</p>
+                <p className="text-2xl font-bold text-purple-400">
                   {formatCurrency(metrics.proUpgradeRevenue)}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5 md:mt-1 hidden sm:block">
+                <p className="text-xs text-slate-400 mt-1">
                   receita extra/mês
                 </p>
               </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-purple-500/20 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 self-end md:self-auto">
-                <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-purple-400" />
+              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-purple-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-red-900/50 to-red-800/30 border-red-700/50">
-          <CardContent className="p-3 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs md:text-sm text-red-300/80 truncate">Churn</p>
-                <p className="text-lg md:text-2xl font-bold text-red-400 truncate">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-300/80">Perda por Churn</p>
+                <p className="text-2xl font-bold text-red-400">
                   {formatCurrency(metrics.churnLoss)}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5 md:mt-1 hidden sm:block">
+                <p className="text-xs text-slate-400 mt-1">
                   {metrics.expired} expirados
                 </p>
               </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-red-500/20 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 self-end md:self-auto">
-                <TrendingDown className="w-4 h-4 md:w-6 md:h-6 text-red-400" />
+              <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                <TrendingDown className="w-6 h-6 text-red-400" />
               </div>
             </div>
           </CardContent>
@@ -293,118 +293,118 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
 
       {/* Conversão Trial → Pro */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
-          <CardTitle className="text-white flex items-center gap-2 text-base md:text-lg">
-            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-400" />
             Conversão Trial → Pro
           </CardTitle>
-          <CardDescription className="text-slate-400 text-xs md:text-sm">
-            Funil de conversão
+          <CardDescription className="text-slate-400">
+            Acompanhamento do funil de conversão
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 md:p-6 pt-0 md:pt-0 space-y-4 md:space-y-6">
+        <CardContent className="space-y-6">
           {/* Funil Visual */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-4">
-            <div className="text-center p-2 md:p-4 bg-slate-700/50 rounded-lg">
-              <div className="text-xl md:text-3xl font-bold text-blue-400">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="text-center p-4 bg-slate-700/50 rounded-lg">
+              <div className="text-3xl font-bold text-blue-400">
                 <AnimatedCounter value={metrics.total} />
               </div>
-              <p className="text-xs md:text-sm text-slate-400 mt-0.5 md:mt-1">Cadastros</p>
+              <p className="text-sm text-slate-400 mt-1">Total Cadastros</p>
             </div>
             
-            <div className="text-center p-2 md:p-4 bg-slate-700/50 rounded-lg relative">
+            <div className="text-center p-4 bg-slate-700/50 rounded-lg relative">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 hidden md:block">
                 <ArrowUpRight className="w-5 h-5 text-slate-600" />
               </div>
-              <div className="text-xl md:text-3xl font-bold text-cyan-400">
+              <div className="text-3xl font-bold text-cyan-400">
                 <AnimatedCounter value={metrics.activeTrials} />
               </div>
-              <p className="text-xs md:text-sm text-slate-400 mt-0.5 md:mt-1">Em Trial</p>
+              <p className="text-sm text-slate-400 mt-1">Em Trial</p>
             </div>
 
-            <div className="text-center p-2 md:p-4 bg-slate-700/50 rounded-lg relative">
+            <div className="text-center p-4 bg-slate-700/50 rounded-lg relative">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 hidden md:block">
                 <ArrowUpRight className="w-5 h-5 text-slate-600" />
               </div>
-              <div className="text-xl md:text-3xl font-bold text-yellow-400">
+              <div className="text-3xl font-bold text-yellow-400">
                 <AnimatedCounter value={metrics.expiredTrials} />
               </div>
-              <p className="text-xs md:text-sm text-slate-400 mt-0.5 md:mt-1">Finalizados</p>
+              <p className="text-sm text-slate-400 mt-1">Trials Finalizados</p>
             </div>
 
-            <div className="text-center p-2 md:p-4 bg-green-900/30 rounded-lg border border-green-700/50 relative">
+            <div className="text-center p-4 bg-green-900/30 rounded-lg border border-green-700/50 relative">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 hidden md:block">
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
-              <div className="text-xl md:text-3xl font-bold text-green-400">
+              <div className="text-3xl font-bold text-green-400">
                 <AnimatedCounter value={metrics.convertedFromTrial} />
               </div>
-              <p className="text-xs md:text-sm text-green-300 mt-0.5 md:mt-1">Converteram</p>
+              <p className="text-sm text-green-300 mt-1">Converteram</p>
             </div>
 
-            <div className="text-center p-2 md:p-4 bg-red-900/30 rounded-lg border border-red-700/50 relative col-span-2 sm:col-span-1">
+            <div className="text-center p-4 bg-red-900/30 rounded-lg border border-red-700/50 relative">
               <div className="absolute -left-3 top-1/2 -translate-y-1/2 hidden md:block">
                 <XCircle className="w-5 h-5 text-red-500" />
               </div>
-              <div className="text-xl md:text-3xl font-bold text-red-400">
+              <div className="text-3xl font-bold text-red-400">
                 <AnimatedCounter value={metrics.churnedTrials} />
               </div>
-              <p className="text-xs md:text-sm text-red-300 mt-0.5 md:mt-1">Não Converteram</p>
+              <p className="text-sm text-red-300 mt-1">Não Converteram</p>
             </div>
           </div>
 
           {/* Taxas */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-slate-700/50 border-slate-600">
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <span className="text-xs md:text-sm text-slate-300">Conversão</span>
-                  <Badge className={`text-xs ${metrics.conversionRate >= 30 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-300">Taxa de Conversão</span>
+                  <Badge className={metrics.conversionRate >= 30 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
                     {metrics.conversionRate.toFixed(1)}%
                   </Badge>
                 </div>
                 <Progress 
                   value={metrics.conversionRate} 
-                  className="h-1.5 md:h-2 bg-slate-600"
+                  className="h-2 bg-slate-600"
                 />
-                <p className="text-xs text-slate-500 mt-1 md:mt-2 hidden sm:block">
-                  Meta: 30% • {metrics.conversionRate >= 30 ? '✓' : `Falta ${(30 - metrics.conversionRate).toFixed(0)}%`}
+                <p className="text-xs text-slate-500 mt-2">
+                  Meta: 30% • {metrics.conversionRate >= 30 ? '✓ Atingida' : `Falta ${(30 - metrics.conversionRate).toFixed(0)}%`}
                 </p>
               </CardContent>
             </Card>
 
             <Card className="bg-slate-700/50 border-slate-600">
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <span className="text-xs md:text-sm text-slate-300">Churn</span>
-                  <Badge className={`text-xs ${metrics.churnRate <= 50 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-300">Taxa de Churn</span>
+                  <Badge className={metrics.churnRate <= 50 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
                     {metrics.churnRate.toFixed(1)}%
                   </Badge>
                 </div>
                 <Progress 
                   value={metrics.churnRate} 
-                  className="h-1.5 md:h-2 bg-slate-600"
+                  className="h-2 bg-slate-600"
                 />
-                <p className="text-xs text-slate-500 mt-1 md:mt-2 hidden sm:block">
-                  Meta: {"<"}50% • {metrics.churnRate <= 50 ? '✓' : 'Acima'}
+                <p className="text-xs text-slate-500 mt-2">
+                  Meta: {"<"}50% • {metrics.churnRate <= 50 ? '✓ Dentro da meta' : 'Acima da meta'}
                 </p>
               </CardContent>
             </Card>
 
             <Card className="bg-slate-700/50 border-slate-600">
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <span className="text-xs md:text-sm text-slate-300">Retenção</span>
-                  <Badge className={`text-xs ${metrics.retentionRate >= 70 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-300">Taxa de Retenção</span>
+                  <Badge className={metrics.retentionRate >= 70 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
                     {metrics.retentionRate.toFixed(1)}%
                   </Badge>
                 </div>
                 <Progress 
                   value={metrics.retentionRate} 
-                  className="h-1.5 md:h-2 bg-slate-600"
+                  className="h-2 bg-slate-600"
                 />
-                <p className="text-xs text-slate-500 mt-1 md:mt-2 hidden sm:block">
-                  {metrics.retainedOver30Days} há +30 dias
+                <p className="text-xs text-slate-500 mt-2">
+                  {metrics.retainedOver30Days} ativos há mais de 30 dias
                 </p>
               </CardContent>
             </Card>
@@ -412,14 +412,14 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
 
           {/* Alertas */}
           {metrics.expiringTrials > 0 && (
-            <div className="p-3 md:p-4 bg-amber-900/30 border border-amber-700/50 rounded-lg">
-              <div className="flex items-start md:items-center gap-2 md:gap-3">
-                <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-400 shrink-0 mt-0.5 md:mt-0" />
+            <div className="p-4 bg-amber-900/30 border border-amber-700/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-amber-400" />
                 <div>
-                  <p className="text-xs md:text-sm text-amber-200 font-medium">
-                    {metrics.expiringTrials} trial{metrics.expiringTrials > 1 ? 's' : ''} expirando em 3 dias
+                  <p className="text-sm text-amber-200 font-medium">
+                    {metrics.expiringTrials} trial{metrics.expiringTrials > 1 ? 's' : ''} expirando nos próximos 3 dias
                   </p>
-                  <p className="text-xs text-amber-300/70 hidden md:block">
+                  <p className="text-xs text-amber-300/70">
                     Entre em contato para incentivar a conversão
                   </p>
                 </div>
@@ -430,38 +430,38 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
       </Card>
 
       {/* Crescimento e Distribuição */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Crescimento */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
-            <CardTitle className="text-white flex items-center gap-2 text-base md:text-lg">
-              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
-              Crescimento
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-400" />
+              Crescimento de Cadastros
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0 space-y-3 md:space-y-4">
-            <div className="flex items-center justify-between p-3 md:p-4 bg-slate-700/50 rounded-lg">
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
               <div>
-                <p className="text-xs md:text-sm text-slate-400">Este mês</p>
-                <p className="text-xl md:text-2xl font-bold text-white">{metrics.registrationsThisMonth}</p>
+                <p className="text-sm text-slate-400">Cadastros este mês</p>
+                <p className="text-2xl font-bold text-white">{metrics.registrationsThisMonth}</p>
               </div>
               <div className={`flex items-center gap-1 ${metrics.growthRate >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {metrics.growthRate >= 0 ? (
-                  <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
+                  <TrendingUp className="w-5 h-5" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 md:w-5 md:h-5" />
+                  <TrendingDown className="w-5 h-5" />
                 )}
-                <span className="text-sm md:text-base font-medium">{Math.abs(metrics.growthRate).toFixed(1)}%</span>
+                <span className="font-medium">{Math.abs(metrics.growthRate).toFixed(1)}%</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 md:p-4 bg-slate-700/50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
               <div>
-                <p className="text-xs md:text-sm text-slate-400">30 dias</p>
-                <p className="text-xl md:text-2xl font-bold text-white">{metrics.registrationsLast30Days}</p>
+                <p className="text-sm text-slate-400">Últimos 30 dias</p>
+                <p className="text-2xl font-bold text-white">{metrics.registrationsLast30Days}</p>
               </div>
-              <Badge className="bg-slate-600 text-slate-300 text-xs">
-                vs anterior
+              <Badge className="bg-slate-600 text-slate-300">
+                vs período anterior
               </Badge>
             </div>
           </CardContent>
@@ -469,61 +469,61 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
 
         {/* Distribuição por Plano */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
-            <CardTitle className="text-white flex items-center gap-2 text-base md:text-lg">
-              <PieChart className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
-              Distribuição
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-purple-400" />
+              Distribuição por Plano
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0 space-y-3 md:space-y-4">
-            <div className="space-y-2 md:space-y-3">
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-blue-500" />
-                  <span className="text-xs md:text-sm text-slate-300">Trial</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <span className="text-sm text-slate-300">Trial</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <span className="text-white font-medium text-sm">{metrics.planDistribution.trial.count}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-medium">{metrics.planDistribution.trial.count}</span>
                   <span className="text-xs text-slate-500">({metrics.planDistribution.trial.percentage.toFixed(0)}%)</span>
                 </div>
               </div>
-              <Progress value={metrics.planDistribution.trial.percentage} className="h-1.5 md:h-2 bg-slate-700" />
+              <Progress value={metrics.planDistribution.trial.percentage} className="h-2 bg-slate-700" />
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500" />
-                  <span className="text-xs md:text-sm text-slate-300">Pro</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="text-sm text-slate-300">Pro</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <span className="text-white font-medium text-sm">{metrics.planDistribution.active.count}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-medium">{metrics.planDistribution.active.count}</span>
                   <span className="text-xs text-slate-500">({metrics.planDistribution.active.percentage.toFixed(0)}%)</span>
                 </div>
               </div>
-              <Progress value={metrics.planDistribution.active.percentage} className="h-1.5 md:h-2 bg-slate-700" />
+              <Progress value={metrics.planDistribution.active.percentage} className="h-2 bg-slate-700" />
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-purple-500" />
-                  <span className="text-xs md:text-sm text-slate-300">Pro+</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500" />
+                  <span className="text-sm text-slate-300">Pro+</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <span className="text-white font-medium text-sm">{metrics.planDistribution.proPlus.count}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-medium">{metrics.planDistribution.proPlus.count}</span>
                   <span className="text-xs text-slate-500">({metrics.planDistribution.proPlus.percentage.toFixed(0)}%)</span>
                 </div>
               </div>
-              <Progress value={metrics.planDistribution.proPlus.percentage} className="h-1.5 md:h-2 bg-slate-700" />
+              <Progress value={metrics.planDistribution.proPlus.percentage} className="h-2 bg-slate-700" />
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500" />
-                  <span className="text-xs md:text-sm text-slate-300">Expirado</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <span className="text-sm text-slate-300">Expirado</span>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <span className="text-white font-medium text-sm">{metrics.planDistribution.expired.count}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-medium">{metrics.planDistribution.expired.count}</span>
                   <span className="text-xs text-slate-500">({metrics.planDistribution.expired.percentage.toFixed(0)}%)</span>
                 </div>
               </div>
-              <Progress value={metrics.planDistribution.expired.percentage} className="h-1.5 md:h-2 bg-slate-700" />
+              <Progress value={metrics.planDistribution.expired.percentage} className="h-2 bg-slate-700" />
             </div>
           </CardContent>
         </Card>
@@ -531,32 +531,32 @@ export const AdminReports = ({ establishments }: AdminReportsProps) => {
 
       {/* Resumo Rápido */}
       <Card className="bg-gradient-to-r from-slate-800 to-slate-800/50 border-slate-700">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-sm md:text-base">Resumo</h3>
-              <p className="text-xs text-slate-400 hidden md:block">Indicadores do período</p>
+              <h3 className="text-white font-semibold">Resumo Executivo</h3>
+              <p className="text-xs text-slate-400">Principais indicadores do período</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-center">
-            <div className="p-2 md:p-0">
-              <p className="text-lg md:text-2xl font-bold text-emerald-400 truncate">{formatCurrency(metrics.estimatedMRR)}</p>
-              <p className="text-xs text-slate-400">MRR</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-emerald-400">{formatCurrency(metrics.estimatedMRR)}</p>
+              <p className="text-xs text-slate-400">MRR Atual</p>
             </div>
-            <div className="p-2 md:p-0">
-              <p className="text-lg md:text-2xl font-bold text-blue-400">{metrics.conversionRate.toFixed(1)}%</p>
+            <div>
+              <p className="text-2xl font-bold text-blue-400">{metrics.conversionRate.toFixed(1)}%</p>
               <p className="text-xs text-slate-400">Conversão</p>
             </div>
-            <div className="p-2 md:p-0">
-              <p className="text-lg md:text-2xl font-bold text-purple-400">{metrics.proPlus}</p>
+            <div>
+              <p className="text-2xl font-bold text-purple-400">{metrics.proPlus}</p>
               <p className="text-xs text-slate-400">Pro+</p>
             </div>
-            <div className="p-2 md:p-0">
-              <p className="text-lg md:text-2xl font-bold text-yellow-400">{metrics.activeTrials}</p>
-              <p className="text-xs text-slate-400">Trial</p>
+            <div>
+              <p className="text-2xl font-bold text-yellow-400">{metrics.activeTrials}</p>
+              <p className="text-xs text-slate-400">Em Trial</p>
             </div>
           </div>
         </CardContent>
