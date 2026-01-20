@@ -63,6 +63,7 @@ import {
   ExternalLink,
   ChartLine,
   TrendingUp,
+  FileText,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +74,7 @@ import { AdminStatsCard } from '@/components/AdminStatsCard';
 import { AdminDashboardSkeleton } from '@/components/AdminDashboardSkeleton';
 import { AdminCharts } from '@/components/AdminCharts';
 import { AdminQuickActions } from '@/components/AdminQuickActions';
+import { AdminReports } from '@/components/AdminReports';
 import logoPedy from '@/assets/logo_pedy.png';
 
 interface Establishment {
@@ -698,6 +700,13 @@ const AdminDashboardPage = () => {
               Estabelecimentos
             </TabsTrigger>
             <TabsTrigger 
+              value="reports"
+              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Relatórios
+            </TabsTrigger>
+            <TabsTrigger 
               value="admins"
               className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
             >
@@ -1065,6 +1074,11 @@ const AdminDashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Relatórios Tab */}
+          <TabsContent value="reports" className="space-y-6">
+            <AdminReports establishments={establishments} />
           </TabsContent>
         </Tabs>
       </main>
