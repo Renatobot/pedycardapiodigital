@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Eye,
   ChartLine,
+  Banknote,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -145,14 +146,14 @@ export const ResellerManagement = () => {
           
           <div className="flex items-center gap-4 mt-3 text-sm">
             {reseller.pricing_mode === 'commission' ? (
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                <Percent className="w-3 h-3 mr-1" />
-                {reseller.commission_percentage}%
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                <Banknote className="w-3 h-3 mr-1" />
+                💵 Pagar {reseller.commission_percentage}%
               </Badge>
             ) : (
               <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                 <DollarSign className="w-3 h-3 mr-1" />
-                Preço
+                🏷️ Preço Próprio
               </Badge>
             )}
           </div>
@@ -182,15 +183,37 @@ export const ResellerManagement = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Info Banner - Commission Type */}
+      <Card className="bg-green-500/10 border-green-500/30">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center shrink-0">
+              <Banknote className="w-5 h-5 text-green-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-300 flex items-center gap-2">
+                💵 REVENDEDORES PARCEIROS
+              </h3>
+              <p className="text-sm text-green-200/80 mt-1">
+                <strong>Ação:</strong> PAGAR COMISSÃO EM DINHEIRO (PIX/Transferência)
+              </p>
+              <p className="text-xs text-green-200/60 mt-1">
+                As comissões devem ser pagas diretamente ao revendedor via transferência bancária.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
             <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-            Revendedores
+            Revendedores (Pagar Comissão)
           </h2>
           <p className="text-xs sm:text-sm text-slate-400">
-            Gerencie os revendedores e acompanhe suas vendas
+            Gerencie os revendedores e pague comissões em dinheiro
           </p>
         </div>
         <div className="flex gap-2">
@@ -356,14 +379,14 @@ export const ResellerManagement = () => {
                         </TableCell>
                         <TableCell>
                           {reseller.pricing_mode === 'commission' ? (
-                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                              <Percent className="w-3 h-3 mr-1" />
-                              {reseller.commission_percentage}%
+                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                              <Banknote className="w-3 h-3 mr-1" />
+                              💵 Pagar {reseller.commission_percentage}%
                             </Badge>
                           ) : (
                             <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                               <DollarSign className="w-3 h-3 mr-1" />
-                              Preço
+                              🏷️ Preço Próprio
                             </Badge>
                           )}
                         </TableCell>
