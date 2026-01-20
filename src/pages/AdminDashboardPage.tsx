@@ -89,6 +89,7 @@ interface Establishment {
   logo_url: string | null;
   slug: string | null;
   plan_status: string;
+  plan_type: string | null;
   plan_expires_at: string | null;
   trial_start_date: string;
   trial_end_date: string;
@@ -116,6 +117,7 @@ const AdminDashboardPage = () => {
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | 'extend'>('activate');
   const [customDays, setCustomDays] = useState<number>(30);
+  const [selectedPlanType, setSelectedPlanType] = useState<'basic' | 'pro' | 'pro_plus'>('pro');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [showCharts, setShowCharts] = useState(false);
   const [adminEmail, setAdminEmail] = useState<string>('');
@@ -479,6 +481,13 @@ const AdminDashboardPage = () => {
         </Badge>
       );
     }
+    if (establishment.plan_type === 'basic') {
+      return (
+        <Badge className="bg-slate-500/20 text-slate-300 border-slate-500/30">
+          📋 Básico
+        </Badge>
+      );
+    }
     return (
       <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
         <Crown className="w-3 h-3 mr-1" />
@@ -488,16 +497,23 @@ const AdminDashboardPage = () => {
   };
 
   // Ações do admin
-  const handleActivatePro = async (establishment: Establishment) => {
+  const handleActivatePlan = async (establishment: Establishment) => {
     try {
       const now = new Date();
       const expiresAt = new Date(now.getTime() + customDays * 24 * 60 * 60 * 1000);
+      
+      // Determinar plan_type e has_pro_plus baseado na seleção
+      const planType = selectedPlanType === 'basic' ? 'basic' : 'pro';
+      const hasProPlus = selectedPlanType === 'pro_plus';
       
       const { data, error } = await supabase
         .from('establishments')
         .update({
           plan_status: 'active',
+          plan_type: planType,
           plan_expires_at: expiresAt.toISOString(),
+          has_pro_plus: hasProPlus,
+          pro_plus_activated_at: hasProPlus ? new Date().toISOString() : null,
         })
         .eq('id', establishment.id)
         .select()
@@ -509,13 +525,16 @@ const AdminDashboardPage = () => {
         throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
       }
 
+      const planName = selectedPlanType === 'basic' ? 'Básico' : selectedPlanType === 'pro' ? 'Pro' : 'Pro+';
+
       toast({
         title: 'Plano ativado!',
-        description: `${establishment.name} agora tem plano Pro por ${customDays} dias.`,
+        description: `${establishment.name} agora tem plano ${planName} por ${customDays} dias.`,
       });
       
       await fetchEstablishments();
       setCustomDays(30);
+      setSelectedPlanType('pro');
     } catch (error: any) {
       console.error('Erro ao ativar plano:', error);
       toast({
@@ -606,6 +625,7 @@ const AdminDashboardPage = () => {
     setSelectedEstablishment(establishment);
     setActionType(action);
     setCustomDays(action === 'extend' ? 7 : 30);
+    setSelectedPlanType('pro'); // Reset para Pro por padrão
     setActionModalOpen(true);
   };
 
@@ -1173,15 +1193,15 @@ const AdminDashboardPage = () => {
 
       {/* Modal de Ação */}
       <Dialog open={actionModalOpen} onOpenChange={setActionModalOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {actionType === 'activate' && 'Ativar Plano Pro'}
+              {actionType === 'activate' && 'Ativar Plano'}
               {actionType === 'deactivate' && 'Desativar Plano'}
               {actionType === 'extend' && 'Estender Trial'}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              {actionType === 'activate' && 'Escolha a duração do plano Pro para este estabelecimento.'}
+              {actionType === 'activate' && 'Escolha o plano e a duração para este estabelecimento.'}
               {actionType === 'deactivate' && 'Isso expirará o plano imediatamente. O estabelecimento perderá o acesso.'}
               {actionType === 'extend' && 'Escolha quantos dias deseja adicionar ao trial.'}
             </DialogDescription>
@@ -1191,6 +1211,69 @@ const AdminDashboardPage = () => {
               <p className="text-slate-300">
                 Estabelecimento: <span className="font-medium text-white">{selectedEstablishment.name}</span>
               </p>
+              
+              {/* Seleção de tipo de plano - apenas para ativar */}
+              {actionType === 'activate' && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-300">
+                    Selecione o plano
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlanType('basic')}
+                      className={`p-3 rounded-lg border text-center transition-all ${
+                        selectedPlanType === 'basic'
+                          ? 'border-blue-500 bg-blue-500/20'
+                          : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                      }`}
+                    >
+                      <p className="text-xs text-slate-400">📋</p>
+                      <p className={`font-medium text-sm ${selectedPlanType === 'basic' ? 'text-blue-400' : 'text-slate-300'}`}>
+                        Básico
+                      </p>
+                      <p className="text-xs text-slate-500">R$ 37/mês</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlanType('pro')}
+                      className={`p-3 rounded-lg border text-center transition-all ${
+                        selectedPlanType === 'pro'
+                          ? 'border-green-500 bg-green-500/20'
+                          : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                      }`}
+                    >
+                      <p className="text-xs text-slate-400">🚀</p>
+                      <p className={`font-medium text-sm ${selectedPlanType === 'pro' ? 'text-green-400' : 'text-slate-300'}`}>
+                        Pro
+                      </p>
+                      <p className="text-xs text-slate-500">R$ 59,90/mês</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlanType('pro_plus')}
+                      className={`p-3 rounded-lg border text-center transition-all ${
+                        selectedPlanType === 'pro_plus'
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                      }`}
+                    >
+                      <p className="text-xs text-slate-400">⭐</p>
+                      <p className={`font-medium text-sm ${selectedPlanType === 'pro_plus' ? 'text-purple-400' : 'text-slate-300'}`}>
+                        Pro+
+                      </p>
+                      <p className="text-xs text-slate-500">R$ 79,90/mês</p>
+                    </button>
+                  </div>
+                  
+                  {/* Info sobre plano selecionado */}
+                  <div className="p-2 bg-slate-700/30 rounded-lg text-xs text-slate-400">
+                    {selectedPlanType === 'basic' && 'Cardápio digital + templates WhatsApp (sem painel de pedidos)'}
+                    {selectedPlanType === 'pro' && 'Cardápio + painel de pedidos + push + cupons + métricas básicas'}
+                    {selectedPlanType === 'pro_plus' && 'Todos recursos + pizza multi-sabor + analytics avançado + CRM'}
+                  </div>
+                </div>
+              )}
               
               {/* Campo de dias - apenas para ativar e estender */}
               {(actionType === 'activate' || actionType === 'extend') && (
@@ -1299,8 +1382,8 @@ const AdminDashboardPage = () => {
               Cancelar
             </Button>
             {actionType === 'activate' && selectedEstablishment && (
-              <Button onClick={() => handleActivatePro(selectedEstablishment)} className="bg-green-600 hover:bg-green-700">
-                Ativar Pro ({customDays} dias)
+              <Button onClick={() => handleActivatePlan(selectedEstablishment)} className="bg-green-600 hover:bg-green-700">
+                Ativar {selectedPlanType === 'basic' ? 'Básico' : selectedPlanType === 'pro' ? 'Pro' : 'Pro+'} ({customDays} dias)
               </Button>
             )}
             {actionType === 'deactivate' && selectedEstablishment && (
