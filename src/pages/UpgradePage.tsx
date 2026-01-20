@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Crown, CheckCircle2, XCircle, MessageCircle, ArrowLeft, Smartphone, Sparkles } from 'lucide-react';
+import { Crown, CheckCircle2, XCircle, MessageCircle, ArrowLeft, Smartphone, Sparkles, Lightbulb } from 'lucide-react';
 import { openWhatsApp, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 import { Badge } from '@/components/ui/badge';
 
@@ -13,6 +13,7 @@ const baseFeatures = [
   'Pedidos via WhatsApp',
   'Instalar como App (PWA)',
   'Sem taxa por pedido',
+  'Templates prontos por nicho',
 ];
 
 // Recursos exclusivos do Pro
@@ -26,7 +27,7 @@ const proFeatures = [
 
 // Recursos exclusivos do Pro+
 const proPlusFeatures = [
-  'Pizzas 3-4 sabores',
+  'Pizzas 3-4 sabores (cobra pelo mais caro)',
   'Combos complexos',
   'Precificação avançada',
   'Personalizações avançadas',
@@ -176,6 +177,32 @@ export default function UpgradePage() {
             {plans.map((plan) => (
               <PlanCard key={plan.name} plan={plan} />
             ))}
+          </div>
+
+          {/* Destaques informativos */}
+          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-primary" />
+              Você sabia?
+            </h3>
+            
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <p className="flex items-start gap-2">
+                <span>🍕</span>
+                <span>
+                  <strong className="text-foreground">Pizzas com vários sabores</strong> cobram 
+                  automaticamente pelo sabor mais caro - sem cálculo manual!
+                </span>
+              </p>
+              
+              <p className="flex items-start gap-2">
+                <span>📋</span>
+                <span>
+                  Temos <strong className="text-foreground">templates prontos</strong> para: 
+                  Pizzarias, Hamburguerias, Açaí, Farmácias, Pet Shops, Depósitos e muito mais!
+                </span>
+              </p>
+            </div>
           </div>
 
           {/* Garantias */}
