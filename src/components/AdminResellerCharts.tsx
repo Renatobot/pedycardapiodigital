@@ -73,7 +73,7 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
       .sort((a, b) => b.total_establishments - a.total_establishments)
       .slice(0, 10)
       .map(r => ({
-        name: r.name.length > 15 ? r.name.substring(0, 15) + '...' : r.name,
+        name: r.name.length > 10 ? r.name.substring(0, 10) + '...' : r.name,
         fullName: r.name,
         ativos: r.active_establishments,
         inativos: r.total_establishments - r.active_establishments,
@@ -125,7 +125,7 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
 
       if (!resellerCommissions[act.reseller_id]) {
         resellerCommissions[act.reseller_id] = {
-          name: reseller.name.length > 12 ? reseller.name.substring(0, 12) + '...' : reseller.name,
+          name: reseller.name.length > 10 ? reseller.name.substring(0, 10) + '...' : reseller.name,
           pendente: 0,
           pago: 0,
         };
@@ -170,54 +170,55 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Card className="bg-yellow-500/10 border-yellow-500/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-yellow-300">Comissões Pendentes</p>
-            <p className="text-2xl font-bold text-yellow-400">{formatCurrency(totalPendingCommission)}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-yellow-300">Comissões Pendentes</p>
+            <p className="text-lg sm:text-2xl font-bold text-yellow-400">{formatCurrency(totalPendingCommission)}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-500/10 border-green-500/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-green-300">Comissões Pagas</p>
-            <p className="text-2xl font-bold text-green-400">{formatCurrency(totalPaidCommission)}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-green-300">Comissões Pagas</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-400">{formatCurrency(totalPaidCommission)}</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Bar Chart - Clients per Reseller */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              👥 Clientes por Revendedor
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-white text-sm sm:text-lg flex items-center gap-2">
+              👥 Clientes <span className="hidden sm:inline">por Revendedor</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="px-2 sm:px-6">
+            <div className="h-48 sm:h-64">
               {clientsPerReseller.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={clientsPerReseller} layout="vertical">
                     <XAxis 
                       type="number" 
                       stroke="#64748B"
-                      tick={{ fill: '#94A3B8', fontSize: 12 }}
+                      tick={{ fill: '#94A3B8', fontSize: 10 }}
                     />
                     <YAxis 
                       type="category" 
                       dataKey="name" 
                       stroke="#64748B"
-                      tick={{ fill: '#94A3B8', fontSize: 11 }}
-                      width={100}
+                      tick={{ fill: '#94A3B8', fontSize: 10 }}
+                      width={70}
                     />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#1E293B', 
                         border: '1px solid #334155',
                         borderRadius: '8px',
-                        color: '#F8FAFC'
+                        color: '#F8FAFC',
+                        fontSize: '12px'
                       }}
                       formatter={(value: number, name: string) => [
                         value,
@@ -229,7 +230,7 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
                   Sem dados para exibir
                 </div>
               )}
@@ -239,33 +240,37 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
 
         {/* Line Chart - Activations over time */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              📈 Ativações nos Últimos 14 Dias
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-white text-sm sm:text-lg flex items-center gap-2">
+              📈 Ativações <span className="hidden sm:inline">nos Últimos 14 Dias</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="px-2 sm:px-6">
+            <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={activationsOverTime}>
                   <XAxis 
                     dataKey="date" 
                     stroke="#64748B"
-                    tick={{ fill: '#94A3B8', fontSize: 12 }}
+                    tick={{ fill: '#94A3B8', fontSize: 10 }}
                     axisLine={{ stroke: '#475569' }}
+                    tickLine={false}
+                    interval="preserveStartEnd"
                   />
                   <YAxis 
                     stroke="#64748B"
-                    tick={{ fill: '#94A3B8', fontSize: 12 }}
+                    tick={{ fill: '#94A3B8', fontSize: 10 }}
                     axisLine={{ stroke: '#475569' }}
                     allowDecimals={false}
+                    width={30}
                   />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#1E293B', 
                       border: '1px solid #334155',
                       borderRadius: '8px',
-                      color: '#F8FAFC'
+                      color: '#F8FAFC',
+                      fontSize: '12px'
                     }}
                     labelStyle={{ color: '#94A3B8' }}
                   />
@@ -273,9 +278,9 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
                     type="monotone" 
                     dataKey="ativações" 
                     stroke="#A855F7" 
-                    strokeWidth={3}
-                    dot={{ fill: '#A855F7', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#C084FC' }}
+                    strokeWidth={2}
+                    dot={{ fill: '#A855F7', strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, fill: '#C084FC' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -285,13 +290,13 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
 
         {/* Pie Chart - Pricing Mode Distribution */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              🍩 Modo de Operação
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-white text-sm sm:text-lg flex items-center gap-2">
+              🍩 Modo <span className="hidden sm:inline">de Operação</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center">
+          <CardContent className="px-2 sm:px-6">
+            <div className="h-48 sm:h-64 flex items-center">
               {pricingModeDistribution.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -299,8 +304,8 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
                       data={pricingModeDistribution}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
+                      innerRadius={35}
+                      outerRadius={60}
                       paddingAngle={5}
                       dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -315,18 +320,19 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
                         backgroundColor: '#1E293B', 
                         border: '1px solid #334155',
                         borderRadius: '8px',
-                        color: '#F8FAFC'
+                        color: '#F8FAFC',
+                        fontSize: '12px'
                       }}
                       formatter={(value: number) => [`${value} revendedores`, '']}
                     />
                     <Legend 
-                      wrapperStyle={{ color: '#94A3B8' }}
+                      wrapperStyle={{ color: '#94A3B8', fontSize: '12px' }}
                       formatter={(value) => <span style={{ color: '#CBD5E1' }}>{value}</span>}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="w-full text-center text-slate-400">
+                <div className="w-full text-center text-slate-400 text-sm">
                   Sem dados para exibir
                 </div>
               )}
@@ -336,35 +342,36 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
 
         {/* Bar Chart - Commissions per Reseller */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              💰 Comissões por Revendedor
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-white text-sm sm:text-lg flex items-center gap-2">
+              💰 Comissões <span className="hidden sm:inline">por Revendedor</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="px-2 sm:px-6">
+            <div className="h-48 sm:h-64">
               {commissionsPerReseller.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={commissionsPerReseller} layout="vertical">
                     <XAxis 
                       type="number" 
                       stroke="#64748B"
-                      tick={{ fill: '#94A3B8', fontSize: 12 }}
+                      tick={{ fill: '#94A3B8', fontSize: 10 }}
                       tickFormatter={(value) => `R$${value}`}
                     />
                     <YAxis 
                       type="category" 
                       dataKey="name" 
                       stroke="#64748B"
-                      tick={{ fill: '#94A3B8', fontSize: 11 }}
-                      width={90}
+                      tick={{ fill: '#94A3B8', fontSize: 10 }}
+                      width={70}
                     />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#1E293B', 
                         border: '1px solid #334155',
                         borderRadius: '8px',
-                        color: '#F8FAFC'
+                        color: '#F8FAFC',
+                        fontSize: '12px'
                       }}
                       formatter={(value: number, name: string) => [
                         formatCurrency(value),
@@ -376,14 +383,14 @@ export function AdminResellerCharts({ resellers }: AdminResellerChartsProps) {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
                   Sem comissões registradas
                 </div>
               )}
             </div>
             
             {/* Legend */}
-            <div className="flex items-center justify-center gap-6 mt-2 text-xs">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 mt-2 text-xs">
               <span className="flex items-center gap-1">
                 <span className="w-3 h-3 rounded bg-yellow-500"></span>
                 <span className="text-slate-400">Pendente</span>
