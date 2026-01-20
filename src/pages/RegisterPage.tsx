@@ -1,16 +1,26 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, MapPin } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Store, Mail, Lock, Phone, Upload, FileText, Loader2, MapPin, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSlug } from '@/lib/utils';
 
+interface ResellerInfo {
+  id: string;
+  name: string;
+  price_basic: number;
+  price_pro: number;
+  price_pro_plus: number;
+  pricing_mode: string;
+}
+
 export default function RegisterPage() {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     establishmentName: '',
     city: '',
@@ -24,9 +34,39 @@ export default function RegisterPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [reseller, setReseller] = useState<ResellerInfo | null>(null);
+  const [loadingReseller, setLoadingReseller] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Fetch reseller info from referral code
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      fetchReseller(refCode);
+    }
+  }, [searchParams]);
+
+  const fetchReseller = async (code: string) => {
+    setLoadingReseller(true);
+    try {
+      const { data, error } = await supabase.rpc('get_reseller_by_code', { code });
+      
+      if (error) {
+        console.error('Error fetching reseller:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setReseller(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching reseller:', error);
+    } finally {
+      setLoadingReseller(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -143,7 +183,8 @@ export default function RegisterPage() {
         counter++;
       }
 
-      // 4. Create establishment record with slug
+      // 4. Create establishment record with slug and reseller info
+      const refCode = searchParams.get('ref');
       const { error: establishmentError } = await supabase
         .from('establishments')
         .insert({
@@ -155,6 +196,8 @@ export default function RegisterPage() {
           email: formData.email,
           city: formData.city,
           slug: slug,
+          reseller_id: reseller?.id || null,
+          referral_code: refCode || null,
         });
 
       if (establishmentError) throw establishmentError;
@@ -221,6 +264,28 @@ export default function RegisterPage() {
               Comece seu teste de 7 dias agora
             </p>
           </div>
+
+          {/* Referral Banner */}
+          {reseller && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
+              <UserPlus className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                  Indicação: {reseller.name}
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  Você foi indicado por um parceiro PEDY
+                </p>
+              </div>
+            </div>
+          )}
+
+          {loadingReseller && (
+            <div className="mb-4 p-3 bg-muted rounded-lg flex items-center gap-3">
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Verificando indicação...</span>
+            </div>
+          )}
 
           <Card className="shadow-soft">
             <CardContent className="pt-6">
