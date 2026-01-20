@@ -12,6 +12,17 @@ export interface Customer {
   reference_point?: string;
 }
 
+export interface CustomerAddress {
+  id: string;
+  label: string;
+  street: string;
+  number: string;
+  complement?: string | null;
+  neighborhood?: string | null;
+  reference_point?: string | null;
+  is_default: boolean;
+}
+
 const STORAGE_KEY = 'pedy-customer';
 
 function normalizePhone(phone: string): string {
@@ -133,6 +144,128 @@ export function useCustomer() {
     return { success: true };
   }, [customer]);
 
+  // Get customer addresses
+  const getAddresses = useCallback(async (): Promise<CustomerAddress[]> => {
+    if (!customer) return [];
+
+    const { data, error } = await supabase
+      .from('customer_addresses')
+      .select('*')
+      .eq('customer_id', customer.id)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching addresses:', error);
+      return [];
+    }
+
+    return data.map(addr => ({
+      id: addr.id,
+      label: addr.label || 'Casa',
+      street: addr.street,
+      number: addr.number,
+      complement: addr.complement,
+      neighborhood: addr.neighborhood,
+      reference_point: addr.reference_point,
+      is_default: addr.is_default || false,
+    }));
+  }, [customer]);
+
+  // Add new address
+  const addAddress = useCallback(async (address: Omit<CustomerAddress, 'id' | 'is_default'> & { is_default?: boolean }): Promise<{ success: boolean; address?: CustomerAddress; error?: string }> => {
+    if (!customer) {
+      return { success: false, error: 'Nenhum cliente logado' };
+    }
+
+    // If this is set as default, unset other defaults first
+    if (address.is_default) {
+      await supabase
+        .from('customer_addresses')
+        .update({ is_default: false })
+        .eq('customer_id', customer.id);
+    }
+
+    const { data, error } = await supabase
+      .from('customer_addresses')
+      .insert({
+        customer_id: customer.id,
+        label: address.label,
+        street: address.street,
+        number: address.number,
+        complement: address.complement || null,
+        neighborhood: address.neighborhood || null,
+        reference_point: address.reference_point || null,
+        is_default: address.is_default || false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: 'Erro ao adicionar endereço' };
+    }
+
+    return {
+      success: true,
+      address: {
+        id: data.id,
+        label: data.label || 'Casa',
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        reference_point: data.reference_point,
+        is_default: data.is_default || false,
+      },
+    };
+  }, [customer]);
+
+  // Update address
+  const updateAddress = useCallback(async (addressId: string, updates: Partial<Omit<CustomerAddress, 'id'>>): Promise<{ success: boolean; error?: string }> => {
+    if (!customer) {
+      return { success: false, error: 'Nenhum cliente logado' };
+    }
+
+    // If setting as default, unset other defaults first
+    if (updates.is_default) {
+      await supabase
+        .from('customer_addresses')
+        .update({ is_default: false })
+        .eq('customer_id', customer.id);
+    }
+
+    const { error } = await supabase
+      .from('customer_addresses')
+      .update(updates)
+      .eq('id', addressId)
+      .eq('customer_id', customer.id);
+
+    if (error) {
+      return { success: false, error: 'Erro ao atualizar endereço' };
+    }
+
+    return { success: true };
+  }, [customer]);
+
+  // Delete address
+  const deleteAddress = useCallback(async (addressId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!customer) {
+      return { success: false, error: 'Nenhum cliente logado' };
+    }
+
+    const { error } = await supabase
+      .from('customer_addresses')
+      .delete()
+      .eq('id', addressId)
+      .eq('customer_id', customer.id);
+
+    if (error) {
+      return { success: false, error: 'Erro ao remover endereço' };
+    }
+
+    return { success: true };
+  }, [customer]);
+
   // Logout
   const logout = useCallback(() => {
     setCustomer(null);
@@ -145,6 +278,10 @@ export function useCustomer() {
     login,
     register,
     updateCustomer,
+    getAddresses,
+    addAddress,
+    updateAddress,
+    deleteAddress,
     logout,
     isLoggedIn: !!customer,
   };

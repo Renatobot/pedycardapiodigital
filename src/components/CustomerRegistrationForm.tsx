@@ -13,11 +13,6 @@ interface CustomerRegistrationFormProps {
 export default function CustomerRegistrationForm({ onSuccess }: CustomerRegistrationFormProps) {
   const [name, setName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
-  const [street, setStreet] = useState('');
-  const [number, setNumber] = useState('');
-  const [complement, setComplement] = useState('');
-  const [neighborhood, setNeighborhood] = useState('');
-  const [referencePoint, setReferencePoint] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register } = useCustomer();
@@ -55,11 +50,6 @@ export default function CustomerRegistrationForm({ onSuccess }: CustomerRegistra
     const result = await register({
       name: name.trim(),
       whatsapp,
-      street: street.trim() || undefined,
-      number: number.trim() || undefined,
-      complement: complement.trim() || undefined,
-      neighborhood: neighborhood.trim() || undefined,
-      reference_point: referencePoint.trim() || undefined,
     });
     setLoading(false);
 
@@ -80,7 +70,6 @@ export default function CustomerRegistrationForm({ onSuccess }: CustomerRegistra
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      {/* Required fields */}
       <div className="space-y-2">
         <Label htmlFor="register-name">Nome completo *</Label>
         <Input
@@ -105,70 +94,9 @@ export default function CustomerRegistrationForm({ onSuccess }: CustomerRegistra
         />
       </div>
 
-      {/* Optional address fields */}
-      <div className="pt-2">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Endereço de entrega (opcional)
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="register-street">Rua/Avenida</Label>
-        <Input
-          id="register-street"
-          placeholder="Nome da rua ou avenida"
-          value={street}
-          onChange={(e) => setStreet(e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="register-number">Número</Label>
-          <Input
-            id="register-number"
-            placeholder="123"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="register-complement">Complemento</Label>
-          <Input
-            id="register-complement"
-            placeholder="Apto, bloco..."
-            value={complement}
-            onChange={(e) => setComplement(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="register-neighborhood">Bairro</Label>
-        <Input
-          id="register-neighborhood"
-          placeholder="Nome do bairro"
-          value={neighborhood}
-          onChange={(e) => setNeighborhood(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="register-reference">Ponto de referência</Label>
-        <Input
-          id="register-reference"
-          placeholder="Próximo ao mercado..."
-          value={referencePoint}
-          onChange={(e) => setReferencePoint(e.target.value)}
-        />
-      </div>
+      <p className="text-xs text-muted-foreground">
+        Você poderá cadastrar seu endereço no momento do pedido.
+      </p>
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? (

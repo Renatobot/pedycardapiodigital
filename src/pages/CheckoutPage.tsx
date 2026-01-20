@@ -23,6 +23,7 @@ import { isEstablishmentActive } from '@/lib/utils';
 import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage, getAvailableScheduleSlots, ScheduleSlot } from '@/lib/businessHours';
 import { hexToHsl } from '@/lib/colors';
 import { CustomerPushPrompt } from '@/components/CustomerPushPrompt';
+import { useCustomer } from '@/hooks/useCustomer';
 
 interface PublicEstablishment {
   id: string;
@@ -61,6 +62,7 @@ interface SavedAddress {
 }
 
 function CheckoutContent() {
+  const { customer } = useCustomer();
   const { id, slug } = useParams();
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
@@ -566,6 +568,7 @@ function CheckoutContent() {
           items: orderItems,
           scheduled_date: scheduledDate,
           scheduled_time: scheduledTime,
+          customer_id: customer?.id || null,
         });
 
       if (error) {

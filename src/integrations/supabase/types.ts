@@ -98,6 +98,53 @@ export type Database = {
           },
         ]
       }
+      customer_addresses: {
+        Row: {
+          complement: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          is_default: boolean | null
+          label: string | null
+          neighborhood: string | null
+          number: string
+          reference_point: string | null
+          street: string
+        }
+        Insert: {
+          complement?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          is_default?: boolean | null
+          label?: string | null
+          neighborhood?: string | null
+          number: string
+          reference_point?: string | null
+          street: string
+        }
+        Update: {
+          complement?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          is_default?: boolean | null
+          label?: string | null
+          neighborhood?: string | null
+          number?: string
+          reference_point?: string | null
+          street?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_favorites: {
         Row: {
           created_at: string | null
@@ -423,6 +470,7 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_address: string
+          customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
           delivery_fee: number | null
@@ -447,6 +495,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           customer_address: string
+          customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number | null
@@ -471,6 +520,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           customer_address?: string
+          customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           delivery_fee?: number | null
@@ -493,6 +543,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_establishment_id_fkey"
             columns: ["establishment_id"]
