@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
-import { Product, ProductAddition, Category, SelectedProductOption } from '@/types';
+import { Product, ProductAddition, Category, SelectedProductOption, calculateGroupPrice } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -162,9 +162,7 @@ function ProductCard({ product, viewMode, onAddToCart }: ProductCardProps) {
     : product.price;
 
   const additionsTotal = selectedAdditions.reduce((sum, a) => sum + a.price, 0);
-  const optionsTotal = selectedOptions.reduce((sum, group) => 
-    sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
-  );
+  const optionsTotal = selectedOptions.reduce((sum, group) => sum + calculateGroupPrice(group), 0);
   const itemTotal = (effectivePrice + additionsTotal + optionsTotal) * quantity;
 
   // Validation for required option groups
@@ -1016,6 +1014,7 @@ function MenuContent() {
               min_selections: g.min_selections || 0,
               max_selections: g.max_selections || 1,
               sort_order: g.sort_order || 0,
+              price_rule: (g.price_rule as 'highest' | 'average' | 'sum') || 'highest',
               options: (g.product_options || [])
                 .filter((o: any) => o.is_available !== false)
                 .map((o: any) => ({

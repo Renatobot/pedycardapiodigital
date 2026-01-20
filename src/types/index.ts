@@ -43,7 +43,31 @@ export interface Product {
 export interface SelectedProductOption {
   groupId: string;
   groupName: string;
+  groupType?: 'single' | 'multiple' | 'flavor';
+  priceRule?: 'highest' | 'average' | 'sum';
   options: { id: string; name: string; price: number }[];
+}
+
+// Utility function to calculate price based on group type and price rule
+export function calculateGroupPrice(group: SelectedProductOption): number {
+  if (!group.options || group.options.length === 0) return 0;
+  
+  const prices = group.options.map(o => o.price);
+  
+  // If it's a flavor type, apply the price rule
+  if (group.groupType === 'flavor' && group.priceRule) {
+    switch (group.priceRule) {
+      case 'highest':
+        return Math.max(...prices);
+      case 'average':
+        return prices.reduce((a, b) => a + b, 0) / prices.length;
+      case 'sum':
+        return prices.reduce((a, b) => a + b, 0);
+    }
+  }
+  
+  // For other types, sum normally
+  return prices.reduce((a, b) => a + b, 0);
 }
 
 export interface CartItem {
