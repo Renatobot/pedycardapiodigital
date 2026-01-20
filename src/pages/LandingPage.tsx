@@ -22,7 +22,6 @@ import {
   CheckCircle2, 
   ArrowRight,
   Store,
-  Menu as MenuIcon,
   CreditCard,
   Users,
   Percent,
@@ -50,6 +49,9 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NICHE_TEMPLATES } from '@/lib/nicheTemplates';
+import { AnimatedText } from '@/components/AnimatedText';
+import { ScrollReveal } from '@/components/ScrollReveal';
+import { AnimatedCounter } from '@/components/AnimatedCounter';
 
 const features = [
   {
@@ -150,10 +152,10 @@ const testimonials = [
 ];
 
 const stats = [
-  { value: '500+', label: 'Estabelecimentos ativos' },
-  { value: '50.000+', label: 'Pedidos enviados' },
-  { value: 'R$ 0', label: 'Taxa por pedido · Sem comissão, sem surpresas' },
-  { value: '5 min', label: 'Para criar seu cardápio' },
+  { value: 500, label: 'Estabelecimentos ativos', suffix: '+' },
+  { value: 50000, label: 'Pedidos enviados', suffix: '+', decimals: 0 },
+  { value: 0, label: 'Taxa por pedido · Sem comissão', prefix: 'R$ ', suffix: '', decimals: 0 },
+  { value: 5, label: 'Minutos para criar seu cardápio', suffix: ' min', decimals: 0 },
 ];
 
 const segments = [
@@ -235,11 +237,34 @@ const templateCards = [
   { id: 'hortifruti', icon: '🥬', name: 'Hortifrúti' },
 ];
 
+// Floating background icons for thematic decoration
+const FloatingIcons = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Top area icons */}
+    <span className="absolute top-20 left-[5%] text-5xl opacity-[0.08] floating-icon select-none">🍕</span>
+    <span className="absolute top-32 right-[8%] text-4xl opacity-[0.06] floating-icon-delayed select-none">🍔</span>
+    <span className="absolute top-[40%] left-[3%] text-3xl opacity-[0.05] floating-icon-delayed-2 select-none">📦</span>
+    <span className="absolute top-[25%] right-[5%] text-4xl opacity-[0.07] floating-icon select-none">🛵</span>
+    <span className="absolute top-[60%] left-[8%] text-3xl opacity-[0.05] floating-icon-delayed select-none">📱</span>
+    <span className="absolute top-[70%] right-[10%] text-4xl opacity-[0.06] floating-icon-delayed-2 select-none">🍟</span>
+    <span className="absolute top-[85%] left-[12%] text-3xl opacity-[0.05] floating-icon select-none">🥤</span>
+    <span className="absolute top-[50%] right-[3%] text-3xl opacity-[0.04] floating-icon-delayed select-none">🍰</span>
+    
+    {/* Decorative blurred circles */}
+    <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+    <div className="absolute top-1/3 -left-40 w-80 h-80 bg-secondary/10 rounded-full blur-3xl" />
+    <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+  </div>
+);
+
 export default function LandingPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen animated-gradient-bg relative">
+      {/* Floating thematic icons */}
+      <FloatingIcons />
+      
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="container flex items-center justify-between h-16">
@@ -256,93 +281,120 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-28 pb-16 px-4">
-        <div className="container">
-          <div className="max-w-3xl mx-auto text-center animate-fade-in">
-            <div className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Zap className="w-4 h-4" />
-              Sem taxas por pedido · Sem comissão
-            </div>
+      <section className="pt-28 pb-16 px-4 relative">
+        <div className="container relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <ScrollReveal>
+              <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-sm font-medium mb-6 border border-secondary/30">
+                <Zap className="w-4 h-4" />
+                <span className="font-bold">Sem taxas por pedido · Sem comissão</span>
+              </div>
+            </ScrollReveal>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Venda mais pelo WhatsApp{' '}
-              <span className="text-gradient">sem pagar taxa por pedido</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Chega de áudios confusos e pedidos bagunçados. Com o PEDY, seu cliente monta o pedido sozinho 
-              e você recebe tudo organizado no WhatsApp. Pronto em 5 minutos.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Link to="/cadastro">
-                <Button variant="hero" size="xl" className="w-full sm:w-auto">
-                  Criar cardápio grátis agora
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-              <Link to="/demo">
-                <Button variant="outline" size="xl" className="w-full sm:w-auto">
-                  <Smartphone className="w-5 h-5 mr-1" />
-                  Ver demonstração
-                </Button>
-              </Link>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              ✓ 7 dias grátis • ✓ Sem cartão de crédito • ✓ Cancele quando quiser
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-3 mt-4">
-              {[
-                'Sem taxa por pedido',
-                'Planos acessíveis', 
-                'Templates prontos por nicho',
-              ].map((badge, index) => (
-                <span 
-                  key={index}
-                  className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-medium"
-                >
-                  ✓ {badge}
+            <ScrollReveal delay={100}>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+                Venda mais pelo WhatsApp{' '}
+                <span className="text-primary font-extrabold">
+                  <AnimatedText 
+                    words={['sem pagar taxa', 'sem comissão', 'sem burocracia', 'com mais lucro']}
+                    className="text-primary"
+                  />
                 </span>
-              ))}
-            </div>
+              </h1>
+            </ScrollReveal>
+            
+            <ScrollReveal delay={200}>
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Chega de áudios confusos e pedidos bagunçados. Com o PEDY, seu cliente monta o pedido sozinho 
+                e você recebe tudo organizado no WhatsApp. <span className="text-primary font-semibold">Pronto em 5 minutos.</span>
+              </p>
+            </ScrollReveal>
+            
+            <ScrollReveal delay={300}>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                <Link to="/cadastro">
+                  <Button variant="hero" size="xl" className="w-full sm:w-auto group">
+                    Criar cardápio grátis agora
+                    <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link to="/demo">
+                  <Button variant="outline" size="xl" className="w-full sm:w-auto">
+                    <Smartphone className="w-5 h-5 mr-1" />
+                    Ver demonstração
+                  </Button>
+                </Link>
+              </div>
+            </ScrollReveal>
+            
+            <ScrollReveal delay={400}>
+              <p className="text-sm text-muted-foreground">
+                <span className="text-secondary font-semibold">✓ 7 dias grátis</span> • 
+                <span className="text-secondary font-semibold"> ✓ Sem cartão de crédito</span> • 
+                <span className="text-secondary font-semibold"> ✓ Cancele quando quiser</span>
+              </p>
+              
+              <div className="flex flex-wrap justify-center gap-3 mt-4">
+                {[
+                  'Sem taxa por pedido',
+                  'Planos acessíveis', 
+                  'Templates prontos por nicho',
+                ].map((badge, index) => (
+                  <span 
+                    key={index}
+                    className="bg-primary/15 text-primary px-3 py-1 rounded-full text-xs font-bold border border-primary/20"
+                  >
+                    ✓ {badge}
+                  </span>
+                ))}
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-card border-y border-border">
+      <section className="py-12 bg-card/80 backdrop-blur-sm border-y border-border relative z-10">
         <div className="container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             {stats.map((stat, index) => (
-              <div 
+              <ScrollReveal 
                 key={index}
-                className="text-center animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                delay={index * 100}
               >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <span className="text-3xl md:text-4xl font-bold text-foreground">{stat.value}</span>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 text-secondary" />
+                    <span className="text-3xl md:text-4xl font-bold text-primary">
+                      <AnimatedCounter 
+                        value={stat.value} 
+                        prefix={stat.prefix || ''} 
+                        suffix={stat.suffix}
+                        decimals={stat.decimals ?? 0}
+                      />
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* How it works - Movido para antes de Features */}
-      <section className="py-16">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Como funciona?
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Em 3 passos simples você começa a receber pedidos
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Como funciona?
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Em <span className="text-primary font-bold">3 passos simples</span> você começa a receber pedidos
+              </p>
+            </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
@@ -350,281 +402,292 @@ export default function LandingPage() {
               { step: '2', title: 'Monte seu cardápio', desc: 'Adicione seus produtos com fotos, preços e adicionais' },
               { step: '3', title: 'Receba pedidos', desc: 'Compartilhe o link e receba pedidos no WhatsApp' },
             ].map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-gradient-hero rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-primary-foreground">
-                  {item.step}
+              <ScrollReveal key={index} delay={index * 150}>
+                <div className="text-center group">
+                  <div className="w-16 h-16 bg-gradient-hero rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-primary-foreground group-hover:scale-110 transition-transform shadow-lg">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground">{item.desc}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
-                <p className="text-muted-foreground">{item.desc}</p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Tudo que você precisa para vender mais
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Acabe com a confusão no WhatsApp, reduza erros nos pedidos e ganhe tempo para focar no que importa: seu negócio
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Tudo que você precisa para <span className="text-secondary font-extrabold">vender mais</span>
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Acabe com a confusão no WhatsApp, reduza erros nos pedidos e ganhe tempo para focar no que importa: seu negócio
+              </p>
+            </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="w-12 h-12 bg-gradient-hero rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary-foreground" />
+              <ScrollReveal key={index} delay={index * 100}>
+                <div className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-border group h-full">
+                  <div className="w-12 h-12 bg-gradient-hero rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {feature.description}
-                </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Segments Section - Para Quem é o PEDY */}
-      <section className="py-16">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Users className="w-4 h-4" />
-              Para todos os segmentos
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-primary/15 text-primary px-4 py-2 rounded-full text-sm font-bold mb-4 border border-primary/20">
+                <Users className="w-4 h-4" />
+                Para todos os segmentos
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Para quem é o PEDY?
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Não importa se você vende comida, produtos ou serviços. Se você recebe pedidos por WhatsApp, <span className="text-primary font-semibold">o PEDY foi feito para você.</span>
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Para quem é o PEDY?
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Não importa se você vende comida, produtos ou serviços. Se você recebe pedidos por WhatsApp, o PEDY foi feito para você.
-            </p>
-          </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {segments.map((segment, index) => (
-              <div 
-                key={index}
-                className="bg-card rounded-xl p-4 text-center shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <segment.icon className="w-6 h-6 text-secondary" />
+              <ScrollReveal key={index} delay={index * 50}>
+                <div className="bg-card/90 backdrop-blur-sm rounded-xl p-4 text-center shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-border group">
+                  <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all">
+                    <segment.icon className="w-6 h-6 text-secondary" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">{segment.name}</p>
                 </div>
-                <p className="text-sm font-medium text-foreground">{segment.name}</p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Advanced Features Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Zap className="w-4 h-4" />
-              Novidades
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-sm font-bold mb-4 border border-secondary/30">
+                <Zap className="w-4 h-4" />
+                Novidades
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Recursos avançados para <span className="text-primary font-extrabold">vender mais</span>
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Funcionalidades que grandes plataformas cobram caro, <span className="text-secondary font-semibold">aqui estão incluídas no seu plano</span>
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Recursos avançados para vender mais
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Funcionalidades que grandes plataformas cobram caro, aqui estão incluídas no seu plano
-            </p>
-          </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {advancedFeatures.map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-secondary" />
+              <ScrollReveal key={index} delay={index * 100}>
+                <div className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-border group h-full">
+                  <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="w-6 h-6 text-secondary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {feature.description}
-                </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Quote className="w-4 h-4" />
-              Depoimentos
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-primary/15 text-primary px-4 py-2 rounded-full text-sm font-bold mb-4 border border-primary/20">
+                <Quote className="w-4 h-4" />
+                Depoimentos
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                O que nossos clientes dizem
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Veja como o PEDY está transformando o delivery de estabelecimentos por todo o Brasil
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              O que nossos clientes dizem
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Veja como o PEDY está transformando o delivery de estabelecimentos por todo o Brasil
-            </p>
-          </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {testimonials.map((testimonial, index) => (
-              <div 
-                key={index}
-                className="bg-card rounded-2xl p-6 shadow-soft border border-border animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+              <ScrollReveal key={index} delay={index * 100}>
+                <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-border hover:shadow-xl transition-all duration-300 h-full">
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-foreground mb-4 italic">
+                    "{testimonial.text}"
+                  </p>
+                  <div className="border-t border-border pt-4">
+                    <p className="font-semibold text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-primary font-medium">{testimonial.business}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.city}</p>
+                  </div>
                 </div>
-                <p className="text-foreground mb-4 italic">
-                  "{testimonial.text}"
-                </p>
-                <div className="border-t border-border pt-4">
-                  <p className="font-semibold text-foreground">{testimonial.name}</p>
-                  <p className="text-sm text-primary">{testimonial.business}</p>
-                  <p className="text-xs text-muted-foreground">{testimonial.city}</p>
-                </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
           
           {/* CTA Intermediário após Depoimentos */}
-          <div className="text-center mt-12 pt-8 border-t border-border">
-            <p className="text-lg text-foreground mb-4 font-medium">
-              Pronto para transformar seu delivery como eles?
-            </p>
-            <Link to="/cadastro">
-              <Button variant="hero" size="lg">
-                Quero criar meu cardápio grátis
-                <ArrowRight className="w-5 h-5 ml-1" />
-              </Button>
-            </Link>
-            <p className="text-xs text-muted-foreground mt-3">
-              Comece agora, teste por 7 dias sem compromisso
-            </p>
-          </div>
+          <ScrollReveal delay={400}>
+            <div className="text-center mt-12 pt-8 border-t border-border">
+              <p className="text-lg text-foreground mb-4 font-medium">
+                Pronto para transformar seu delivery como eles?
+              </p>
+              <Link to="/cadastro">
+                <Button variant="hero" size="lg" className="group">
+                  Quero criar meu cardápio grátis
+                  <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <p className="text-xs text-muted-foreground mt-3">
+                Comece agora, teste por 7 dias sem compromisso
+              </p>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* Comparison Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <TrendingUp className="w-4 h-4" />
-              Compare e economize
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-destructive/15 text-destructive px-4 py-2 rounded-full text-sm font-bold mb-4 border border-destructive/20">
+                <TrendingUp className="w-4 h-4" />
+                Compare e economize
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                PEDY vs Plataformas tradicionais
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Por que pagar até <span className="text-destructive font-bold">27% de comissão</span> por pedido quando você pode ter seu próprio cardápio digital por um valor fixo mensal?
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              PEDY vs Plataformas tradicionais
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Por que pagar até 27% de comissão por pedido quando você pode ter seu próprio cardápio digital por um valor fixo mensal?
-            </p>
-          </div>
+          </ScrollReveal>
           
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-background rounded-2xl shadow-soft border border-border overflow-hidden">
-              {/* Table Header */}
-              <div className="grid grid-cols-3 bg-muted/50 p-4 border-b border-border">
-                <div className="font-semibold text-foreground">Funcionalidade</div>
-                <div className="font-semibold text-center text-primary">PEDY</div>
-                <div className="font-semibold text-center text-muted-foreground">Plataformas tradicionais</div>
+          <ScrollReveal delay={200}>
+            <div className="max-w-3xl mx-auto">
+              <div className="bg-background rounded-2xl shadow-soft border border-border overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-3 bg-muted/50 p-4 border-b border-border">
+                  <div className="font-semibold text-foreground">Funcionalidade</div>
+                  <div className="font-semibold text-center text-primary">PEDY</div>
+                  <div className="font-semibold text-center text-muted-foreground">Plataformas tradicionais</div>
+                </div>
+                
+                {/* Table Body */}
+                {comparison.map((item, index) => (
+                  <div 
+                    key={index}
+                    className={`grid grid-cols-3 p-4 items-center ${index !== comparison.length - 1 ? 'border-b border-border' : ''}`}
+                  >
+                    <div className="text-foreground text-sm md:text-base">{item.feature}</div>
+                    <div className="text-center">
+                      {typeof item.pedy === 'boolean' ? (
+                        <Check className="w-6 h-6 text-secondary mx-auto" />
+                      ) : (
+                        <span className="font-bold text-secondary">{item.pedy}</span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      {typeof item.others === 'boolean' ? (
+                        <X className="w-6 h-6 text-destructive mx-auto" />
+                      ) : (
+                        <span className="text-muted-foreground">{item.others}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
               
-              {/* Table Body */}
-              {comparison.map((item, index) => (
-                <div 
-                  key={index}
-                  className={`grid grid-cols-3 p-4 items-center ${index !== comparison.length - 1 ? 'border-b border-border' : ''}`}
-                >
-                  <div className="text-foreground text-sm md:text-base">{item.feature}</div>
-                  <div className="text-center">
-                    {typeof item.pedy === 'boolean' ? (
-                      <Check className="w-6 h-6 text-secondary mx-auto" />
-                    ) : (
-                      <span className="font-semibold text-secondary">{item.pedy}</span>
-                    )}
-                  </div>
-                  <div className="text-center">
-                    {typeof item.others === 'boolean' ? (
-                      <X className="w-6 h-6 text-destructive mx-auto" />
-                    ) : (
-                      <span className="text-muted-foreground">{item.others}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                * Comparação baseada em valores médios praticados por grandes plataformas de delivery do mercado
+              </p>
             </div>
-            
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              * Comparação baseada em valores médios praticados por grandes plataformas de delivery do mercado
-            </p>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
 
       {/* Templates de Nicho */}
-      <section className="py-16 bg-background">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="text-center mb-10">
-            <Badge className="mb-4 bg-secondary/10 text-secondary hover:bg-secondary/20">
-              Templates Prontos
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Templates prontos para seu negócio
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Clique em um nicho para ver o cardápio de exemplo. 
-              Personalize como quiser!
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-10">
+              <Badge className="mb-4 bg-secondary/20 text-secondary hover:bg-secondary/30 font-bold border border-secondary/30">
+                Templates Prontos
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Templates prontos para seu negócio
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Clique em um nicho para ver o cardápio de exemplo. 
+                <span className="text-primary font-semibold"> Personalize como quiser!</span>
+              </p>
+            </div>
+          </ScrollReveal>
           
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4 max-w-4xl mx-auto">
             {templateCards.map((template, index) => (
-              <div 
-                key={template.id}
-                onClick={() => setSelectedTemplate(template.id)}
-                className="group bg-card rounded-xl p-4 text-center border border-border 
-                           hover:border-primary hover:shadow-lg hover:scale-105 
-                           active:scale-95 cursor-pointer
-                           transition-all duration-300 ease-out
-                           animate-fade-in"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <span className="text-3xl md:text-4xl mb-2 block transform group-hover:scale-110 transition-transform duration-200">
-                  {template.icon}
-                </span>
-                <span className="text-xs md:text-sm font-medium text-foreground">{template.name}</span>
-                <span className="text-[10px] text-primary mt-1 block opacity-0 group-hover:opacity-100 transition-opacity">
-                  Ver prévia
-                </span>
-              </div>
+              <ScrollReveal key={template.id} delay={index * 30}>
+                <div 
+                  onClick={() => setSelectedTemplate(template.id)}
+                  className="group bg-card/90 backdrop-blur-sm rounded-xl p-4 text-center border border-border 
+                             hover:border-primary hover:shadow-xl hover:scale-105 
+                             active:scale-95 cursor-pointer
+                             transition-all duration-300 ease-out"
+                >
+                  <span className="text-3xl md:text-4xl mb-2 block transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">
+                    {template.icon}
+                  </span>
+                  <span className="text-xs md:text-sm font-medium text-foreground">{template.name}</span>
+                  <span className="text-[10px] text-primary mt-1 block opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
+                    Ver prévia
+                  </span>
+                </div>
+              </ScrollReveal>
             ))}
           </div>
           
-          <p className="text-center text-muted-foreground mt-6 text-sm">
-            E se seu nicho não estiver na lista, você pode criar do zero!
-          </p>
+          <ScrollReveal delay={400}>
+            <p className="text-center text-muted-foreground mt-6 text-sm">
+              E se seu nicho não estiver na lista, <span className="text-primary font-semibold">você pode criar do zero!</span>
+            </p>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -678,9 +741,9 @@ export default function LandingPage() {
               </div>
               
               <Link to="/cadastro" className="mt-6 block">
-                <Button variant="hero" className="w-full">
+                <Button variant="hero" className="w-full group">
                   Usar este template e começar grátis
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </>
@@ -689,17 +752,19 @@ export default function LandingPage() {
       </Dialog>
 
       {/* Por que escolher o PEDY */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
           <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Por que escolher o PEDY?
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                Tudo que você precisa para vender mais, sem complicação
-              </p>
-            </div>
+            <ScrollReveal>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  Por que escolher o <span className="text-primary font-extrabold">PEDY</span>?
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  Tudo que você precisa para vender mais, <span className="text-secondary font-semibold">sem complicação</span>
+                </p>
+              </div>
+            </ScrollReveal>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
               {[
@@ -710,128 +775,137 @@ export default function LandingPage() {
                 { icon: '❌', text: 'Cancele quando quiser' },
                 { icon: '📋', text: 'Templates prontos por nicho' },
               ].map((item, index) => (
-                <div 
-                  key={index}
-                  className="bg-background rounded-xl p-4 text-center border border-border shadow-soft hover:shadow-lg transition-all duration-300"
-                >
-                  <span className="text-2xl mb-2 block">{item.icon}</span>
-                  <span className="text-sm font-medium text-foreground">{item.text}</span>
-                </div>
+                <ScrollReveal key={index} delay={index * 50}>
+                  <div className="bg-background rounded-xl p-4 text-center border border-border shadow-soft hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                    <span className="text-2xl mb-2 block group-hover:scale-125 transition-transform">{item.icon}</span>
+                    <span className="text-sm font-medium text-foreground">{item.text}</span>
+                  </div>
+                </ScrollReveal>
               ))}
             </div>
             
-            <div className="text-center">
-              <Link to="/cadastro">
-                <Button variant="hero" size="xl">
-                  Criar meu cardápio grátis agora
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-            </div>
+            <ScrollReveal delay={300}>
+              <div className="text-center">
+                <Link to="/cadastro">
+                  <Button variant="hero" size="xl" className="group">
+                    Criar meu cardápio grátis agora
+                    <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
 
       {/* Guarantee Section */}
-      <section className="py-16">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-card rounded-3xl p-8 md:p-10 text-center shadow-soft border-2 border-secondary/30">
-              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-secondary" />
-              </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                Teste sem risco por 7 dias
-              </h3>
-              <p className="text-muted-foreground text-lg mb-6">
-                Se você não gostar, não paga nada. Sem cartão de crédito, sem compromisso. 
-                Você só precisa de 5 minutos para criar seu cardápio e começar a receber pedidos.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-secondary" />
-                  Sem cartão de crédito
-                </span>
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-secondary" />
-                  Sem compromisso
-                </span>
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-secondary" />
-                  Cancele quando quiser
-                </span>
+          <ScrollReveal>
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-card/90 backdrop-blur-sm rounded-3xl p-8 md:p-10 text-center shadow-xl border-2 border-secondary/40 hover:border-secondary/60 transition-colors">
+                <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                  <Shield className="w-8 h-8 text-secondary" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                  Teste sem risco por <span className="text-secondary">7 dias</span>
+                </h3>
+                <p className="text-muted-foreground text-lg mb-6">
+                  Se você não gostar, <span className="text-primary font-semibold">não paga nada</span>. Sem cartão de crédito, sem compromisso. 
+                  Você só precisa de 5 minutos para criar seu cardápio e começar a receber pedidos.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    <span className="font-medium">Sem cartão de crédito</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    <span className="font-medium">Sem compromisso</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    <span className="font-medium">Cancele quando quiser</span>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <HelpCircle className="w-4 h-4" />
-              Dúvidas frequentes
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-primary/15 text-primary px-4 py-2 rounded-full text-sm font-bold mb-4 border border-primary/20">
+                <HelpCircle className="w-4 h-4" />
+                Dúvidas frequentes
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Perguntas frequentes
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Tire suas dúvidas sobre o PEDY
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Perguntas frequentes
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Tire suas dúvidas sobre o PEDY
-            </p>
-          </div>
+          </ScrollReveal>
           
-          <div className="max-w-2xl mx-auto">
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`}
-                  className="bg-background rounded-xl border border-border px-6 data-[state=open]:shadow-soft"
-                >
-                  <AccordionTrigger className="text-left text-foreground hover:no-underline py-4">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-4">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
+          <ScrollReveal delay={200}>
+            <div className="max-w-2xl mx-auto">
+              <Accordion type="single" collapsible className="w-full space-y-4">
+                {faqs.map((faq, index) => (
+                  <AccordionItem 
+                    key={index} 
+                    value={`item-${index}`}
+                    className="bg-background rounded-xl border border-border px-6 data-[state=open]:shadow-lg data-[state=open]:border-primary/30 transition-all"
+                  >
+                    <AccordionTrigger className="text-left text-foreground hover:no-underline py-4 hover:text-primary transition-colors">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-4">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 relative z-10">
         <div className="container">
-          <div className="bg-gradient-hero rounded-3xl p-8 md:p-12 text-center">
-            <div className="max-w-2xl mx-auto">
-              <Users className="w-12 h-12 text-primary-foreground mx-auto mb-4" />
-              <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-                Junte-se a centenas de estabelecimentos
-              </h2>
-              <p className="text-primary-foreground/90 text-lg mb-6">
-                Enquanto você lê isso, outros estabelecimentos já estão recebendo pedidos organizados pelo PEDY. 
-                Crie seu cardápio agora e veja a diferença.
-              </p>
-              <Link to="/cadastro">
-                <Button 
-                  size="xl" 
-                  className="bg-card text-foreground hover:bg-card/90 shadow-xl"
-                >
-                  Começar grátis em 5 minutos
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
+          <ScrollReveal>
+            <div className="bg-gradient-hero rounded-3xl p-8 md:p-12 text-center shadow-2xl">
+              <div className="max-w-2xl mx-auto">
+                <Users className="w-12 h-12 text-primary-foreground mx-auto mb-4" />
+                <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+                  Junte-se a centenas de estabelecimentos
+                </h2>
+                <p className="text-primary-foreground/90 text-lg mb-6">
+                  Enquanto você lê isso, outros estabelecimentos já estão recebendo pedidos organizados pelo PEDY. 
+                  <span className="font-bold"> Crie seu cardápio agora e veja a diferença.</span>
+                </p>
+                <Link to="/cadastro">
+                  <Button 
+                    size="xl" 
+                    className="bg-card text-foreground hover:bg-card/90 shadow-xl group"
+                  >
+                    Começar grátis em 5 minutos
+                    <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-border">
+      <footer className="py-8 border-t border-border bg-card/80 backdrop-blur-sm relative z-10">
         <div className="container">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <img src={pedyLogo} alt="PEDY" className="h-20 md:h-24 object-contain" />
@@ -839,10 +913,10 @@ export default function LandingPage() {
               © 2026 PEDY. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-4">
-              <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
                 Entrar
               </Link>
-              <Link to="/cadastro" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link to="/cadastro" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
                 Cadastrar
               </Link>
             </div>
