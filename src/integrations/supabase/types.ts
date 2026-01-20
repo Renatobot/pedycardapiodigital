@@ -472,6 +472,7 @@ export type Database = {
           customer_address: string
           customer_id: string | null
           customer_name: string | null
+          customer_order_count: number | null
           customer_phone: string | null
           delivery_fee: number | null
           delivery_type: string | null
@@ -479,6 +480,7 @@ export type Database = {
           discount_value: number | null
           establishment_id: string
           id: string
+          is_registered_customer: boolean | null
           items: Json
           neighborhood: string | null
           observations: string | null
@@ -497,6 +499,7 @@ export type Database = {
           customer_address: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_order_count?: number | null
           customer_phone?: string | null
           delivery_fee?: number | null
           delivery_type?: string | null
@@ -504,6 +507,7 @@ export type Database = {
           discount_value?: number | null
           establishment_id: string
           id?: string
+          is_registered_customer?: boolean | null
           items: Json
           neighborhood?: string | null
           observations?: string | null
@@ -522,6 +526,7 @@ export type Database = {
           customer_address?: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_order_count?: number | null
           customer_phone?: string | null
           delivery_fee?: number | null
           delivery_type?: string | null
@@ -529,6 +534,7 @@ export type Database = {
           discount_value?: number | null
           establishment_id?: string
           id?: string
+          is_registered_customer?: boolean | null
           items?: Json
           neighborhood?: string | null
           observations?: string | null
