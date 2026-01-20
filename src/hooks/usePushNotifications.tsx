@@ -25,7 +25,7 @@ interface UsePushNotificationsResult {
   permission: NotificationPermission | 'unsupported';
   isSubscribed: boolean;
   isLoading: boolean;
-  subscribe: (establishmentId: string, customerPhone: string) => Promise<boolean>;
+  subscribe: (establishmentId: string, customerPhone: string, customerId?: string) => Promise<boolean>;
   unsubscribe: (establishmentId: string, customerPhone: string) => Promise<boolean>;
 }
 
@@ -45,7 +45,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
     }
   }, []);
 
-  const subscribe = useCallback(async (establishmentId: string, customerPhone: string): Promise<boolean> => {
+  const subscribe = useCallback(async (establishmentId: string, customerPhone: string, customerId?: string): Promise<boolean> => {
     if (!isSupported) {
       console.log('Push notifications not supported');
       return false;
@@ -85,13 +85,14 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const p256dh = subscriptionData.keys?.p256dh || '';
       const auth = subscriptionData.keys?.auth || '';
 
-      // Salvar no Supabase
+      // Salvar no Supabase (incluindo customer_id se disponível)
       const { error } = await supabase
         .from('push_subscriptions')
         .upsert(
           {
             establishment_id: establishmentId,
             customer_phone: customerPhone,
+            customer_id: customerId || null,
             endpoint,
             p256dh,
             auth,
