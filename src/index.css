@@ -280,6 +280,19 @@
   animation: badgeShine 2s infinite;
 }
 
+/* Heart animation for favorites */
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+.animate-heart-beat {
+  animation: heartBeat 0.6s ease-out;
+}
+
 /* Hide Lovable badge globally */
 #lovable-badge {
   display: none !important;

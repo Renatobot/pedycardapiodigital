@@ -97,7 +97,9 @@ function CheckoutContent() {
     customerPhone: '',
     deliveryType: 'delivery' as 'delivery' | 'pickup' | 'other',
     neighborhood: '',
-    address: '',
+    street: '',
+    number: '',
+    complement: '',
     referencePoint: '',
     paymentMethod: 'pix',
     needsChange: false,
@@ -254,12 +256,36 @@ function CheckoutContent() {
   };
 
   const selectSavedAddress = (address: SavedAddress) => {
-    setFormData(prev => ({
-      ...prev,
-      address: address.address,
-      neighborhood: address.neighborhood || '',
-      referencePoint: address.reference_point || '',
-    }));
+    // If address has structured fields, use them; otherwise parse from address string
+    const savedAddr = address as SavedAddress & { street?: string; number?: string; complement?: string };
+    if (savedAddr.street) {
+      setFormData(prev => ({
+        ...prev,
+        street: savedAddr.street || '',
+        number: savedAddr.number || '',
+        complement: savedAddr.complement || '',
+        neighborhood: address.neighborhood || '',
+        referencePoint: address.reference_point || '',
+      }));
+    } else {
+      // Legacy address - put in street field
+      setFormData(prev => ({
+        ...prev,
+        street: address.address,
+        number: '',
+        complement: '',
+        neighborhood: address.neighborhood || '',
+        referencePoint: address.reference_point || '',
+      }));
+    }
+  };
+
+  // Build full address string from structured fields
+  const getFullAddress = (): string => {
+    const parts = [formData.street];
+    if (formData.number) parts.push(formData.number);
+    if (formData.complement) parts.push(`- ${formData.complement}`);
+    return parts.join(', ');
   };
 
   // Calculate delivery fee based on neighborhood and settings
@@ -428,10 +454,19 @@ function CheckoutContent() {
       return;
     }
 
-    if (formData.deliveryType === 'delivery' && !formData.address) {
+    if (formData.deliveryType === 'delivery' && !formData.street) {
       toast({
         title: 'Erro',
-        description: 'Por favor, preencha o endereço de entrega.',
+        description: 'Por favor, preencha a rua.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.deliveryType === 'delivery' && !formData.number) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha o número.',
         variant: 'destructive',
       });
       return;
@@ -447,7 +482,8 @@ function CheckoutContent() {
     }
 
     // Save address if requested
-    if (formData.saveAddress && formData.customerPhone && formData.address) {
+    const fullAddress = getFullAddress();
+    if (formData.saveAddress && formData.customerPhone && fullAddress) {
       const normalizedPhone = formData.customerPhone.replace(/\D/g, '');
       
       // Check if we already have 3 addresses
@@ -460,7 +496,10 @@ function CheckoutContent() {
       await supabase.from('saved_addresses').insert({
         whatsapp: normalizedPhone,
         establishment_id: establishment.id,
-        address: formData.address,
+        address: fullAddress,
+        street: formData.street || null,
+        number: formData.number || null,
+        complement: formData.complement || null,
         neighborhood: formData.neighborhood || null,
         reference_point: formData.referencePoint || null,
       });
@@ -511,7 +550,7 @@ function CheckoutContent() {
           establishment_id: establishment.id,
           customer_name: formData.customerName.trim(),
           customer_phone: formData.customerPhone.replace(/\D/g, '') || null,
-          customer_address: formData.deliveryType === 'pickup' ? 'Retirada no local' : formData.address,
+          customer_address: formData.deliveryType === 'pickup' ? 'Retirada no local' : getFullAddress(),
           neighborhood: formData.neighborhood || null,
           reference_point: formData.referencePoint || null,
           delivery_type: formData.deliveryType,
@@ -580,7 +619,7 @@ function CheckoutContent() {
       establishment.name || '',
       items,
       formData.customerName,
-      formData.address,
+      getFullAddress(),
       formData.neighborhood || 'Não informado',
       formData.referencePoint,
       formData.deliveryType,
@@ -831,15 +870,39 @@ function CheckoutContent() {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Endereço completo *</Label>
-                    <Textarea
-                      id="address"
-                      name="address"
-                      placeholder="Rua, número, complemento..."
-                      value={formData.address}
+                    <Label htmlFor="street">Rua/Avenida *</Label>
+                    <Input
+                      id="street"
+                      name="street"
+                      placeholder="Nome da rua ou avenida"
+                      value={formData.street}
                       onChange={handleChange}
                       required
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="number">Número *</Label>
+                      <Input
+                        id="number"
+                        name="number"
+                        placeholder="123"
+                        value={formData.number}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="complement">Complemento</Label>
+                      <Input
+                        id="complement"
+                        name="complement"
+                        placeholder="Apto, bloco..."
+                        value={formData.complement}
+                        onChange={handleChange}
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
