@@ -45,8 +45,8 @@ export function FavoritesSection({
         <div className="flex gap-3 pb-2">
           {favoriteProducts.map((product) => {
             const effectivePrice =
-              (product as any).is_promotional && (product as any).promotional_price
-                ? (product as any).promotional_price
+              product.is_promotional && product.promotional_price
+                ? product.promotional_price
                 : product.price;
 
             return (

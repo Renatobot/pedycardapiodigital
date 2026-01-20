@@ -116,7 +116,7 @@ export default function ResellerSalesPage() {
         .select('*')
         .eq('referral_code', referralCode)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setReseller(data);
