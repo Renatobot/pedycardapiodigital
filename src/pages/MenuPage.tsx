@@ -21,7 +21,9 @@ import {
   List,
   LayoutGrid,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Heart,
+  User
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -43,6 +45,11 @@ import { useDynamicManifest } from '@/hooks/useDynamicManifest';
 import { ProductCardSkeleton, ProductCardSkeletonGrid } from '@/components/ProductCardSkeleton';
 import { MenuSearchBar } from '@/components/MenuSearchBar';
 import { cn } from '@/lib/utils';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useCustomer } from '@/hooks/useCustomer';
+import { FavoriteButton } from '@/components/FavoriteButton';
+import { FavoritesSection } from '@/components/FavoritesSection';
+import CustomerIdentificationModal from '@/components/CustomerIdentificationModal';
 
 interface PublicEstablishment {
   id: string;
