@@ -22,11 +22,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
   checkFeatureAccess, 
+  checkProFeatureAccess,
   PRO_PLUS_FEATURES, 
+  PRO_FEATURES,
   requiresProPlusForFlavors,
   EstablishmentForGating 
 } from '@/lib/featureGating';
 import { ProPlusLockBadge, ProPlusUpgradeCard } from './ProPlusLockBadge';
+import { ProLockBadge, ProUpgradeCard } from './ProLockBadge';
 import { NICHE_TEMPLATES, suggestTemplateForCategory, NicheTemplate, OptionGroupTemplate } from '@/lib/nicheTemplates';
 import { formatCurrency } from '@/lib/whatsapp';
 
@@ -70,7 +73,11 @@ export function ProductOptionGroupsManager({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [suggestedTemplate, setSuggestedTemplate] = useState<NicheTemplate | null>(null);
 
-  // Check Pro+ access for product customization
+  // Check Pro access for basic product options (groups, up to 2 flavors)
+  const proAccess = checkProFeatureAccess(establishment, PRO_FEATURES.PRODUCT_OPTIONS);
+  const hasProductOptions = proAccess.hasAccess;
+
+  // Check Pro+ access for advanced product customization
   const productCustomizationAccess = checkFeatureAccess(establishment, PRO_PLUS_FEATURES.PRODUCT_CUSTOMIZATION);
   const hasProductCustomization = productCustomizationAccess.hasAccess;
 
@@ -279,13 +286,35 @@ export function ProductOptionGroupsManager({
 
   return (
     <div className="relative">
-      {/* Overlay de upgrade se não tem Pro+ */}
-      {!hasProductCustomization && (
-        <ProPlusUpgradeCard feature={PRO_PLUS_FEATURES.PRODUCT_CUSTOMIZATION} />
+      {/* Overlay de upgrade se não tem Pro (plano básico) */}
+      {!hasProductOptions && (
+        <ProUpgradeCard feature={PRO_FEATURES.PRODUCT_OPTIONS} />
+      )}
+
+      {/* Card informativo sobre Pro+ para quem tem Pro mas não Pro+ */}
+      {hasProductOptions && !hasProductCustomization && (
+        <Card className="mb-4 border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-foreground">
+                  Desbloqueie mais recursos com Pro+
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No <strong>Plano Pro</strong> você pode criar grupos de opções e pizzas até 2 sabores.
+                  Para 3-4 sabores e precificação automática, ative o <strong>Plano Pro+ (R$ 79,90/mês)</strong>.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Card informativo sobre Pro+ para trial */}
-      {hasProductCustomization && establishment?.plan_status === 'trial' && (
+      {hasProductOptions && hasProductCustomization && establishment?.plan_status === 'trial' && (
         <Card className="mb-4 border-primary/30 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -298,7 +327,7 @@ export function ProductOptionGroupsManager({
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
                   Durante o período de teste, você tem acesso a todas as configurações de personalização. 
-                  Após o trial, para continuar usando esses recursos, será necessário ativar o <strong>Plano Pro+ (R$ 57/mês)</strong>.
+                  Após o trial, para continuar usando esses recursos, será necessário ativar o <strong>Plano Pro+ (R$ 79,90/mês)</strong>.
                 </p>
               </div>
             </div>
@@ -307,7 +336,7 @@ export function ProductOptionGroupsManager({
       )}
 
       {/* Conteúdo - esmaecido se bloqueado mas PRESERVADO */}
-      <div className={!hasProductCustomization ? 'opacity-40 pointer-events-none select-none' : ''}>
+      <div className={!hasProductOptions ? 'opacity-40 pointer-events-none select-none' : ''}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
