@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +8,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   ShoppingBag, 
   Smartphone, 
@@ -38,9 +45,11 @@ import {
   Flower,
   UtensilsCrossed,
   X,
-  Check
+  Check,
+  Folder
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { NICHE_TEMPLATES } from '@/lib/nicheTemplates';
 
 const features = [
   {
@@ -198,7 +207,25 @@ const faqs = [
   },
 ];
 
+const templateCards = [
+  { id: 'pizzaria', icon: '🍕', name: 'Pizzaria' },
+  { id: 'hamburgueria', icon: '🍔', name: 'Hamburgueria' },
+  { id: 'marmitaria', icon: '🍱', name: 'Marmitaria' },
+  { id: 'acaiteria', icon: '🫐', name: 'Açaiteria' },
+  { id: 'pastelaria', icon: '🥟', name: 'Pastelaria' },
+  { id: 'japonesa', icon: '🍣', name: 'Japonesa' },
+  { id: 'petshop', icon: '🐾', name: 'Pet Shop' },
+  { id: 'loja_racao', icon: '🦴', name: 'Ração' },
+  { id: 'farmacia', icon: '💊', name: 'Farmácia' },
+  { id: 'deposito_bebidas', icon: '🍺', name: 'Bebidas' },
+  { id: 'sorveteria', icon: '🍦', name: 'Sorveteria' },
+  { id: 'padaria', icon: '🥐', name: 'Padaria' },
+  { id: 'hortifruti', icon: '🥬', name: 'Hortifrúti' },
+];
+
 export default function LandingPage() {
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -527,42 +554,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-16">
-        <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <HelpCircle className="w-4 h-4" />
-              Dúvidas frequentes
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Perguntas frequentes
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Tire suas dúvidas sobre o PEDY
-            </p>
-          </div>
-          
-          <div className="max-w-2xl mx-auto">
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`}
-                  className="bg-card rounded-xl border border-border px-6 data-[state=open]:shadow-soft"
-                >
-                  <AccordionTrigger className="text-left text-foreground hover:no-underline py-4">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-4">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </div>
-      </section>
 
       {/* Templates de Nicho */}
       <section className="py-16 bg-background">
@@ -575,33 +566,30 @@ export default function LandingPage() {
               Templates prontos para seu negócio
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Escolha seu nicho e comece com um cardápio pré-montado, 
-              com categorias e produtos de exemplo. Personalize como quiser!
+              Clique em um nicho para ver o cardápio de exemplo. 
+              Personalize como quiser!
             </p>
           </div>
           
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4 max-w-4xl mx-auto">
-            {[
-              { icon: '🍕', name: 'Pizzaria' },
-              { icon: '🍔', name: 'Hamburgueria' },
-              { icon: '🍱', name: 'Marmitaria' },
-              { icon: '🫐', name: 'Açaiteria' },
-              { icon: '🥟', name: 'Pastelaria' },
-              { icon: '🍣', name: 'Japonesa' },
-              { icon: '🐾', name: 'Pet Shop' },
-              { icon: '🦴', name: 'Ração' },
-              { icon: '💊', name: 'Farmácia' },
-              { icon: '🍺', name: 'Bebidas' },
-              { icon: '🍦', name: 'Sorveteria' },
-              { icon: '🥐', name: 'Padaria' },
-              { icon: '🥬', name: 'Hortifrúti' },
-            ].map((template, index) => (
+            {templateCards.map((template, index) => (
               <div 
-                key={index}
-                className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/50 hover:shadow-md transition-all duration-200"
+                key={template.id}
+                onClick={() => setSelectedTemplate(template.id)}
+                className="group bg-card rounded-xl p-4 text-center border border-border 
+                           hover:border-primary hover:shadow-lg hover:scale-105 
+                           active:scale-95 cursor-pointer
+                           transition-all duration-300 ease-out
+                           animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <span className="text-3xl md:text-4xl mb-2 block">{template.icon}</span>
+                <span className="text-3xl md:text-4xl mb-2 block transform group-hover:scale-110 transition-transform duration-200">
+                  {template.icon}
+                </span>
                 <span className="text-xs md:text-sm font-medium text-foreground">{template.name}</span>
+                <span className="text-[10px] text-primary mt-1 block opacity-0 group-hover:opacity-100 transition-opacity">
+                  Ver prévia
+                </span>
               </div>
             ))}
           </div>
@@ -611,6 +599,66 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* Modal de Prévia do Template */}
+      <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          {selectedTemplate && NICHE_TEMPLATES[selectedTemplate] && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <span className="text-4xl">{NICHE_TEMPLATES[selectedTemplate].icon}</span>
+                  <div>
+                    <span className="text-xl block">{NICHE_TEMPLATES[selectedTemplate].name}</span>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      {NICHE_TEMPLATES[selectedTemplate].description}
+                    </p>
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 mt-4">
+                {NICHE_TEMPLATES[selectedTemplate].categories?.map((category, catIndex) => (
+                  <div key={catIndex}>
+                    <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                      <Folder className="w-4 h-4 text-primary" />
+                      {category.name}
+                    </h4>
+                    <div className="space-y-2 pl-6">
+                      {category.products.slice(0, 3).map((product, prodIndex) => (
+                        <div key={prodIndex} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{product.name}</span>
+                          <span className="text-foreground font-medium">
+                            R$ {product.price.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                      ))}
+                      {category.products.length > 3 && (
+                        <p className="text-xs text-muted-foreground italic">
+                          +{category.products.length - 3} mais produtos...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {!NICHE_TEMPLATES[selectedTemplate].categories?.length && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Este template inclui grupos de personalização prontos para usar!
+                  </p>
+                )}
+              </div>
+              
+              <Link to="/cadastro" className="mt-6 block">
+                <Button variant="hero" className="w-full">
+                  Usar este template e começar grátis
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Por que escolher o PEDY */}
       <section className="py-16 bg-card">
@@ -686,6 +734,43 @@ export default function LandingPage() {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 bg-card">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <HelpCircle className="w-4 h-4" />
+              Dúvidas frequentes
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Perguntas frequentes
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Tire suas dúvidas sobre o PEDY
+            </p>
+          </div>
+          
+          <div className="max-w-2xl mx-auto">
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              {faqs.map((faq, index) => (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="bg-background rounded-xl border border-border px-6 data-[state=open]:shadow-soft"
+                >
+                  <AccordionTrigger className="text-left text-foreground hover:no-underline py-4">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground pb-4">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </div>
       </section>
