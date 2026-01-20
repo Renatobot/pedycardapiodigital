@@ -75,6 +75,7 @@ import { AdminDashboardSkeleton } from '@/components/AdminDashboardSkeleton';
 import { AdminCharts } from '@/components/AdminCharts';
 import { AdminQuickActions } from '@/components/AdminQuickActions';
 import { AdminReports } from '@/components/AdminReports';
+import { ResellerManagement } from '@/components/ResellerManagement';
 import logoPedy from '@/assets/logo_pedy.png';
 
 interface Establishment {
@@ -707,10 +708,17 @@ const AdminDashboardPage = () => {
               Relatórios
             </TabsTrigger>
             <TabsTrigger 
-              value="admins"
+              value="resellers"
               className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
             >
               <Users className="w-4 h-4 mr-2" />
+              Revendedores
+            </TabsTrigger>
+            <TabsTrigger 
+              value="admins"
+              className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400"
+            >
+              <Shield className="w-4 h-4 mr-2" />
               Administradores
             </TabsTrigger>
           </TabsList>
@@ -1074,6 +1082,11 @@ const AdminDashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Revendedores Tab */}
+          <TabsContent value="resellers" className="space-y-6">
+            <ResellerManagement />
           </TabsContent>
 
           {/* Relatórios Tab */}
