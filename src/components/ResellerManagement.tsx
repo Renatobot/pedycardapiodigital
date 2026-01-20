@@ -21,6 +21,7 @@ import {
   Building2,
   TrendingUp,
   Eye,
+  ChartLine,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,6 +29,7 @@ import { useResellers, Reseller, ResellerStats } from '@/hooks/useResellers';
 import { ResellerCreateModal } from '@/components/ResellerCreateModal';
 import { ResellerReport } from '@/components/ResellerReport';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
+import { AdminResellerCharts } from '@/components/AdminResellerCharts';
 
 export const ResellerManagement = () => {
   const {
@@ -46,6 +48,7 @@ export const ResellerManagement = () => {
   const [selectedStats, setSelectedStats] = useState<ResellerStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
 
   useEffect(() => {
     fetchResellers();
@@ -123,13 +126,23 @@ export const ResellerManagement = () => {
             Gerencie os revendedores e acompanhe suas vendas
           </p>
         </div>
-        <Button
-          onClick={() => setCreateModalOpen(true)}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Novo Revendedor
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowCharts(!showCharts)}
+            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+          >
+            <ChartLine className="w-4 h-4 mr-2" />
+            {showCharts ? 'Ocultar Gráficos' : 'Ver Gráficos'}
+          </Button>
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Novo Revendedor
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -198,6 +211,11 @@ export const ResellerManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts Section */}
+      {showCharts && (
+        <AdminResellerCharts resellers={resellers} />
+      )}
 
       {/* Resellers Table */}
       <Card className="bg-slate-800 border-slate-700">
