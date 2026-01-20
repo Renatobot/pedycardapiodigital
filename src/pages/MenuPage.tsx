@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,17 @@ import {
   Minus, 
   X,
   ChevronRight,
-  Loader2,
   Clock,
   ChevronDown,
   MapPin,
   Package,
   Moon,
-  Sun
+  Sun,
+  Settings2,
+  List,
+  LayoutGrid,
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/whatsapp';
 import { useCart } from '@/contexts/CartContext';
@@ -36,6 +40,9 @@ import { hexToHsl } from '@/lib/colors';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { useDynamicManifest } from '@/hooks/useDynamicManifest';
+import { ProductCardSkeleton, ProductCardSkeletonGrid } from '@/components/ProductCardSkeleton';
+import { MenuSearchBar } from '@/components/MenuSearchBar';
+import { cn } from '@/lib/utils';
 
 interface PublicEstablishment {
   id: string;
@@ -62,9 +69,68 @@ interface PublicEstablishment {
 
 interface ProductWithOptions extends Product {
   optionGroups?: ProductOptionGroup[];
+  is_promotional?: boolean;
+  original_price?: number;
+  promotional_price?: number;
+  unit_type?: string;
+  subject_to_availability?: boolean;
+  created_at?: string;
 }
 
-function ProductCard({ product }: { product: ProductWithOptions }) {
+// Helper to check if product is new (created within last 7 days)
+function isNewProduct(createdAt?: string): boolean {
+  if (!createdAt) return false;
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays <= 7;
+}
+
+// Helper to get category emoji
+function getCategoryEmoji(categoryName: string): string {
+  const emojiMap: Record<string, string> = {
+    'lanches': '🍔',
+    'hamburgers': '🍔',
+    'hambúrgueres': '🍔',
+    'pizzas': '🍕',
+    'pizza': '🍕',
+    'bebidas': '🥤',
+    'drinks': '🥤',
+    'sobremesas': '🍰',
+    'desserts': '🍰',
+    'doces': '🍬',
+    'salgados': '🥟',
+    'açaí': '🍇',
+    'acai': '🍇',
+    'sorvetes': '🍦',
+    'massas': '🍝',
+    'carnes': '🥩',
+    'frutos do mar': '🦐',
+    'sushi': '🍣',
+    'japonesa': '🍣',
+    'saladas': '🥗',
+    'combos': '🎁',
+    'promoções': '🔥',
+    'porções': '🍟',
+    'petiscos': '🍿',
+    'cafés': '☕',
+    'sucos': '🧃',
+  };
+  
+  const lowerName = categoryName.toLowerCase();
+  for (const [key, emoji] of Object.entries(emojiMap)) {
+    if (lowerName.includes(key)) return emoji;
+  }
+  return '🍽️';
+}
+
+interface ProductCardProps {
+  product: ProductWithOptions;
+  viewMode: 'list' | 'grid';
+  onAddToCart: () => void;
+}
+
+function ProductCard({ product, viewMode, onAddToCart }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -81,11 +147,15 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
     );
   };
 
+  const effectivePrice = product.is_promotional && product.promotional_price 
+    ? product.promotional_price 
+    : product.price;
+
   const additionsTotal = selectedAdditions.reduce((sum, a) => sum + a.price, 0);
   const optionsTotal = selectedOptions.reduce((sum, group) => 
     sum + group.options.reduce((oSum, opt) => oSum + opt.price, 0), 0
   );
-  const itemTotal = (product.price + additionsTotal + optionsTotal) * quantity;
+  const itemTotal = (effectivePrice + additionsTotal + optionsTotal) * quantity;
 
   // Validation for required option groups
   const validateOptions = (): { valid: boolean; message?: string } => {
@@ -122,6 +192,8 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
       description: `${quantity}x ${product.name} foi adicionado ao carrinho`,
     });
     
+    onAddToCart();
+    
     setIsOpen(false);
     setQuantity(1);
     setSelectedAdditions([]);
@@ -131,28 +203,191 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
 
   if (!product.available) return null;
 
-  return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex gap-3 p-3">
-              <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+  const hasOptions = product.optionGroups && product.optionGroups.length > 0;
+  const isNew = isNewProduct(product.created_at);
+
+  // Grid view card
+  if (viewMode === 'grid') {
+    return (
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative">
+            {/* Badges */}
+            <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+              {isNew && (
+                <Badge className="bg-green-500 text-white text-xs px-1.5 py-0.5">
+                  <Sparkles className="w-3 h-3 mr-0.5" />
+                  NOVO
+                </Badge>
+              )}
+              {product.is_promotional && (
+                <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 badge-shine">
+                  🔥 PROMOÇÃO
+                </Badge>
+              )}
+            </div>
+            
+            {/* Availability badge */}
+            {product.subject_to_availability && (
+              <div className="absolute top-2 right-2 z-10">
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/50">
+                  <AlertTriangle className="w-3 h-3 mr-0.5" />
+                  Disponibilidade
+                </Badge>
+              </div>
+            )}
+            
+            <CardContent className="p-0">
+              <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
                 {product.image ? (
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                 ) : (
-                  <Store className="w-8 h-8 text-muted-foreground" />
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex flex-col items-center justify-center">
+                    <span className="text-4xl">{getCategoryEmoji(product.name)}</span>
+                    <span className="text-xs text-muted-foreground mt-1">Sem foto</span>
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <h3 className="font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-1 min-h-[2rem]">
+                  {product.description}
+                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex flex-col">
+                    {product.is_promotional && product.original_price ? (
+                      <>
+                        <span className="text-xs text-muted-foreground line-through">
+                          {formatCurrency(product.original_price)}
+                        </span>
+                        <span className="font-bold text-red-500">
+                          {formatCurrency(effectivePrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-bold text-primary">
+                        {formatCurrency(effectivePrice)}
+                        {product.unit_type && product.unit_type !== 'Unidade' && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            /{product.unit_type.toLowerCase()}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {hasOptions && (
+                      <Settings2 className="w-4 h-4 text-muted-foreground" />
+                    )}
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </SheetTrigger>
+        
+        {/* Sheet content same for both views */}
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+          <ProductDetailSheet
+            product={product}
+            quantity={quantity}
+            setQuantity={setQuantity}
+            selectedAdditions={selectedAdditions}
+            toggleAddition={toggleAddition}
+            observations={observations}
+            setObservations={setObservations}
+            selectedOptions={selectedOptions}
+            setSelectedOptions={setSelectedOptions}
+            itemTotal={itemTotal}
+            effectivePrice={effectivePrice}
+            validateOptions={validateOptions}
+            handleAddToCart={handleAddToCart}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // List view card (default)
+  return (
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden relative">
+          {/* Badges */}
+          <div className="absolute top-2 left-2 z-10 flex gap-1">
+            {isNew && (
+              <Badge className="bg-green-500 text-white text-xs px-1.5 py-0.5">
+                <Sparkles className="w-3 h-3 mr-0.5" />
+                NOVO
+              </Badge>
+            )}
+            {product.is_promotional && (
+              <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 badge-shine">
+                🔥 PROMOÇÃO
+              </Badge>
+            )}
+          </div>
+          
+          <CardContent className="p-0">
+            <div className="flex gap-3 p-3">
+              <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                {product.image ? (
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex flex-col items-center justify-center">
+                    <span className="text-3xl">{getCategoryEmoji(product.name)}</span>
+                    <span className="text-xs text-muted-foreground mt-0.5">Sem foto</span>
+                  </div>
+                )}
+                {/* Availability badge on image */}
+                {product.subject_to_availability && (
+                  <div className="absolute bottom-1 left-1">
+                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 bg-amber-50/90 dark:bg-amber-950/90 px-1 py-0">
+                      ⚠️ Disponibilidade
+                    </Badge>
+                  </div>
                 )}
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-semibold text-foreground line-clamp-1">{product.name}</h3>
+                    {hasOptions && (
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                        <Settings2 className="w-2.5 h-2.5 mr-0.5" />
+                        Personalizável
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                     {product.description}
                   </p>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="font-bold text-primary">{formatCurrency(product.price)}</p>
+                  <div className="flex items-center gap-2">
+                    {product.is_promotional && product.original_price ? (
+                      <>
+                        <span className="text-sm text-muted-foreground line-through">
+                          {formatCurrency(product.original_price)}
+                        </span>
+                        <span className="font-bold text-red-500">
+                          {formatCurrency(effectivePrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-bold text-primary">
+                        {formatCurrency(effectivePrice)}
+                        {product.unit_type && product.unit_type !== 'Unidade' && (
+                          <span className="text-xs font-normal text-muted-foreground ml-0.5">
+                            /{product.unit_type.toLowerCase()}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                   <Button size="sm" variant="secondary" className="h-8">
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -164,120 +399,227 @@ function ProductCard({ product }: { product: ProductWithOptions }) {
       </SheetTrigger>
       
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="text-left">{product.name}</SheetTitle>
-        </SheetHeader>
-        
-        <div className="space-y-6 overflow-auto max-h-[calc(85vh-180px)]">
-          <div className="w-full h-48 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
-            {product.image ? (
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-            ) : (
-              <Store className="w-12 h-12 text-muted-foreground" />
-            )}
-          </div>
-          
-          <div>
-            <p className="text-muted-foreground">{product.description}</p>
-            <p className="text-xl font-bold text-primary mt-2">{formatCurrency(product.price)}</p>
-          </div>
-
-          {/* Product Option Groups */}
-          {product.optionGroups && product.optionGroups.length > 0 && (
-            <ProductOptionSelector
-              groups={product.optionGroups}
-              selectedOptions={selectedOptions}
-              onSelectionChange={setSelectedOptions}
-            />
-          )}
-          
-          {product.additions.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-foreground mb-3">Adicionais</h4>
-              <div className="space-y-2">
-                {product.additions.map((addition) => (
-                  <div 
-                    key={addition.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        id={addition.id}
-                        checked={selectedAdditions.some((a) => a.id === addition.id)}
-                        onCheckedChange={() => toggleAddition(addition)}
-                      />
-                      <Label htmlFor={addition.id} className="cursor-pointer">
-                        {addition.name}
-                      </Label>
-                    </div>
-                    <span className="text-sm font-medium text-secondary">
-                      +{formatCurrency(addition.price)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <div>
-            <Label htmlFor="observations">Observações (opcional)</Label>
-            <Textarea
-              id="observations"
-              placeholder="Ex: Sem cebola, bem passado..."
-              value={observations}
-              onChange={(e) => setObservations(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-        </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3 bg-muted rounded-lg p-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="w-8 text-center font-semibold">{quantity}</span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <span className="text-lg font-bold text-foreground">{formatCurrency(itemTotal)}</span>
-          </div>
-          
-          {(() => {
-            const validation = validateOptions();
-            return (
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="w-full" 
-                onClick={handleAddToCart}
-                disabled={!validation.valid}
-              >
-                {validation.valid ? 'Adicionar ao carrinho' : validation.message}
-              </Button>
-            );
-          })()}
-        </div>
+        <ProductDetailSheet
+          product={product}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          selectedAdditions={selectedAdditions}
+          toggleAddition={toggleAddition}
+          observations={observations}
+          setObservations={setObservations}
+          selectedOptions={selectedOptions}
+          setSelectedOptions={setSelectedOptions}
+          itemTotal={itemTotal}
+          effectivePrice={effectivePrice}
+          validateOptions={validateOptions}
+          handleAddToCart={handleAddToCart}
+        />
       </SheetContent>
     </Sheet>
   );
 }
 
-function CartSheet() {
+// Extracted sheet content component
+interface ProductDetailSheetProps {
+  product: ProductWithOptions;
+  quantity: number;
+  setQuantity: (q: number) => void;
+  selectedAdditions: ProductAddition[];
+  toggleAddition: (a: ProductAddition) => void;
+  observations: string;
+  setObservations: (o: string) => void;
+  selectedOptions: SelectedProductOption[];
+  setSelectedOptions: (o: SelectedProductOption[]) => void;
+  itemTotal: number;
+  effectivePrice: number;
+  validateOptions: () => { valid: boolean; message?: string };
+  handleAddToCart: () => void;
+}
+
+function ProductDetailSheet({
+  product,
+  quantity,
+  setQuantity,
+  selectedAdditions,
+  toggleAddition,
+  observations,
+  setObservations,
+  selectedOptions,
+  setSelectedOptions,
+  itemTotal,
+  effectivePrice,
+  validateOptions,
+  handleAddToCart
+}: ProductDetailSheetProps) {
+  return (
+    <>
+      <SheetHeader className="pb-4">
+        <SheetTitle className="text-left">{product.name}</SheetTitle>
+      </SheetHeader>
+      
+      <div className="space-y-6 overflow-auto max-h-[calc(85vh-180px)]">
+        <div className="w-full h-48 bg-muted rounded-xl flex items-center justify-center overflow-hidden relative">
+          {product.image ? (
+            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex flex-col items-center justify-center">
+              <span className="text-5xl">{getCategoryEmoji(product.name)}</span>
+              <span className="text-sm text-muted-foreground mt-2">Sem foto</span>
+            </div>
+          )}
+          
+          {/* Badges in sheet */}
+          <div className="absolute top-3 left-3 flex gap-2">
+            {isNewProduct(product.created_at) && (
+              <Badge className="bg-green-500 text-white">
+                <Sparkles className="w-3 h-3 mr-1" />
+                NOVO
+              </Badge>
+            )}
+            {product.is_promotional && (
+              <Badge className="bg-red-500 text-white badge-shine">
+                🔥 PROMOÇÃO
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        <div>
+          <p className="text-muted-foreground">{product.description}</p>
+          
+          {product.subject_to_availability && (
+            <Badge variant="outline" className="mt-2 text-amber-600 border-amber-300">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Sujeito à disponibilidade
+            </Badge>
+          )}
+          
+          <div className="mt-2">
+            {product.is_promotional && product.original_price ? (
+              <div className="flex items-center gap-2">
+                <span className="text-lg text-muted-foreground line-through">
+                  {formatCurrency(product.original_price)}
+                </span>
+                <span className="text-xl font-bold text-red-500">
+                  {formatCurrency(effectivePrice)}
+                </span>
+              </div>
+            ) : (
+              <p className="text-xl font-bold text-primary">
+                {formatCurrency(effectivePrice)}
+                {product.unit_type && product.unit_type !== 'Unidade' && (
+                  <span className="text-sm font-normal text-muted-foreground ml-1">
+                    /{product.unit_type.toLowerCase()}
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Product Option Groups */}
+        {product.optionGroups && product.optionGroups.length > 0 && (
+          <ProductOptionSelector
+            groups={product.optionGroups}
+            selectedOptions={selectedOptions}
+            onSelectionChange={setSelectedOptions}
+          />
+        )}
+        
+        {product.additions.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-foreground mb-3">Adicionais</h4>
+            <div className="space-y-2">
+              {product.additions.map((addition) => (
+                <div 
+                  key={addition.id}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id={addition.id}
+                      checked={selectedAdditions.some((a) => a.id === addition.id)}
+                      onCheckedChange={() => toggleAddition(addition)}
+                    />
+                    <Label htmlFor={addition.id} className="cursor-pointer">
+                      {addition.name}
+                    </Label>
+                  </div>
+                  <span className="text-sm font-medium text-secondary">
+                    +{formatCurrency(addition.price)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div>
+          <Label htmlFor="observations">Observações (opcional)</Label>
+          <Textarea
+            id="observations"
+            placeholder="Ex: Sem cebola, bem passado..."
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            className="mt-2"
+          />
+        </div>
+      </div>
+      
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3 bg-muted rounded-lg p-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <span className="w-8 text-center font-semibold">{quantity}</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <span className="text-lg font-bold text-foreground">{formatCurrency(itemTotal)}</span>
+        </div>
+        
+        {(() => {
+          const validation = validateOptions();
+          return (
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="w-full" 
+              onClick={handleAddToCart}
+              disabled={!validation.valid}
+            >
+              {validation.valid ? 'Adicionar ao carrinho' : validation.message}
+            </Button>
+          );
+        })()}
+      </div>
+    </>
+  );
+}
+
+function CartSheet({ isAnimating }: { isAnimating: boolean }) {
   const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { id, slug } = useParams();
+
+  // Dynamic height based on item count
+  const getSheetHeight = () => {
+    if (itemCount === 0) return 'h-[50vh]';
+    if (itemCount <= 2) return 'h-[55vh]';
+    if (itemCount <= 4) return 'h-[70vh]';
+    return 'h-[85vh]';
+  };
 
   return (
     <Sheet>
@@ -285,7 +627,10 @@ function CartSheet() {
         <Button 
           variant={itemCount > 0 ? "hero" : "outline"} 
           size="lg" 
-          className="fixed bottom-4 left-4 right-4 z-50 shadow-xl"
+          className={cn(
+            "fixed bottom-4 left-4 right-4 z-50 shadow-xl transition-all",
+            isAnimating && "animate-cart-bounce animate-cart-pulse"
+          )}
         >
           <ShoppingCart className="w-5 h-5 mr-2" />
           {itemCount > 0 ? (
@@ -299,7 +644,7 @@ function CartSheet() {
         </Button>
       </SheetTrigger>
       
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+      <SheetContent side="bottom" className={cn("rounded-t-3xl transition-all", getSheetHeight())}>
         <SheetHeader className="pb-4">
           <div className="flex items-center justify-between">
             <SheetTitle>Seu pedido</SheetTitle>
@@ -312,7 +657,7 @@ function CartSheet() {
         </SheetHeader>
         
         {itemCount === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[calc(85vh-200px)] text-center">
+          <div className="flex flex-col items-center justify-center h-[calc(50vh-150px)] text-center">
             <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground">Seu carrinho está vazio</h3>
             <p className="text-muted-foreground mt-2 max-w-xs">
@@ -338,7 +683,9 @@ function CartSheet() {
                       {item.product.image ? (
                         <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Store className="w-6 h-6 text-muted-foreground" />
+                        <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                          <span className="text-2xl">{getCategoryEmoji(item.product.name)}</span>
+                        </div>
                       )}
                     </div>
                     
@@ -441,6 +788,15 @@ function MenuContent() {
   const [hoursOpen, setHoursOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
+  
+  // New states for improvements
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [cartAnimating, setCartAnimating] = useState(false);
+  
+  // Refs for intersection observer
+  const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Verificar se deve mostrar splash (PWA ou primeira visita)
   const isPWA = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
@@ -452,6 +808,50 @@ function MenuContent() {
       sessionStorage.setItem('pedy-menu-visited', 'true');
     }
   }, []);
+
+  // Handle cart animation
+  const handleAddToCart = useCallback(() => {
+    setCartAnimating(true);
+    setTimeout(() => setCartAnimating(false), 600);
+  }, []);
+
+  // Scroll to category
+  const scrollToCategory = useCallback((categoryId: string) => {
+    const element = categoryRefs.current.get(categoryId);
+    if (element) {
+      const yOffset = -120; // Account for sticky header
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Intersection observer for active category
+  useEffect(() => {
+    if (!mounted || categories.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const categoryId = entry.target.getAttribute('data-category-id');
+            if (categoryId) {
+              setActiveCategory(categoryId);
+            }
+          }
+        });
+      },
+      {
+        rootMargin: '-120px 0px -60% 0px',
+        threshold: 0
+      }
+    );
+
+    categoryRefs.current.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [mounted, categories]);
 
   // Manifest dinâmico com dados do estabelecimento
   useDynamicManifest(establishment ? {
@@ -562,6 +962,11 @@ function MenuContent() {
           order: c.sort_order
         })) || []);
         
+        // Set first category as active
+        if (catData && catData.length > 0) {
+          setActiveCategory(catData[0].id);
+        }
+        
         // Mapear produtos para formato esperado com grupos de opções
         setProducts(prodData?.map(p => {
           // Find option groups for this product
@@ -602,7 +1007,14 @@ function MenuContent() {
               name: a.name,
               price: Number(a.price)
             })),
-            optionGroups: productGroups
+            optionGroups: productGroups,
+            // New fields
+            is_promotional: p.is_promotional || false,
+            original_price: p.original_price ? Number(p.original_price) : undefined,
+            promotional_price: p.promotional_price ? Number(p.promotional_price) : undefined,
+            unit_type: p.unit_type || 'Unidade',
+            subject_to_availability: p.subject_to_availability || false,
+            created_at: p.created_at
           };
         }) || []);
 
@@ -638,6 +1050,14 @@ function MenuContent() {
     fetchData();
   }, [id, slug]);
 
+  // Filter products by search term
+  const filteredProducts = searchTerm
+    ? products.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : products;
+
   // Mostrar splash apenas em PWA ou primeira visita, enquanto carrega ou logo após
   if ((isPWA || isFirstVisit) && showSplash) {
     return (
@@ -649,10 +1069,47 @@ function MenuContent() {
     );
   }
 
+  // Skeleton loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background pb-24">
+        {/* Skeleton Header */}
+        <div className="bg-gradient-to-br from-primary to-secondary text-white p-4 pb-6">
+          <div className="container">
+            <div className="flex flex-col items-center text-center mt-8">
+              <div className="w-36 h-36 bg-white/20 rounded-2xl animate-pulse" />
+              <div className="h-6 w-48 bg-white/20 rounded mt-3 animate-pulse" />
+              <div className="h-5 w-24 bg-white/20 rounded-full mt-2 animate-pulse" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Skeleton Categories */}
+        <div className="sticky top-0 z-40 bg-card border-b border-border">
+          <div className="container overflow-x-auto">
+            <div className="flex gap-2 py-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-8 w-20 bg-muted rounded-md animate-pulse flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Skeleton Products */}
+        <main className="container py-6">
+          <div className="space-y-8">
+            {[1, 2].map((section) => (
+              <div key={section}>
+                <div className="h-6 w-32 bg-muted rounded mb-4 animate-pulse" />
+                <div className="grid gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <ProductCardSkeleton key={i} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -793,16 +1250,25 @@ function MenuContent() {
         </div>
       </div>
       
-      {/* Categories Navigation */}
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="container overflow-x-auto">
+      {/* Search Bar */}
+      <div className="container py-3">
+        <MenuSearchBar onSearch={setSearchTerm} />
+      </div>
+      
+      {/* Categories Navigation with active state */}
+      <div className="sticky top-0 z-40 bg-card border-b border-border shadow-sm">
+        <div className="container overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 py-3">
             {categories.map((category) => (
               <Button 
                 key={category.id}
-                variant="ghost" 
+                variant={activeCategory === category.id ? "default" : "ghost"} 
                 size="sm"
-                className="flex-shrink-0"
+                className={cn(
+                  "flex-shrink-0 transition-all",
+                  activeCategory === category.id && "shadow-md"
+                )}
+                onClick={() => scrollToCategory(category.id)}
               >
                 {category.name}
               </Button>
@@ -811,28 +1277,113 @@ function MenuContent() {
         </div>
       </div>
       
-      {/* Products */}
-      <main className="container py-6">
-        <div className="space-y-8">
-          {categories.map((category) => {
-            const categoryProducts = products.filter(p => p.categoryId === category.id && p.available);
-            if (categoryProducts.length === 0) return null;
-            
-            return (
-              <div key={category.id}>
-                <h2 className="text-xl font-bold text-foreground mb-4">{category.name}</h2>
-                <div className="grid gap-4">
-                  {categoryProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+      {/* View Mode Toggle */}
+      <div className="container pt-4 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">
+          {filteredProducts.filter(p => p.available).length} produtos
+        </span>
+        <div className="flex gap-1 bg-muted rounded-lg p-1">
+          <Button 
+            variant={viewMode === 'list' ? 'default' : 'ghost'} 
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
         </div>
+      </div>
+      
+      {/* Products */}
+      <main className="container py-4">
+        {searchTerm ? (
+          // Search results
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Resultados para "{searchTerm}"
+            </h2>
+            {filteredProducts.filter(p => p.available).length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <Store className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum produto encontrado</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className={cn(
+                "gap-4",
+                viewMode === 'grid' ? 'grid grid-cols-2' : 'grid'
+              )}>
+                {filteredProducts
+                  .filter(p => p.available)
+                  .map((product) => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      viewMode={viewMode}
+                      onAddToCart={handleAddToCart}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          // Normal category view
+          <div className="space-y-8">
+            {categories.map((category) => {
+              const categoryProducts = filteredProducts.filter(p => p.categoryId === category.id && p.available);
+              
+              return (
+                <div 
+                  key={category.id}
+                  ref={(el) => {
+                    if (el) categoryRefs.current.set(category.id, el);
+                  }}
+                  data-category-id={category.id}
+                >
+                  <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <span className="text-2xl">{getCategoryEmoji(category.name)}</span>
+                    {category.name}
+                  </h2>
+                  
+                  {categoryProducts.length === 0 ? (
+                    <Card className="border-dashed">
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p>Novidades em breve...</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className={cn(
+                      "gap-4",
+                      viewMode === 'grid' ? 'grid grid-cols-2' : 'grid'
+                    )}>
+                      {categoryProducts.map((product) => (
+                        <ProductCard 
+                          key={product.id} 
+                          product={product} 
+                          viewMode={viewMode}
+                          onAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
       
-      <CartSheet />
+      <CartSheet isAnimating={cartAnimating} />
       <PWAInstallPrompt 
         establishmentName={establishment?.name}
         establishmentLogo={establishment?.logo_url}
@@ -844,5 +1395,3 @@ function MenuContent() {
 export default function MenuPage() {
   return <MenuContent />;
 }
-
-// Splash screen logic is inside MenuContent
