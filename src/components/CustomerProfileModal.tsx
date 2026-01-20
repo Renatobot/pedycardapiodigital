@@ -35,12 +35,14 @@ interface CustomerProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   establishmentId?: string;
+  establishmentName?: string;
 }
 
 export default function CustomerProfileModal({
   open,
   onOpenChange,
   establishmentId,
+  establishmentName,
 }: CustomerProfileModalProps) {
   const { customer, logout, updateCustomer, getAddresses, addAddress, updateAddress, deleteAddress } = useCustomer();
   const { toast } = useToast();
@@ -190,6 +192,14 @@ export default function CustomerProfileModal({
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
+            {/* Establishment Context Badge */}
+            {establishmentName && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
+                <p className="text-sm text-muted-foreground">Você está em:</p>
+                <p className="font-semibold text-primary">{establishmentName}</p>
+              </div>
+            )}
+            
             {/* Profile Section */}
             <Card>
               <CardContent className="p-4">
@@ -227,6 +237,10 @@ export default function CustomerProfileModal({
                   </h3>
                 </div>
                 
+                <p className="text-xs text-muted-foreground mb-3">
+                  Seus endereços salvos funcionam em todos os cardápios
+                </p>
+                
                 {loadingAddresses ? (
                   <div className="flex justify-center py-4">
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -261,7 +275,11 @@ export default function CustomerProfileModal({
                     <Package className="w-5 h-5 text-primary" />
                     <div>
                       <h3 className="font-medium">Histórico de pedidos</h3>
-                      <p className="text-sm text-muted-foreground">Ver e repetir pedidos anteriores</p>
+                      <p className="text-sm text-muted-foreground">
+                        {establishmentName 
+                          ? `Pedidos em ${establishmentName}` 
+                          : 'Ver e repetir pedidos anteriores'}
+                      </p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -388,6 +406,7 @@ export default function CustomerProfileModal({
         onOpenChange={setShowOrderHistory}
         customerId={customer?.id}
         establishmentId={establishmentId}
+        establishmentName={establishmentName}
       />
     </>
   );

@@ -15,6 +15,7 @@ interface CustomerOrderHistoryProps {
   onOpenChange: (open: boolean) => void;
   customerId?: string;
   establishmentId?: string;
+  establishmentName?: string;
 }
 
 export default function CustomerOrderHistory({
@@ -22,6 +23,7 @@ export default function CustomerOrderHistory({
   onOpenChange,
   customerId,
   establishmentId,
+  establishmentName,
 }: CustomerOrderHistoryProps) {
   const { orders, loading, fetchOrders, repeatOrder, getStatusLabel } = useCustomerOrders(
     customerId,
@@ -55,8 +57,13 @@ export default function CustomerOrderHistory({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
-            Meus Pedidos
+            {establishmentName ? `Pedidos em ${establishmentName}` : 'Meus Pedidos'}
           </SheetTitle>
+          {establishmentName && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Exibindo apenas pedidos feitos neste estabelecimento
+            </p>
+          )}
         </SheetHeader>
 
         <ScrollArea className="h-[calc(100vh-100px)] mt-4 pr-4">
@@ -67,7 +74,11 @@ export default function CustomerOrderHistory({
           ) : orders.length === 0 ? (
             <div className="text-center py-12">
               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Você ainda não fez nenhum pedido</p>
+              <p className="text-muted-foreground">
+                {establishmentName 
+                  ? `Você ainda não fez pedidos em ${establishmentName}`
+                  : 'Você ainda não fez nenhum pedido'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">

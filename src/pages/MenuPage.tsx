@@ -1431,6 +1431,7 @@ function MenuContent() {
         open={showProfileModal}
         onOpenChange={setShowProfileModal}
         establishmentId={establishment?.id}
+        establishmentName={establishment?.name || undefined}
       />
       
       {/* Customer Identification Modal */}
