@@ -82,15 +82,16 @@ export function checkProFeatureAccess(
   }
 
   const now = new Date();
+  const trialEnd = establishment.trial_end_date 
+    ? new Date(establishment.trial_end_date) 
+    : null;
   
-  // During trial, ALL features are unlocked
-  if (establishment.plan_status === 'trial') {
-    const trialEnd = establishment.trial_end_date 
-      ? new Date(establishment.trial_end_date) 
-      : null;
-    if (!trialEnd || trialEnd > now) {
-      return { hasAccess: true, reason: 'trial' };
-    }
+  // During trial (by status OR type), ALL features are unlocked
+  const isInTrial = establishment.plan_status === 'trial' || 
+                    establishment.plan_type === 'trial';
+  
+  if (isInTrial && (!trialEnd || trialEnd > now)) {
+    return { hasAccess: true, reason: 'trial' };
   }
   
   // Check plan type
@@ -124,15 +125,16 @@ export function checkFeatureAccess(
   }
 
   const now = new Date();
+  const trialEnd = establishment.trial_end_date 
+    ? new Date(establishment.trial_end_date) 
+    : null;
   
-  // During trial, ALL features are unlocked
-  if (establishment.plan_status === 'trial') {
-    const trialEnd = establishment.trial_end_date 
-      ? new Date(establishment.trial_end_date) 
-      : null;
-    if (!trialEnd || trialEnd > now) {
-      return { hasAccess: true, reason: 'trial' };
-    }
+  // During trial (by status OR type), ALL features are unlocked
+  const isInTrial = establishment.plan_status === 'trial' || 
+                    establishment.plan_type === 'trial';
+  
+  if (isInTrial && (!trialEnd || trialEnd > now)) {
+    return { hasAccess: true, reason: 'trial' };
   }
   
   // Check plan type or legacy has_pro_plus flag
