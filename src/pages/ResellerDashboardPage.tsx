@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -23,11 +26,15 @@ import {
   Phone,
   TrendingUp,
   DollarSign,
-  Calendar,
   ExternalLink,
   UserPlus,
   AlertCircle,
   RefreshCw,
+  Store,
+  Eye,
+  Save,
+  Image as ImageIcon,
+  Palette,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +49,18 @@ export default function ResellerDashboardPage() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Sales page settings state
+  const [salesPageTitle, setSalesPageTitle] = useState('');
+  const [salesPageSubtitle, setSalesPageSubtitle] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#4A9BD9');
+  const [secondaryColor, setSecondaryColor] = useState('#4CAF50');
+  const [showPrices, setShowPrices] = useState(true);
+  const [customCtaText, setCustomCtaText] = useState('');
+  const [priceBasic, setPriceBasic] = useState(37);
+  const [pricePro, setPricePro] = useState(59.90);
+  const [priceProPlus, setPriceProPlus] = useState(79.90);
   
   const {
     reseller,
@@ -52,9 +71,27 @@ export default function ResellerDashboardPage() {
     error,
     fetchResellerData,
     getReferralLink,
+    getSalesPageLink,
     getClientStatus,
     getDaysRemaining,
+    updateSalesPageSettings,
+    uploadResellerLogo,
   } = useResellerDashboard();
+
+  // Initialize form with reseller data
+  useEffect(() => {
+    if (reseller) {
+      setSalesPageTitle(reseller.sales_page_title || '');
+      setSalesPageSubtitle(reseller.sales_page_subtitle || '');
+      setPrimaryColor(reseller.primary_color || '#4A9BD9');
+      setSecondaryColor(reseller.secondary_color || '#4CAF50');
+      setShowPrices(reseller.show_prices !== false);
+      setCustomCtaText(reseller.custom_cta_text || '');
+      setPriceBasic(reseller.price_basic);
+      setPricePro(reseller.price_pro);
+      setPriceProPlus(reseller.price_pro_plus);
+    }
+  }, [reseller]);
 
   // Check authentication and role
   useEffect(() => {
@@ -137,6 +174,75 @@ export default function ResellerDashboardPage() {
     window.open(`https://wa.me/55${cleaned}`, '_blank');
   };
 
+  const handleSaveSalesPage = async () => {
+    setSaving(true);
+    try {
+      const settings: Record<string, unknown> = {
+        sales_page_title: salesPageTitle || null,
+        sales_page_subtitle: salesPageSubtitle || null,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        show_prices: showPrices,
+        custom_cta_text: customCtaText || null,
+      };
+
+      // Only include prices if custom_price mode
+      if (reseller?.pricing_mode === 'custom_price') {
+        settings.price_basic = priceBasic;
+        settings.price_pro = pricePro;
+        settings.price_pro_plus = priceProPlus;
+      }
+
+      const { error } = await updateSalesPageSettings(settings);
+      
+      if (error) {
+        throw new Error(typeof error === 'string' ? error : 'Erro ao salvar');
+      }
+      
+      toast({
+        title: 'Configurações salvas!',
+        description: 'Sua página de vendas foi atualizada.',
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as configurações.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSaving(true);
+    try {
+      const { error, url } = await uploadResellerLogo(file);
+      if (error) throw new Error(error);
+      
+      toast({
+        title: 'Logo enviada!',
+        description: 'Sua logo foi atualizada com sucesso.',
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao enviar logo',
+        description: 'Não foi possível enviar a imagem.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openPreview = () => {
+    const link = getSalesPageLink();
+    window.open(link, '_blank');
+  };
+
   if (checkingAuth || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -209,9 +315,7 @@ export default function ResellerDashboardPage() {
               <CardTitle className="text-lg">Seu Link de Indicação</CardTitle>
             </div>
             <CardDescription>
-              {reseller.pricing_mode === 'commission' 
-                ? 'Quando um cliente usar seu link, ele será cadastrado automaticamente e vinculado a você.'
-                : 'Quando um cliente acessar seu link, ele verá a página de vendas e será direcionado para seu WhatsApp.'}
+              Compartilhe este link com seus clientes. Eles verão sua página de vendas personalizada.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -321,10 +425,14 @@ export default function ResellerDashboardPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="clients" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="clients" className="gap-1">
               <Users className="w-4 h-4" />
-              Seus Clientes
+              Clientes
+            </TabsTrigger>
+            <TabsTrigger value="sales-page" className="gap-1">
+              <Store className="w-4 h-4" />
+              Minha Página
             </TabsTrigger>
             {reseller.pricing_mode === 'commission' && (
               <TabsTrigger value="commissions" className="gap-1">
@@ -335,7 +443,7 @@ export default function ResellerDashboardPage() {
             {reseller.pricing_mode === 'custom_price' && (
               <TabsTrigger value="prices" className="gap-1">
                 <DollarSign className="w-4 h-4" />
-                Seus Preços
+                Preços
               </TabsTrigger>
             )}
           </TabsList>
@@ -417,6 +525,230 @@ export default function ResellerDashboardPage() {
                     </Table>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Sales Page Tab */}
+          <TabsContent value="sales-page">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Personalize sua Página de Vendas</CardTitle>
+                    <CardDescription>
+                      Configure sua página exclusiva com sua marca e preços
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" onClick={openPreview} className="gap-1">
+                    <Eye className="w-4 h-4" />
+                    Visualizar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Sua Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden bg-muted">
+                      {reseller.logo_url ? (
+                        <img src={reseller.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="max-w-xs"
+                        disabled={saving}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Se não enviar, a logo do PEDY será usada
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title & Subtitle */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Título da Página</Label>
+                    <Input
+                      placeholder="Ex: Cardápio Digital - Consultoria João"
+                      value={salesPageTitle}
+                      onChange={(e) => setSalesPageTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subtítulo (opcional)</Label>
+                    <Input
+                      placeholder="Ex: Atendimento personalizado"
+                      value={salesPageSubtitle}
+                      onChange={(e) => setSalesPageSubtitle(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Colors */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Palette className="w-4 h-4" />
+                      Cor Primária
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-14 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        placeholder="#4A9BD9"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Palette className="w-4 h-4" />
+                      Cor Secundária
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        className="w-14 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        placeholder="#4CAF50"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Text */}
+                <div className="space-y-2">
+                  <Label>Texto do Botão Principal</Label>
+                  <Input
+                    placeholder={reseller.pricing_mode === 'custom_price' ? 'Ex: Falar Comigo' : 'Ex: Criar Meu Cardápio'}
+                    value={customCtaText}
+                    onChange={(e) => setCustomCtaText(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deixe em branco para usar o texto padrão
+                  </p>
+                </div>
+
+                {/* Show Prices */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Exibir Preços na Página</p>
+                    <p className="text-sm text-muted-foreground">
+                      Mostrar os valores dos planos para os visitantes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={showPrices}
+                    onCheckedChange={setShowPrices}
+                  />
+                </div>
+
+                {/* Custom Prices (only for custom_price mode) */}
+                {reseller.pricing_mode === 'custom_price' && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-primary" />
+                      <h3 className="font-medium">Seus Preços de Revenda</h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Plano Básico</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={priceBasic}
+                            onChange={(e) => setPriceBasic(parseFloat(e.target.value) || 0)}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Plano Pro</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pricePro}
+                            onChange={(e) => setPricePro(parseFloat(e.target.value) || 0)}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Plano Pro+</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={priceProPlus}
+                            onChange={(e) => setPriceProPlus(parseFloat(e.target.value) || 0)}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Estes valores serão exibidos na sua página de vendas personalizada
+                    </p>
+                  </div>
+                )}
+
+                {/* Link Preview */}
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <Label className="mb-2 block">Link da sua página:</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={getSalesPageLink()}
+                      className="font-mono text-sm"
+                    />
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(getSalesPageLink());
+                        toast({ title: 'Link copiado!' });
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSalesPage} disabled={saving} className="gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Salvar Alterações
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

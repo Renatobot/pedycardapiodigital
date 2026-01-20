@@ -29,6 +29,14 @@ export interface ResellerData {
   total_activations: number;
   is_active: boolean;
   created_at: string;
+  // Sales page customization fields
+  sales_page_title: string | null;
+  sales_page_subtitle: string | null;
+  logo_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  show_prices: boolean | null;
+  custom_cta_text: string | null;
 }
 
 export interface ResellerCommission {
@@ -168,14 +176,68 @@ export function useResellerDashboard() {
     
     const baseUrl = window.location.origin;
     
-    // Commission mode: direct to registration
-    if (reseller.pricing_mode === 'commission') {
-      return `${baseUrl}/cadastro?ref=${reseller.referral_code}`;
-    }
-    
-    // Custom price mode: to landing page (WhatsApp will be reseller's)
-    return `${baseUrl}/?ref=${reseller.referral_code}`;
+    // Both modes now go to the personalized sales page
+    return `${baseUrl}/parceiro/${reseller.referral_code}`;
   }, [reseller]);
+
+  const getSalesPageLink = useCallback(() => {
+    if (!reseller) return '';
+    return `${window.location.origin}/parceiro/${reseller.referral_code}`;
+  }, [reseller]);
+
+  const updateSalesPageSettings = useCallback(async (settings: {
+    sales_page_title?: string | null;
+    sales_page_subtitle?: string | null;
+    logo_url?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    show_prices?: boolean;
+    custom_cta_text?: string | null;
+    price_basic?: number;
+    price_pro?: number;
+    price_pro_plus?: number;
+  }) => {
+    if (!reseller) return { error: 'Reseller not found' };
+
+    const { error } = await supabase
+      .from('resellers')
+      .update(settings)
+      .eq('id', reseller.id);
+
+    if (!error) {
+      setReseller(prev => prev ? { ...prev, ...settings } : null);
+    }
+
+    return { error };
+  }, [reseller]);
+
+  const uploadResellerLogo = useCallback(async (file: File) => {
+    if (!reseller) return { error: 'Reseller not found', url: null };
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${reseller.id}-${Date.now()}.${fileExt}`;
+      const filePath = `reseller-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(filePath);
+
+      // Update reseller with logo URL
+      await updateSalesPageSettings({ logo_url: publicUrl });
+
+      return { error: null, url: publicUrl };
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      return { error: 'Erro ao enviar logo', url: null };
+    }
+  }, [reseller, updateSalesPageSettings]);
 
   const getClientStatus = useCallback((client: ResellerClient) => {
     const now = new Date();
@@ -224,7 +286,10 @@ export function useResellerDashboard() {
     error,
     fetchResellerData,
     getReferralLink,
+    getSalesPageLink,
     getClientStatus,
     getDaysRemaining,
+    updateSalesPageSettings,
+    uploadResellerLogo,
   };
 }
