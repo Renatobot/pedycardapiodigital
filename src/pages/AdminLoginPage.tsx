@@ -12,9 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Shield, Eye, EyeOff, Loader2, Zap, KeyRound } from 'lucide-react';
+import { Shield, Eye, EyeOff, Loader2, Zap, KeyRound, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import logoPedy from '@/assets/logo_pedy.png';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
@@ -250,10 +251,33 @@ const AdminLoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800 border-slate-700">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-4">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-red-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-slate-700/20 rounded-full blur-3xl" />
+        {/* Grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }}
+        />
+      </div>
+
+      <Card className="w-full max-w-md bg-slate-800/90 backdrop-blur-sm border-slate-700 shadow-2xl shadow-black/50 relative z-10 animate-fade-in-up">
+        <CardHeader className="text-center pb-2">
+          {/* PEDY Logo */}
+          <div className="flex justify-center mb-4">
+            <img 
+              src={logoPedy} 
+              alt="PEDY" 
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-red-500/25">
             <Shield className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl text-white">Painel Master</CardTitle>

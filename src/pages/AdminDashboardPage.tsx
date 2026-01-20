@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -31,6 +32,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Shield,
   LogOut,
   Search,
@@ -51,12 +59,21 @@ import {
   Sparkles,
   Crown,
   Menu,
+  MoreVertical,
+  ExternalLink,
+  ChartLine,
+  TrendingUp,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FEATURE_LABELS, PRO_PLUS_FEATURES } from '@/lib/featureGating';
+import { AdminStatsCard } from '@/components/AdminStatsCard';
+import { AdminDashboardSkeleton } from '@/components/AdminDashboardSkeleton';
+import { AdminCharts } from '@/components/AdminCharts';
+import { AdminQuickActions } from '@/components/AdminQuickActions';
+import logoPedy from '@/assets/logo_pedy.png';
 
 interface Establishment {
   id: string;
@@ -66,6 +83,7 @@ interface Establishment {
   cpf_cnpj: string;
   pix_key: string | null;
   logo_url: string | null;
+  slug: string | null;
   plan_status: string;
   plan_expires_at: string | null;
   trial_start_date: string;
@@ -94,6 +112,9 @@ const AdminDashboardPage = () => {
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | 'extend'>('activate');
   const [customDays, setCustomDays] = useState<number>(30);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
+  const [adminEmail, setAdminEmail] = useState<string>('');
   
   // Plan management state
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -127,6 +148,8 @@ const AdminDashboardPage = () => {
           navigate('/admin/login');
           return;
         }
+
+        setAdminEmail(user.email || '');
 
         // Verificar se tem role de admin
         const { data: roleData, error: roleError } = await supabase
@@ -163,6 +186,7 @@ const AdminDashboardPage = () => {
 
       if (error) throw error;
       setEstablishments(data || []);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Erro ao buscar estabelecimentos:', error);
       toast({
@@ -607,43 +631,56 @@ const AdminDashboardPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white">Carregando...</div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (
     <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+      {/* Enhanced Header */}
+      <header className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-800/95 border-b border-slate-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
+              <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">PEDY Admin</h1>
-              <p className="text-xs text-slate-400">Painel de Administração Master</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-white">PEDY Admin</h1>
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                  Master
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-400 flex items-center gap-2">
+                <span>Painel de Administração</span>
+                <span className="text-slate-600">•</span>
+                <span>{format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}</span>
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {adminEmail && (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-xs text-slate-300">{adminEmail}</span>
+              </div>
+            )}
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setChangePasswordModalOpen(true)}
               className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
-              <Key className="w-4 h-4 mr-2" />
-              Alterar Senha
+              <Key className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Alterar Senha</span>
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={handleLogout}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-red-400 hover:border-red-500/50"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
+              <LogOut className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Sair</span>
             </Button>
           </div>
         </div>
@@ -671,78 +708,70 @@ const AdminDashboardPage = () => {
 
           {/* Estabelecimentos Tab */}
           <TabsContent value="establishments" className="space-y-6">
-            {/* Estatísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <Card className="bg-slate-800 border-slate-700">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
-                      <Building2 className="w-6 h-6 text-slate-300" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{stats.total}</p>
-                      <p className="text-sm text-slate-400">Total</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{stats.trial}</p>
-                      <p className="text-sm text-slate-400">Em Trial</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{stats.active}</p>
-                      <p className="text-sm text-slate-400">Ativos</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{stats.proPlus}</p>
-                      <p className="text-sm text-slate-400">Pro+</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Quick Actions Bar */}
+            <AdminQuickActions 
+              establishments={establishments}
+              onRefresh={fetchEstablishments}
+              lastUpdate={lastUpdate}
+            />
 
-              <Card className="bg-slate-800 border-slate-700">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
-                      <XCircle className="w-6 h-6 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{stats.expired}</p>
-                      <p className="text-sm text-slate-400">Expirados</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Estatísticas com animação */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <AdminStatsCard
+                icon={<Building2 className="w-6 h-6" />}
+                value={stats.total}
+                label="Total"
+                iconBgColor="bg-slate-700"
+                iconColor="text-slate-300"
+              />
+              <AdminStatsCard
+                icon={<Clock className="w-6 h-6" />}
+                value={stats.trial}
+                label="Em Trial"
+                iconBgColor="bg-blue-500/20"
+                iconColor="text-blue-400"
+                trend={stats.trial > 0 ? { value: stats.trial, label: 'testando', isPositive: true } : undefined}
+              />
+              <AdminStatsCard
+                icon={<CheckCircle className="w-6 h-6" />}
+                value={stats.active}
+                label="Ativos"
+                iconBgColor="bg-green-500/20"
+                iconColor="text-green-400"
+              />
+              <AdminStatsCard
+                icon={<Sparkles className="w-6 h-6" />}
+                value={stats.proPlus}
+                label="Pro+"
+                iconBgColor="bg-purple-500/20"
+                iconColor="text-purple-400"
+              />
+              <AdminStatsCard
+                icon={<XCircle className="w-6 h-6" />}
+                value={stats.expired}
+                label="Expirados"
+                iconBgColor="bg-red-500/20"
+                iconColor="text-red-400"
+              />
             </div>
+
+            {/* Toggle Charts */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCharts(!showCharts)}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                <ChartLine className="w-4 h-4 mr-2" />
+                {showCharts ? 'Ocultar Gráficos' : 'Ver Gráficos'}
+              </Button>
+            </div>
+
+            {/* Charts Section */}
+            {showCharts && (
+              <AdminCharts establishments={establishments} />
+            )}
 
             {/* Lista de Estabelecimentos */}
             <Card className="bg-slate-800 border-slate-700">
@@ -801,87 +830,113 @@ const AdminDashboardPage = () => {
                         </TableRow>
                       ) : (
                         filteredEstablishments.map((establishment) => (
-                          <TableRow key={establishment.id} className="border-slate-700 hover:bg-slate-700/50">
+                          <TableRow 
+                            key={establishment.id} 
+                            className={`border-slate-700 hover:bg-slate-700/50 transition-colors ${
+                              establishment.plan_status === 'expired' ? 'border-l-2 border-l-red-500' :
+                              establishment.plan_status === 'trial' ? 'border-l-2 border-l-blue-500' :
+                              establishment.has_pro_plus ? 'border-l-2 border-l-purple-500' :
+                              'border-l-2 border-l-green-500'
+                            }`}
+                          >
                             <TableCell>
-                              <div>
-                                <p className="font-medium text-white">{establishment.name}</p>
-                                <p className="text-sm text-slate-400">{establishment.email}</p>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="w-10 h-10 border border-slate-600">
+                                  {establishment.logo_url ? (
+                                    <AvatarImage src={establishment.logo_url} alt={establishment.name} />
+                                  ) : null}
+                                  <AvatarFallback className="bg-slate-700 text-slate-300 text-xs font-medium">
+                                    {establishment.name.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-white">{establishment.name}</p>
+                                  <p className="text-xs text-slate-400">{establishment.email}</p>
+                                </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-slate-300">{establishment.cpf_cnpj}</TableCell>
-                            <TableCell className="text-slate-300">{establishment.whatsapp}</TableCell>
+                            <TableCell className="text-slate-300 text-sm">{establishment.cpf_cnpj}</TableCell>
+                            <TableCell className="text-slate-300 text-sm">{establishment.whatsapp}</TableCell>
                             <TableCell>{getStatusBadge(establishment.plan_status)}</TableCell>
                             <TableCell>{getPlanBadge(establishment)}</TableCell>
-                            <TableCell className="text-slate-300">{getExpirationInfo(establishment)}</TableCell>
+                            <TableCell className="text-slate-300 text-sm">{getExpirationInfo(establishment)}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => navigate(`/admin/dashboard/${establishment.id}`)}
-                                  className="text-orange-400 hover:text-orange-300 hover:bg-orange-500/20"
-                                  title="Gerenciar Cardápio"
-                                >
-                                  <Menu className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setSelectedEstablishment(establishment);
-                                    setDetailsModalOpen(true);
-                                  }}
-                                  className="text-slate-400 hover:text-white hover:bg-slate-700"
-                                  title="Ver Detalhes"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setSelectedEstablishment(establishment);
-                                    setPlanModalOpen(true);
-                                  }}
-                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/20"
-                                  title="Gerenciar Plano"
-                                >
-                                  <Settings className="w-4 h-4" />
-                                </Button>
-                                {establishment.plan_status !== 'active' && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'activate')}
-                                    className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
-                                    title="Ativar Pro"
+                                    className="text-slate-400 hover:text-white hover:bg-slate-700"
                                   >
-                                    <Play className="w-4 h-4" />
+                                    <MoreVertical className="w-4 h-4" />
                                   </Button>
-                                )}
-                                {establishment.plan_status === 'active' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'deactivate')}
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                    title="Desativar"
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                                  <DropdownMenuItem 
+                                    onClick={() => navigate(`/admin/dashboard/${establishment.id}`)}
+                                    className="text-orange-400 focus:text-orange-300 focus:bg-orange-500/20 cursor-pointer"
                                   >
-                                    <Pause className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                {establishment.plan_status === 'trial' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openActionModal(establishment, 'extend')}
-                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                                    title="Estender Trial"
+                                    <Menu className="w-4 h-4 mr-2" />
+                                    Gerenciar Cardápio
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => window.open(`/${establishment.slug || establishment.id}`, '_blank')}
+                                    className="text-slate-300 focus:text-white focus:bg-slate-700 cursor-pointer"
                                   >
-                                    <Calendar className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Ver Cardápio
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-slate-700" />
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedEstablishment(establishment);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                    className="text-slate-300 focus:text-white focus:bg-slate-700 cursor-pointer"
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Ver Detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedEstablishment(establishment);
+                                      setPlanModalOpen(true);
+                                    }}
+                                    className="text-purple-400 focus:text-purple-300 focus:bg-purple-500/20 cursor-pointer"
+                                  >
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Gerenciar Plano
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-slate-700" />
+                                  {establishment.plan_status !== 'active' && (
+                                    <DropdownMenuItem 
+                                      onClick={() => openActionModal(establishment, 'activate')}
+                                      className="text-green-400 focus:text-green-300 focus:bg-green-500/20 cursor-pointer"
+                                    >
+                                      <Play className="w-4 h-4 mr-2" />
+                                      Ativar Pro
+                                    </DropdownMenuItem>
+                                  )}
+                                  {establishment.plan_status === 'active' && (
+                                    <DropdownMenuItem 
+                                      onClick={() => openActionModal(establishment, 'deactivate')}
+                                      className="text-red-400 focus:text-red-300 focus:bg-red-500/20 cursor-pointer"
+                                    >
+                                      <Pause className="w-4 h-4 mr-2" />
+                                      Desativar Plano
+                                    </DropdownMenuItem>
+                                  )}
+                                  {establishment.plan_status === 'trial' && (
+                                    <DropdownMenuItem 
+                                      onClick={() => openActionModal(establishment, 'extend')}
+                                      className="text-blue-400 focus:text-blue-300 focus:bg-blue-500/20 cursor-pointer"
+                                    >
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      Estender Trial
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
