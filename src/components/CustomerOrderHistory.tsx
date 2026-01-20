@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/whatsapp';
 import { useCustomerOrders, CustomerOrder } from '@/hooks/useCustomerOrders';
 import { useOrderReviews } from '@/hooks/useOrderReviews';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Package, Loader2, Calendar, MapPin, CreditCard, Star, CheckCircle } from 'lucide-react';
+import { RefreshCw, Package, Loader2, Calendar, MapPin, CreditCard, Star, CheckCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import OrderReviewModal from './OrderReviewModal';
@@ -90,19 +90,33 @@ export default function CustomerOrderHistory({
         (payload) => {
           const updatedOrder = payload.new as any;
           
-          // Update local orders with the new status
+          // Update local orders with the new status and rejection reason
           setLocalOrders(prev => prev.map(order => 
             order.id === updatedOrder.id 
-              ? { ...order, status: updatedOrder.status || order.status }
+              ? { 
+                  ...order, 
+                  status: updatedOrder.status || order.status,
+                  rejection_reason: updatedOrder.rejection_reason || null
+                }
               : order
           ));
 
           // Show toast notification for status change
           const statusInfo = getStatusLabel(updatedOrder.status);
-          toast({
-            title: getStatusIcon(updatedOrder.status) + ' Status atualizado!',
-            description: `Seu pedido está: ${statusInfo.label}`,
-          });
+          
+          // Special toast for rejection with reason
+          if (updatedOrder.status === 'rejected' && updatedOrder.rejection_reason) {
+            toast({
+              title: '❌ Pedido Rejeitado',
+              description: updatedOrder.rejection_reason,
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: getStatusIcon(updatedOrder.status) + ' Status atualizado!',
+              description: `Seu pedido está: ${statusInfo.label}`,
+            });
+          }
         }
       )
       .subscribe();
@@ -118,7 +132,10 @@ export default function CustomerOrderHistory({
       confirmed: '✅',
       preparing: '👨‍🍳',
       delivering: '🛵',
+      'on-the-way': '🛵',
       completed: '🎉',
+      delivered: '🎉',
+      rejected: '❌',
       cancelled: '❌',
     };
     return icons[status] || '📦';
@@ -184,7 +201,8 @@ export default function CustomerOrderHistory({
               <div className="space-y-4">
                 {localOrders.map((order) => {
                   const statusInfo = getStatusLabel(order.status);
-                  const isDelivered = order.status === 'completed';
+                  const isDelivered = order.status === 'completed' || order.status === 'delivered';
+                  const isRejected = order.status === 'rejected';
                   const isReviewed = reviewedOrders.has(order.id);
                   
                   return (
@@ -229,6 +247,17 @@ export default function CustomerOrderHistory({
                           <MapPin className="w-3 h-3" />
                           <span className="truncate">{order.customer_address}</span>
                         </div>
+
+                        {/* Rejection reason */}
+                        {isRejected && (order as any).rejection_reason && (
+                          <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded-md p-2 border border-red-200">
+                            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-medium">Motivo da rejeição:</p>
+                              <p>{(order as any).rejection_reason}</p>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Review badge if already reviewed */}
                         {isReviewed && (

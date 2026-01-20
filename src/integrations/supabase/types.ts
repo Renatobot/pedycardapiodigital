@@ -360,6 +360,7 @@ export type Database = {
           address_number: string | null
           address_street: string | null
           allow_orders_when_closed: boolean | null
+          allow_scheduling_when_open: boolean | null
           city: string | null
           cpf_cnpj: string
           created_at: string
@@ -397,6 +398,7 @@ export type Database = {
           address_number?: string | null
           address_street?: string | null
           allow_orders_when_closed?: boolean | null
+          allow_scheduling_when_open?: boolean | null
           city?: string | null
           cpf_cnpj: string
           created_at?: string
@@ -434,6 +436,7 @@ export type Database = {
           address_number?: string | null
           address_street?: string | null
           allow_orders_when_closed?: boolean | null
+          allow_scheduling_when_open?: boolean | null
           city?: string | null
           cpf_cnpj?: string
           created_at?: string
@@ -487,6 +490,7 @@ export type Database = {
           payment_details: string | null
           payment_method: string
           reference_point: string | null
+          rejection_reason: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: string | null
@@ -514,6 +518,7 @@ export type Database = {
           payment_details?: string | null
           payment_method: string
           reference_point?: string | null
+          rejection_reason?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: string | null
@@ -541,6 +546,7 @@ export type Database = {
           payment_details?: string | null
           payment_method?: string
           reference_point?: string | null
+          rejection_reason?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: string | null

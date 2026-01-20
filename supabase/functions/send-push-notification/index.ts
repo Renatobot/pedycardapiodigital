@@ -23,6 +23,10 @@ const STATUS_MESSAGES: Record<string, { title: string; body: string }> = {
     title: '🎉 Entregue!',
     body: 'Seu pedido foi entregue. Bom apetite!',
   },
+  'rejected': {
+    title: '❌ Pedido Rejeitado',
+    body: 'Infelizmente seu pedido foi rejeitado pelo estabelecimento.',
+  },
   'cancelled': {
     title: '❌ Pedido Cancelado',
     body: 'Infelizmente seu pedido foi cancelado.',
@@ -303,7 +307,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { orderId, newStatus, establishmentId, customerPhone, establishmentName } = await req.json();
+    const { orderId, newStatus, establishmentId, customerPhone, establishmentName, rejectionReason } = await req.json();
 
     console.log('Received push notification request:', {
       orderId,
@@ -311,6 +315,7 @@ Deno.serve(async (req) => {
       establishmentId,
       customerPhone,
       establishmentName,
+      rejectionReason,
     });
 
     // Validar parâmetros
@@ -368,15 +373,23 @@ Deno.serve(async (req) => {
     }
 
     // Preparar payload da notificação
+    let notificationBody = `${establishmentName}: ${message.body}`;
+    
+    // Include rejection reason if present
+    if (newStatus === 'rejected' && rejectionReason) {
+      notificationBody = `${establishmentName}: ${rejectionReason}`;
+    }
+
     const notificationPayload = JSON.stringify({
       title: message.title,
-      body: `${establishmentName}: ${message.body}`,
+      body: notificationBody,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
       tag: `order-${orderId}`,
       data: {
         orderId,
         status: newStatus,
+        rejectionReason: rejectionReason || null,
         url: '/',
       },
     });
