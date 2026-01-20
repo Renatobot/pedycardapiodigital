@@ -2,13 +2,12 @@ import { Link } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Crown, CheckCircle2, XCircle, MessageCircle, ArrowLeft, Smartphone, Sparkles, Lightbulb } from 'lucide-react';
+import { Crown, CheckCircle2, XCircle, MessageCircle, ArrowLeft, Smartphone, Sparkles, Lightbulb, Gift, Users, Wallet } from 'lucide-react';
 import { openWhatsApp, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedText } from '@/components/AnimatedText';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
-
 // Recursos base disponíveis em TODOS os planos
 const baseFeatures = [
   'Cardápio digital ilimitado',
@@ -214,8 +213,36 @@ export default function UpgradePage() {
             ))}
           </div>
 
+          {/* Programa de Indicação */}
+          <ScrollReveal delay={450}>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40 transition-colors">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-purple-500" />
+                  <h3 className="font-bold text-foreground">Programa Indique e Ganhe</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Indique amigos empreendedores! Quando eles assinarem um plano{' '}
+                  <strong className="text-foreground">Pro ou Pro+</strong>, você ganha 
+                  o valor do plano como{' '}
+                  <strong className="text-green-500">crédito na sua próxima mensalidade</strong>!
+                </p>
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1 bg-purple-500/10 px-2 py-1 rounded-full">
+                    <Users className="w-3 h-3 text-purple-400" />
+                    <span className="text-purple-300">Disponível para TODOS os planos</span>
+                  </span>
+                  <span className="flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded-full">
+                    <Wallet className="w-3 h-3 text-green-400" />
+                    <span className="text-green-300">Até R$ 79,90 por indicação</span>
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
+
           {/* Destaques informativos */}
-          <ScrollReveal delay={500} direction="left">
+          <ScrollReveal delay={550} direction="left">
             <div className="bg-primary/5 rounded-lg p-4 border border-primary/20 space-y-3 hover:border-primary/40 transition-colors">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-primary animate-bounce-subtle" />

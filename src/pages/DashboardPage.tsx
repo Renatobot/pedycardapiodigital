@@ -1025,16 +1025,14 @@ export default function DashboardPage() {
             <Star className="w-4 h-4 mr-1" />
             Avaliações
           </Button>
-          {(isPro || isProPlus || isTrial) && (
-            <Button
-              variant={activeTab === 'referrals' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('referrals')}
-            >
-              <Gift className="w-4 h-4 mr-1" />
-              Indicar
-            </Button>
-          )}
+          <Button
+            variant={activeTab === 'referrals' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('referrals')}
+          >
+            <Gift className="w-4 h-4 mr-1" />
+            Indicar
+          </Button>
         </div>
 
         {/* Orders Tab */}

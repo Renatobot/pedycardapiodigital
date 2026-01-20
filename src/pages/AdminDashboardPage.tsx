@@ -64,6 +64,7 @@ import {
   ChartLine,
   TrendingUp,
   FileText,
+  Gift,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,7 @@ import { AdminQuickActions } from '@/components/AdminQuickActions';
 import { AdminReports } from '@/components/AdminReports';
 import { ResellerManagement } from '@/components/ResellerManagement';
 import { AdminNotifications } from '@/components/AdminNotifications';
+import { AdminReferralManagement } from '@/components/AdminReferralManagement';
 import { useIsMobile } from '@/hooks/use-mobile';
 import logoPedy from '@/assets/logo_pedy.png';
 
@@ -97,6 +99,7 @@ interface Establishment {
   created_at: string;
   has_pro_plus: boolean;
   pro_plus_activated_at: string | null;
+  referred_by_establishment_id?: string | null;
 }
 
 interface Admin {
@@ -527,6 +530,37 @@ const AdminDashboardPage = () => {
         throw new Error('A atualização não foi aplicada. Verifique suas permissões.');
       }
 
+      // Se foi indicado por outro estabelecimento e plano é Pro/Pro+, registrar indicação
+      if (selectedPlanType !== 'basic' && establishment.referred_by_establishment_id) {
+        const planValue = selectedPlanType === 'pro_plus' ? 79.90 : 59.90;
+        
+        // Verificar se já existe um registro de indicação para este par
+        const { data: existingReferral } = await supabase
+          .from('establishment_referrals')
+          .select('id')
+          .eq('referrer_id', establishment.referred_by_establishment_id)
+          .eq('referred_id', establishment.id)
+          .maybeSingle();
+
+        if (!existingReferral) {
+          await supabase.from('establishment_referrals').insert({
+            referrer_id: establishment.referred_by_establishment_id,
+            referred_id: establishment.id,
+            referred_name: establishment.name,
+            plan_type: selectedPlanType === 'pro_plus' ? 'pro_plus' : 'pro',
+            plan_value: planValue,
+            credit_status: 'pending',
+            activated_at: new Date().toISOString(),
+          });
+          
+          console.log('[Referral] Indicação registrada:', {
+            referrer: establishment.referred_by_establishment_id,
+            referred: establishment.id,
+            planValue,
+          });
+        }
+      }
+
       const planName = selectedPlanType === 'basic' ? 'Básico' : selectedPlanType === 'pro' ? 'Pro' : 'Pro+';
 
       toast({
@@ -746,6 +780,13 @@ const AdminDashboardPage = () => {
               >
                 <Shield className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Administradores</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="referrals"
+                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-400 px-2 sm:px-4"
+              >
+                <Gift className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Indicações</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1119,6 +1160,11 @@ const AdminDashboardPage = () => {
           {/* Relatórios Tab */}
           <TabsContent value="reports" className="space-y-6">
             <AdminReports establishments={establishments} />
+          </TabsContent>
+
+          {/* Indicações Tab */}
+          <TabsContent value="referrals" className="space-y-6">
+            <AdminReferralManagement />
           </TabsContent>
         </Tabs>
       </main>
