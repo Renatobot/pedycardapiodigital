@@ -109,6 +109,7 @@ interface Admin {
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -659,7 +660,6 @@ const AdminDashboardPage = () => {
     return <AdminDashboardSkeleton />;
   }
 
-  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen bg-slate-900">
