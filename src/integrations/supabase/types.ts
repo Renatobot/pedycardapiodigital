@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string | null
+          establishment_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          reseller_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          reseller_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          reseller_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notifications_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notifications_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_notifications_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automatic_promotions: {
         Row: {
           conditions: Json | null
