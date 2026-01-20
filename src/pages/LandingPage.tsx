@@ -205,6 +205,18 @@ const faqs = [
     question: 'Os pedidos vão direto pro meu WhatsApp?',
     answer: 'Exatamente! O cliente monta o pedido no cardápio e envia formatado pro seu número.',
   },
+  {
+    question: 'Funciona com Pix?',
+    answer: 'Sim! Você pode configurar sua chave Pix no painel e o cliente recebe as instruções de pagamento no momento do pedido.',
+  },
+  {
+    question: 'Preciso ter WhatsApp Business?',
+    answer: 'Não é obrigatório, mas recomendamos. O PEDY funciona com WhatsApp normal ou Business.',
+  },
+  {
+    question: 'Posso usar mais de um número de WhatsApp?',
+    answer: 'Cada estabelecimento cadastrado possui um número de WhatsApp vinculado. Se você tem mais de um negócio, pode criar contas separadas.',
+  },
 ];
 
 const templateCards = [
@@ -320,74 +332,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Tudo que você precisa para vender mais
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Acabe com a confusão no WhatsApp, reduza erros nos pedidos e ganhe tempo para focar no que importa: seu negócio
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="w-12 h-12 bg-gradient-hero rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Segments Section - Para Quem é o PEDY */}
-      <section className="py-16 bg-card">
-        <div className="container">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Users className="w-4 h-4" />
-              Para todos os segmentos
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Para quem é o PEDY?
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Não importa se você vende comida, produtos ou serviços. Se você recebe pedidos por WhatsApp, o PEDY foi feito para você.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {segments.map((segment, index) => (
-              <div 
-                key={index}
-                className="bg-background rounded-xl p-4 text-center shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <segment.icon className="w-6 h-6 text-secondary" />
-                </div>
-                <p className="text-sm font-medium text-foreground">{segment.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
+      {/* How it works - Movido para antes de Features */}
       <section className="py-16">
         <div className="container">
           <div className="text-center mb-12">
@@ -411,6 +356,73 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
                 <p className="text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-card">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Tudo que você precisa para vender mais
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Acabe com a confusão no WhatsApp, reduza erros nos pedidos e ganhe tempo para focar no que importa: seu negócio
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <div 
+                key={index}
+                className="bg-background rounded-2xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="w-12 h-12 bg-gradient-hero rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Segments Section - Para Quem é o PEDY */}
+      <section className="py-16">
+        <div className="container">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Users className="w-4 h-4" />
+              Para todos os segmentos
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Para quem é o PEDY?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Não importa se você vende comida, produtos ou serviços. Se você recebe pedidos por WhatsApp, o PEDY foi feito para você.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            {segments.map((segment, index) => (
+              <div 
+                key={index}
+                className="bg-card rounded-xl p-4 text-center shadow-soft hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up border border-border"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <segment.icon className="w-6 h-6 text-secondary" />
+                </div>
+                <p className="text-sm font-medium text-foreground">{segment.name}</p>
               </div>
             ))}
           </div>
@@ -493,6 +505,22 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+          
+          {/* CTA Intermediário após Depoimentos */}
+          <div className="text-center mt-12 pt-8 border-t border-border">
+            <p className="text-lg text-foreground mb-4 font-medium">
+              Pronto para transformar seu delivery como eles?
+            </p>
+            <Link to="/cadastro">
+              <Button variant="hero" size="lg">
+                Quero criar meu cardápio grátis
+                <ArrowRight className="w-5 h-5 ml-1" />
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground mt-3">
+              Comece agora, teste por 7 dias sem compromisso
+            </p>
           </div>
         </div>
       </section>
