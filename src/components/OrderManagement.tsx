@@ -33,7 +33,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar as CalendarIcon, Volume2, VolumeX, Bell, BellOff, Trash2, History, Check } from 'lucide-react';
+import { Clock, MapPin, CreditCard, Package, Truck, CheckCircle, XCircle, Eye, Loader2, MessageCircle, Phone, User, Calendar as CalendarIcon, Volume2, VolumeX, Bell, BellOff, Trash2, History, Check, X, AlertTriangle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, generateStatusNotificationMessage, generateWhatsAppLinkToCustomer } from '@/lib/whatsapp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +75,9 @@ interface Order {
   delivery_type?: string;
   is_registered_customer?: boolean;
   customer_order_count?: number;
+  scheduled_date?: string | null;
+  scheduled_time?: string | null;
+  rejection_reason?: string | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -81,6 +85,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
   preparing: { label: 'Em preparo', color: 'bg-yellow-500', icon: Package },
   'on-the-way': { label: 'A caminho', color: 'bg-purple-500', icon: Truck },
   delivered: { label: 'Entregue', color: 'bg-green-500', icon: CheckCircle },
+  rejected: { label: 'Rejeitado', color: 'bg-red-600', icon: XCircle },
   cancelled: { label: 'Cancelado', color: 'bg-red-500', icon: XCircle },
 };
 
@@ -106,6 +111,11 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
   const [historyOrders, setHistoryOrders] = useState<Order[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   
+  // Rejection modal states
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
+  
   const { toast } = useToast();
   const { 
     isSupported: pushSupported, 
@@ -128,10 +138,11 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     audioRef.current.volume = 1.0; // VOLUME MÁXIMO
     audioRef.current.loop = true; // SOM EM LOOP CONTÍNUO
     
-    // Check if sound was previously enabled
+    // Check if sound was previously enabled and unlock if so
     const storedSoundEnabled = localStorage.getItem('orderSoundEnabled');
     if (storedSoundEnabled === 'true') {
       setSoundEnabled(true);
+      setSoundUnlocked(true); // Also restore unlocked state
     }
 
     return () => {
@@ -518,6 +529,77 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     }
   };
 
+  // Reject order with reason
+  const rejectOrder = async (orderId: string, reason: string) => {
+    if (!reason.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, informe o motivo da rejeição.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsRejecting(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: reason.trim()
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      const rejectedOrder = orders.find(o => o.id === orderId);
+
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId 
+            ? { ...order, status: 'rejected', rejection_reason: reason.trim() } 
+            : order
+        )
+      );
+
+      markOrderAsViewed(orderId);
+      setRejectingOrderId(null);
+      setRejectionReason('');
+
+      toast({
+        title: '❌ Pedido rejeitado',
+        description: 'O cliente foi notificado sobre a rejeição.',
+      });
+
+      // Send push notification to customer about rejection
+      if (rejectedOrder?.customer_phone) {
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              orderId,
+              newStatus: 'rejected',
+              establishmentId,
+              customerPhone: rejectedOrder.customer_phone,
+              establishmentName,
+              rejectionReason: reason.trim(),
+            },
+          });
+        } catch (pushError) {
+          console.log('Push notification failed (optional):', pushError);
+        }
+      }
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível rejeitar o pedido.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsOpen(true);
@@ -584,6 +666,8 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
     const isPending = order.status === 'pending';
     const isUnviewed = unviewedOrderIds.includes(order.id);
 
+    const isScheduled = order.scheduled_date && order.scheduled_time;
+
     return (
       <Card className={`mb-3 transition-all ${
         isPending && isUnviewed 
@@ -593,11 +677,18 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <Badge className={`${statusInfo.color} text-white text-xs`}>
                   <StatusIcon className="w-3 h-3 mr-1" />
                   {statusInfo.label}
                 </Badge>
+                {/* Scheduled Order Badge */}
+                {isScheduled && (
+                  <Badge className="bg-orange-500 text-white text-xs animate-pulse">
+                    <CalendarIcon className="w-3 h-3 mr-1" />
+                    📅 AGENDADO: {new Date(order.scheduled_date! + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às {order.scheduled_time}
+                  </Badge>
+                )}
                 <span className="text-xs text-muted-foreground">
                   {formatTimeAgo(order.created_at)}
                 </span>
@@ -649,6 +740,16 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             </p>
           </div>
 
+          {/* Rejection reason display */}
+          {order.status === 'rejected' && order.rejection_reason && (
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-600 flex items-start gap-1">
+                <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span><strong>Motivo:</strong> {order.rejection_reason}</span>
+              </p>
+            </div>
+          )}
+
           <div className="text-xs text-muted-foreground mb-3">
             {(order.items as OrderItem[]).slice(0, 2).map((item, i) => (
               <span key={i}>
@@ -659,21 +760,32 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
             {order.items.length > 2 && ` +${order.items.length - 2} itens`}
           </div>
 
-          {/* ACEITAR PEDIDO button - only for pending orders */}
+          {/* ACEITAR / REJEITAR buttons - only for pending orders */}
           {isPending && (
-            <Button
-              onClick={() => updateOrderStatus(order.id, 'preparing')}
-              disabled={updatingStatus === order.id}
-              className="w-full mb-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 text-base gap-2 shadow-lg"
-              size="lg"
-            >
-              {updatingStatus === order.id ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Check className="w-5 h-5" />
-              )}
-              ACEITAR PEDIDO
-            </Button>
+            <div className="flex gap-2 mb-3">
+              <Button
+                onClick={() => updateOrderStatus(order.id, 'preparing')}
+                disabled={updatingStatus === order.id}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 text-base gap-2 shadow-lg"
+                size="lg"
+              >
+                {updatingStatus === order.id ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Check className="w-5 h-5" />
+                )}
+                ACEITAR
+              </Button>
+              <Button
+                onClick={() => setRejectingOrderId(order.id)}
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold py-3 text-base gap-2"
+                size="lg"
+              >
+                <X className="w-5 h-5" />
+                REJEITAR
+              </Button>
+            </div>
           )}
 
           <div className="flex items-center gap-2">
@@ -690,6 +802,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                 <SelectItem value="preparing">Em preparo</SelectItem>
                 <SelectItem value="on-the-way">A caminho</SelectItem>
                 <SelectItem value="delivered">Entregue</SelectItem>
+                <SelectItem value="rejected">Rejeitado</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>
             </Select>
@@ -1172,6 +1285,7 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
                     <SelectItem value="preparing">Em preparo</SelectItem>
                     <SelectItem value="on-the-way">A caminho</SelectItem>
                     <SelectItem value="delivered">Entregue</SelectItem>
+                    <SelectItem value="rejected">Rejeitado</SelectItem>
                     <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1212,6 +1326,61 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Modal */}
+      <Dialog open={!!rejectingOrderId} onOpenChange={(open) => {
+        if (!open) {
+          setRejectingOrderId(null);
+          setRejectionReason('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              Rejeitar Pedido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              O cliente será notificado sobre a rejeição e verá o motivo em tempo real.
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Motivo da rejeição *</label>
+              <Textarea
+                placeholder='Exemplo: "Infelizmente nossa Coca-Cola acabou. Podemos oferecer Guaraná ou cancelar o pedido."'
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejectingOrderId(null);
+                  setRejectionReason('');
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => rejectingOrderId && rejectOrder(rejectingOrderId, rejectionReason)}
+                disabled={isRejecting || !rejectionReason.trim()}
+              >
+                {isRejecting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <XCircle className="w-4 h-4 mr-2" />
+                )}
+                Confirmar Rejeição
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
