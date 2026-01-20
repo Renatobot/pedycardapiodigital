@@ -76,6 +76,7 @@ import { AdminCharts } from '@/components/AdminCharts';
 import { AdminQuickActions } from '@/components/AdminQuickActions';
 import { AdminReports } from '@/components/AdminReports';
 import { ResellerManagement } from '@/components/ResellerManagement';
+import { AdminNotifications } from '@/components/AdminNotifications';
 import logoPedy from '@/assets/logo_pedy.png';
 
 interface Establishment {
@@ -667,6 +668,7 @@ const AdminDashboardPage = () => {
                 <span className="text-xs text-slate-300">{adminEmail}</span>
               </div>
             )}
+            <AdminNotifications />
             <Button
               variant="outline"
               size="sm"
