@@ -262,15 +262,53 @@ const templateCards = [
 // Floating background icons for thematic decoration
 const FloatingIcons = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    {/* Top area icons */}
-    <span className="absolute top-20 left-[5%] text-5xl opacity-[0.08] floating-icon select-none">🍕</span>
-    <span className="absolute top-32 right-[8%] text-4xl opacity-[0.06] floating-icon-delayed select-none">🍔</span>
-    <span className="absolute top-[40%] left-[3%] text-3xl opacity-[0.05] floating-icon-delayed-2 select-none">📦</span>
-    <span className="absolute top-[25%] right-[5%] text-4xl opacity-[0.07] floating-icon select-none">🛵</span>
-    <span className="absolute top-[60%] left-[8%] text-3xl opacity-[0.05] floating-icon-delayed select-none">📱</span>
-    <span className="absolute top-[70%] right-[10%] text-4xl opacity-[0.06] floating-icon-delayed-2 select-none">🍟</span>
-    <span className="absolute top-[85%] left-[12%] text-3xl opacity-[0.05] floating-icon select-none">🥤</span>
-    <span className="absolute top-[50%] right-[3%] text-3xl opacity-[0.04] floating-icon-delayed select-none">🍰</span>
+    {/* === NICHOS PEDY - 13 principais === */}
+    {/* Pizzaria */}
+    <span className="absolute top-16 left-[4%] text-5xl opacity-[0.15] floating-icon select-none">🍕</span>
+    {/* Hamburgueria */}
+    <span className="absolute top-24 right-[6%] text-4xl opacity-[0.12] floating-icon-delayed select-none">🍔</span>
+    {/* Marmitaria */}
+    <span className="absolute top-[18%] left-[12%] text-4xl opacity-[0.12] floating-icon-delayed-2 select-none hidden md:block">🍱</span>
+    {/* Açaí */}
+    <span className="absolute top-[22%] right-[10%] text-5xl opacity-[0.14] floating-icon select-none">🫐</span>
+    {/* Pastelaria */}
+    <span className="absolute top-[32%] left-[3%] text-4xl opacity-[0.12] floating-icon-delayed select-none">🥟</span>
+    {/* Japonesa */}
+    <span className="absolute top-[35%] right-[4%] text-4xl opacity-[0.11] floating-icon-delayed-2 select-none hidden md:block">🍣</span>
+    {/* Pet Shop */}
+    <span className="absolute top-[45%] left-[8%] text-5xl opacity-[0.14] floating-icon select-none">🐾</span>
+    {/* Pet Food/Ração */}
+    <span className="absolute top-[48%] right-[8%] text-4xl opacity-[0.12] floating-icon-delayed select-none hidden md:block">🦴</span>
+    {/* Farmácia */}
+    <span className="absolute top-[58%] left-[4%] text-4xl opacity-[0.13] floating-icon-delayed-2 select-none">💊</span>
+    {/* Bebidas/Depósito */}
+    <span className="absolute top-[62%] right-[5%] text-5xl opacity-[0.14] floating-icon select-none">🍺</span>
+    {/* Sorveteria */}
+    <span className="absolute top-[72%] left-[10%] text-4xl opacity-[0.12] floating-icon-delayed select-none hidden md:block">🍦</span>
+    {/* Padaria */}
+    <span className="absolute top-[75%] right-[12%] text-4xl opacity-[0.11] floating-icon-delayed-2 select-none">🥐</span>
+    {/* Hortifrúti */}
+    <span className="absolute top-[85%] left-[6%] text-4xl opacity-[0.12] floating-icon select-none hidden md:block">🥬</span>
+    
+    {/* === EMOJIS COMPLEMENTARES === */}
+    {/* Entrega */}
+    <span className="absolute top-[28%] left-[18%] text-4xl opacity-[0.11] floating-icon-delayed select-none hidden lg:block">🛵</span>
+    {/* Pedido */}
+    <span className="absolute top-[42%] right-[15%] text-3xl opacity-[0.10] floating-icon-delayed-2 select-none hidden md:block">📦</span>
+    {/* Celular */}
+    <span className="absolute top-[55%] left-[15%] text-3xl opacity-[0.10] floating-icon select-none hidden lg:block">📱</span>
+    {/* Batata frita */}
+    <span className="absolute top-[68%] right-[3%] text-4xl opacity-[0.11] floating-icon-delayed select-none hidden md:block">🍟</span>
+    {/* Bebida */}
+    <span className="absolute top-[82%] right-[8%] text-3xl opacity-[0.10] floating-icon-delayed-2 select-none">🥤</span>
+    {/* Bolo */}
+    <span className="absolute top-[88%] left-[18%] text-4xl opacity-[0.11] floating-icon select-none hidden md:block">🍰</span>
+    {/* Café */}
+    <span className="absolute top-[15%] right-[18%] text-3xl opacity-[0.10] floating-icon-delayed select-none hidden lg:block">☕</span>
+    {/* Cupcake */}
+    <span className="absolute top-[92%] right-[15%] text-3xl opacity-[0.10] floating-icon-delayed-2 select-none hidden md:block">🧁</span>
+    {/* Donut */}
+    <span className="absolute top-[38%] left-[20%] text-3xl opacity-[0.09] floating-icon select-none hidden lg:block">🍩</span>
     
     {/* Decorative blurred circles */}
     <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
