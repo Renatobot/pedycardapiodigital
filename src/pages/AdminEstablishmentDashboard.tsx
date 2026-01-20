@@ -416,7 +416,7 @@ export default function AdminEstablishmentDashboard() {
       }
     }
 
-    // Create/update groups
+    // Admin always has full access, so save price_rule for flavor types
     for (const group of groups) {
       if (group.id.startsWith('temp-')) {
         // Create new group
@@ -430,6 +430,7 @@ export default function AdminEstablishmentDashboard() {
             min_selections: group.min_selections,
             max_selections: group.max_selections,
             sort_order: group.sort_order,
+            price_rule: group.type === 'flavor' ? group.price_rule : null,
           })
           .select()
           .single();
@@ -458,6 +459,7 @@ export default function AdminEstablishmentDashboard() {
             min_selections: group.min_selections,
             max_selections: group.max_selections,
             sort_order: group.sort_order,
+            price_rule: group.type === 'flavor' ? group.price_rule : null,
           })
           .eq('id', group.id);
 

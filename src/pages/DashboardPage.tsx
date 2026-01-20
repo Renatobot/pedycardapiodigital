@@ -639,6 +639,11 @@ export default function DashboardPage() {
       for (const group of groups) {
         const isNewGroup = group.id.startsWith('temp-');
 
+        // Check if establishment has Pro+ for automatic pizza pricing
+        const hasAutoPricing = establishment?.has_pro_plus || 
+          establishment?.plan_status === 'trial' || 
+          (establishment as any)?.plan_type === 'pro_plus';
+
         const groupData = {
           product_id: productId,
           name: group.name,
@@ -647,6 +652,8 @@ export default function DashboardPage() {
           min_selections: group.min_selections,
           max_selections: group.max_selections,
           sort_order: group.sort_order,
+          // Only save price_rule if it's a flavor type and establishment has Pro+
+          price_rule: group.type === 'flavor' && hasAutoPricing ? group.price_rule : null,
         };
 
         let groupId = group.id;
