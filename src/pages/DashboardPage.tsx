@@ -52,7 +52,8 @@ import {
   Moon,
   Sun,
   Volume2,
-  VolumeX
+  VolumeX,
+  Star
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -77,6 +78,7 @@ import { MenuAppearanceSettings } from '@/components/MenuAppearanceSettings';
 import { DashboardPWAPrompt } from '@/components/DashboardPWAPrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { NicheSelectionModal } from '@/components/NicheSelectionModal';
+import EstablishmentReviews from '@/components/EstablishmentReviews';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -118,7 +120,7 @@ export default function DashboardPage() {
   const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings' | 'reviews'>('menu');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [nicheModalOpen, setNicheModalOpen] = useState(false);
   const [hasShownNicheModal, setHasShownNicheModal] = useState(false);
@@ -996,6 +998,14 @@ export default function DashboardPage() {
             <Store className="w-4 h-4 mr-1" />
             Configurações
           </Button>
+          <Button
+            variant={activeTab === 'reviews' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('reviews')}
+          >
+            <Star className="w-4 h-4 mr-1" />
+            Avaliações
+          </Button>
         </div>
 
         {/* Orders Tab */}
@@ -1005,6 +1015,11 @@ export default function DashboardPage() {
             establishmentName={establishment.name}
             notifyCustomerEnabled={(establishment as any).notify_customer_on_status_change ?? true}
           />
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <EstablishmentReviews establishmentId={establishment.id} />
         )}
 
         {/* Settings Tab */}

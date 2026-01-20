@@ -16,6 +16,7 @@ interface CustomerPushPromptProps {
   establishmentId: string;
   establishmentName: string;
   customerPhone: string;
+  customerId?: string;
 }
 
 export function CustomerPushPrompt({
@@ -24,12 +25,13 @@ export function CustomerPushPrompt({
   establishmentId,
   establishmentName,
   customerPhone,
+  customerId,
 }: CustomerPushPromptProps) {
   const { isSupported, permission, subscribe, isLoading } = usePushNotifications();
   const [subscribed, setSubscribed] = useState(false);
 
   const handleSubscribe = async () => {
-    const success = await subscribe(establishmentId, customerPhone);
+    const success = await subscribe(establishmentId, customerPhone, customerId);
     if (success) {
       setSubscribed(true);
       setTimeout(() => {

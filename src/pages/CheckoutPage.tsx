@@ -1310,6 +1310,7 @@ function CheckoutContent() {
         establishmentId={orderEstablishmentId}
         establishmentName={establishment?.name || ''}
         customerPhone={formData.customerPhone.replace(/\D/g, '')}
+        customerId={customer?.id}
       />
     </div>
   );
