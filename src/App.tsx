@@ -19,6 +19,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminEstablishmentDashboard from "./pages/AdminEstablishmentDashboard";
 import ResellerDashboardPage from "./pages/ResellerDashboardPage";
+import ResellerSalesPage from "./pages/ResellerSalesPage";
 import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/admin/dashboard/:establishmentId" element={<AdminEstablishmentDashboard />} />
                 {/* Reseller Routes */}
                 <Route path="/revendedor" element={<ResellerDashboardPage />} />
+                <Route path="/parceiro/:referralCode" element={<ResellerSalesPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

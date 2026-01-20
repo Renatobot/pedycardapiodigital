@@ -1065,18 +1065,25 @@ export type Database = {
           active_establishments: number | null
           commission_percentage: number
           created_at: string | null
+          custom_cta_text: string | null
           email: string
           id: string
           is_active: boolean | null
           is_master: boolean | null
           last_activity_at: string | null
           last_login_at: string | null
+          logo_url: string | null
           name: string
           price_basic: number
           price_pro: number
           price_pro_plus: number
           pricing_mode: string
+          primary_color: string | null
           referral_code: string
+          sales_page_subtitle: string | null
+          sales_page_title: string | null
+          secondary_color: string | null
+          show_prices: boolean | null
           total_activations: number | null
           total_establishments: number | null
           updated_at: string | null
@@ -1088,18 +1095,25 @@ export type Database = {
           active_establishments?: number | null
           commission_percentage?: number
           created_at?: string | null
+          custom_cta_text?: string | null
           email: string
           id?: string
           is_active?: boolean | null
           is_master?: boolean | null
           last_activity_at?: string | null
           last_login_at?: string | null
+          logo_url?: string | null
           name: string
           price_basic?: number
           price_pro?: number
           price_pro_plus?: number
           pricing_mode?: string
+          primary_color?: string | null
           referral_code: string
+          sales_page_subtitle?: string | null
+          sales_page_title?: string | null
+          secondary_color?: string | null
+          show_prices?: boolean | null
           total_activations?: number | null
           total_establishments?: number | null
           updated_at?: string | null
@@ -1111,18 +1125,25 @@ export type Database = {
           active_establishments?: number | null
           commission_percentage?: number
           created_at?: string | null
+          custom_cta_text?: string | null
           email?: string
           id?: string
           is_active?: boolean | null
           is_master?: boolean | null
           last_activity_at?: string | null
           last_login_at?: string | null
+          logo_url?: string | null
           name?: string
           price_basic?: number
           price_pro?: number
           price_pro_plus?: number
           pricing_mode?: string
+          primary_color?: string | null
           referral_code?: string
+          sales_page_subtitle?: string | null
+          sales_page_title?: string | null
+          secondary_color?: string | null
+          show_prices?: boolean | null
           total_activations?: number | null
           total_establishments?: number | null
           updated_at?: string | null
