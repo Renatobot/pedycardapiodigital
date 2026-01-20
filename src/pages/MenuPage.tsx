@@ -899,12 +899,14 @@ function MenuContent() {
   } : null);
 
   // Atualizar meta tags do iOS imediatamente quando dados do estabelecimento chegarem
-  // Isso garante que as meta tags estejam prontas ANTES do PWAInstallPrompt montar
+  // E salvar URL no Cache API para redirecionamento correto no PWA iOS
   useEffect(() => {
     if (establishment?.name) {
+      // Atualizar meta tags para iOS
       const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if (appleTitle) {
         appleTitle.setAttribute('content', establishment.name);
+        console.log('[MenuPage] Updated apple-mobile-web-app-title to:', establishment.name);
       }
       
       if (establishment.logo_url) {
@@ -912,6 +914,23 @@ function MenuContent() {
         if (appleIcon) {
           appleIcon.setAttribute('href', establishment.logo_url);
         }
+      }
+      
+      // Salvar URL atual no Cache API para iOS PWA redirect funcionar
+      const currentPath = window.location.pathname;
+      if (currentPath && currentPath !== '/' && 'caches' in window) {
+        caches.open('pedy-pwa-config').then((cache) => {
+          const response = new Response(JSON.stringify({ startUrl: currentPath }));
+          cache.put('start-url', response);
+          console.log('[MenuPage] Saved start URL to Cache API:', currentPath);
+        }).catch((e) => {
+          console.log('[MenuPage] Failed to save to Cache API:', e);
+        });
+      }
+      
+      // Também salvar no localStorage como backup
+      if (currentPath && currentPath !== '/') {
+        localStorage.setItem('pwa-start-url', currentPath);
       }
     }
   }, [establishment?.name, establishment?.logo_url]);

@@ -166,9 +166,24 @@ export function PWARedirectHandler() {
         return;
       }
 
-      // PRIORIDADE 1: Verificar sessão ativa e redirecionar por tipo de usuário
+      // Aguardar um pequeno delay para sessão ser restaurada do storage (crítico para iOS)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // PRIORIDADE 1: Verificar sessão ativa com retry (para garantir restauração do storage)
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        let session = null;
+        let retries = 3;
+        
+        while (retries > 0 && !session) {
+          const { data } = await supabase.auth.getSession();
+          session = data.session;
+          
+          if (!session) {
+            console.log('[PWA Redirect] No session found, retrying...', retries);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            retries--;
+          }
+        }
         
         if (session?.user) {
           const userType = await detectUserType(session.user.id);
