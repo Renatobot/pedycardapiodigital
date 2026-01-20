@@ -65,11 +65,17 @@ import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 
-// Detect if running as PWA (standalone mode)
+// Helper to detect PWA mode
 const isPWAMode = (): boolean => {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(display-mode: standalone)').matches ||
          (window.navigator as any).standalone === true;
+};
+
+// Check if PWARedirectHandler set the entry screen flag
+const shouldShowPWAEntryScreen = (): boolean => {
+  if (!isPWAMode()) return false;
+  return localStorage.getItem('pwa-show-entry-screen') === 'true';
 };
 
 const features = [
@@ -339,39 +345,17 @@ export default function LandingPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
   const [reseller, setReseller] = useState<ResellerRefInfo | null>(null);
-  const [isPWA, setIsPWA] = useState(false);
-  const [pwaCheckComplete, setPwaCheckComplete] = useState(false);
-
-  // Check PWA mode and handle redirects
+  
+  // Check if we should show PWA entry screen (flag set by PWARedirectHandler)
+  const [showPWAEntry, setShowPWAEntry] = useState(false);
+  
   useEffect(() => {
-    const checkPWAAndRedirect = async () => {
-      const isStandalone = isPWAMode();
-      setIsPWA(isStandalone);
-      
-      if (isStandalone) {
-        // Priority 1: Check for active Supabase session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate('/dashboard', { replace: true });
-          return;
-        }
-        
-        // Priority 2: Check for last visited menu
-        const lastMenu = localStorage.getItem('pwa-start-url') || 
-                         localStorage.getItem('last_visited_menu');
-        if (lastMenu && lastMenu !== '/') {
-          navigate(lastMenu, { replace: true });
-          return;
-        }
-        
-        // Priority 3: Show PWA entry screen (handled by render)
-      }
-      
-      setPwaCheckComplete(true);
-    };
-    
-    checkPWAAndRedirect();
-  }, [navigate]);
+    if (shouldShowPWAEntryScreen()) {
+      setShowPWAEntry(true);
+      // Clear the flag so it doesn't persist across page navigations
+      localStorage.removeItem('pwa-show-entry-screen');
+    }
+  }, []);
 
   // Fetch reseller info from referral code
   useEffect(() => {
@@ -436,17 +420,8 @@ export default function LandingPage() {
     window.open(`https://wa.me/55${SUPPORT_WHATSAPP}?text=${message}`, '_blank');
   };
 
-  // Show loading while checking PWA status
-  if (!pwaCheckComplete) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <img src={pedyLogo} alt="PEDY" className="h-24 animate-pulse" />
-      </div>
-    );
-  }
-
-  // If PWA mode, show clean entry screen (without marketing)
-  if (isPWA) {
+  // If PWA mode with entry screen flag, show clean entry screen (without marketing)
+  if (showPWAEntry) {
     return <PWAEntryScreen />;
   }
 
