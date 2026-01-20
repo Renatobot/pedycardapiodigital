@@ -31,7 +31,7 @@ const proFeatures = [
 
 // Recursos exclusivos do Pro+
 const proPlusFeatures = [
-  'Pizzas 3-4 sabores',
+  'Pizzas 2 ou mais sabores',
   'Precificação automática (cobra pelo mais caro)',
   'Dashboard analítico avançado',
   'CRM - Gestão de clientes',
@@ -199,7 +199,7 @@ export default function UpgradePage() {
                 <span>
                   <strong className="text-foreground">No Pro:</strong> Pizzas de 2 sabores com preço definido manualmente por você.
                   <br />
-                  <strong className="text-foreground">No Pro+:</strong> Sistema cobra automaticamente pelo sabor mais caro - sem cálculo manual!
+                  <strong className="text-foreground">No Pro+:</strong> Pizzas de 2, 3 ou 4 sabores com cobrança automática pelo sabor mais caro - sem cálculo manual!
                 </span>
               </p>
               
