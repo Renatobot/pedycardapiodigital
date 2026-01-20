@@ -100,6 +100,12 @@ export function checkProFeatureAccess(
     return { hasAccess: true, reason: planType as 'pro' | 'pro_plus' };
   }
   
+  // Fallback: If plan_status is 'active' but plan_type wasn't set correctly,
+  // assume it's Pro (retroactive compatibility for old activations)
+  if (establishment.plan_status === 'active') {
+    return { hasAccess: true, reason: 'pro' };
+  }
+  
   // Basic plan doesn't have Pro features
   return { hasAccess: false, reason: 'locked' };
 }
