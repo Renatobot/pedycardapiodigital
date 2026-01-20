@@ -19,6 +19,11 @@ interface ResellerInfo {
   pricing_mode: string;
 }
 
+interface EstablishmentReferrerInfo {
+  id: string;
+  name: string;
+}
+
 export default function RegisterPage() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
@@ -35,16 +40,21 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [reseller, setReseller] = useState<ResellerInfo | null>(null);
+  const [establishmentReferrer, setEstablishmentReferrer] = useState<EstablishmentReferrerInfo | null>(null);
   const [loadingReseller, setLoadingReseller] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch reseller info from referral code
+  // Fetch reseller info from referral code OR establishment referral
   useEffect(() => {
     const refCode = searchParams.get('ref');
+    const indicacaoCode = searchParams.get('indicacao');
+    
     if (refCode) {
       fetchReseller(refCode);
+    } else if (indicacaoCode) {
+      fetchEstablishmentReferrer(indicacaoCode);
     }
   }, [searchParams]);
 
@@ -63,6 +73,29 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Error fetching reseller:', error);
+    } finally {
+      setLoadingReseller(false);
+    }
+  };
+
+  const fetchEstablishmentReferrer = async (code: string) => {
+    setLoadingReseller(true);
+    try {
+      const { data, error } = await supabase.rpc('get_establishment_by_referral_code', { code });
+      
+      if (error) {
+        console.error('Error fetching establishment referrer:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setEstablishmentReferrer({
+          id: data[0].id,
+          name: data[0].name,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching establishment referrer:', error);
     } finally {
       setLoadingReseller(false);
     }
@@ -183,8 +216,9 @@ export default function RegisterPage() {
         counter++;
       }
 
-      // 4. Create establishment record with slug and reseller info
+      // 4. Create establishment record with slug and reseller/referrer info
       const refCode = searchParams.get('ref');
+      const indicacaoCode = searchParams.get('indicacao');
       const { error: establishmentError } = await supabase
         .from('establishments')
         .insert({
@@ -197,7 +231,8 @@ export default function RegisterPage() {
           city: formData.city,
           slug: slug,
           reseller_id: reseller?.id || null,
-          referral_code: refCode || null,
+          referral_code: refCode || indicacaoCode || null,
+          referred_by_establishment_id: establishmentReferrer?.id || null,
         });
 
       if (establishmentError) throw establishmentError;
@@ -265,7 +300,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Referral Banner */}
+          {/* Referral Banner - Reseller */}
           {reseller && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
               <UserPlus className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -275,6 +310,21 @@ export default function RegisterPage() {
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400">
                   Você foi indicado por um parceiro PEDY
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Referral Banner - Establishment */}
+          {establishmentReferrer && (
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3">
+              <UserPlus className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Indicação: {establishmentReferrer.name}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">
+                  Você foi indicado por um cliente PEDY
                 </p>
               </div>
             </div>

@@ -53,7 +53,8 @@ import {
   Sun,
   Volume2,
   VolumeX,
-  Star
+  Star,
+  Gift
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { formatCurrency } from '@/lib/whatsapp';
@@ -79,6 +80,7 @@ import { DashboardPWAPrompt } from '@/components/DashboardPWAPrompt';
 import { SplashScreen } from '@/components/SplashScreen';
 import { NicheSelectionModal } from '@/components/NicheSelectionModal';
 import EstablishmentReviews from '@/components/EstablishmentReviews';
+import { ReferralTab } from '@/components/ReferralTab';
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -120,7 +122,7 @@ export default function DashboardPage() {
   const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings' | 'reviews'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'settings' | 'reviews' | 'referrals'>('menu');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [nicheModalOpen, setNicheModalOpen] = useState(false);
   const [hasShownNicheModal, setHasShownNicheModal] = useState(false);
@@ -1023,6 +1025,16 @@ export default function DashboardPage() {
             <Star className="w-4 h-4 mr-1" />
             Avaliações
           </Button>
+          {(isPro || isProPlus || isTrial) && (
+            <Button
+              variant={activeTab === 'referrals' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('referrals')}
+            >
+              <Gift className="w-4 h-4 mr-1" />
+              Indicar
+            </Button>
+          )}
         </div>
 
         {/* Orders Tab */}
@@ -1037,6 +1049,17 @@ export default function DashboardPage() {
         {/* Reviews Tab */}
         {activeTab === 'reviews' && (
           <EstablishmentReviews establishmentId={establishment.id} />
+        )}
+
+        {/* Referrals Tab */}
+        {activeTab === 'referrals' && (
+          <ReferralTab 
+            establishment={{
+              id: establishment.id,
+              name: establishment.name,
+              logo_url: establishment.logo_url || undefined,
+            }} 
+          />
         )}
 
         {/* Settings Tab */}
