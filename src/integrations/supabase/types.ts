@@ -437,6 +437,7 @@ export type Database = {
           accept_debit: boolean | null
           accept_pickup: boolean | null
           accept_pix: boolean | null
+          activated_by_reseller: boolean | null
           address_complement: string | null
           address_neighborhood: string | null
           address_number: string | null
@@ -464,6 +465,8 @@ export type Database = {
           plan_type: string | null
           primary_color: string | null
           pro_plus_activated_at: string | null
+          referral_code: string | null
+          reseller_id: string | null
           scheduled_orders_message: string | null
           secondary_color: string | null
           show_address_on_menu: boolean | null
@@ -480,6 +483,7 @@ export type Database = {
           accept_debit?: boolean | null
           accept_pickup?: boolean | null
           accept_pix?: boolean | null
+          activated_by_reseller?: boolean | null
           address_complement?: string | null
           address_neighborhood?: string | null
           address_number?: string | null
@@ -507,6 +511,8 @@ export type Database = {
           plan_type?: string | null
           primary_color?: string | null
           pro_plus_activated_at?: string | null
+          referral_code?: string | null
+          reseller_id?: string | null
           scheduled_orders_message?: string | null
           secondary_color?: string | null
           show_address_on_menu?: boolean | null
@@ -523,6 +529,7 @@ export type Database = {
           accept_debit?: boolean | null
           accept_pickup?: boolean | null
           accept_pix?: boolean | null
+          activated_by_reseller?: boolean | null
           address_complement?: string | null
           address_neighborhood?: string | null
           address_number?: string | null
@@ -550,6 +557,8 @@ export type Database = {
           plan_type?: string | null
           primary_color?: string | null
           pro_plus_activated_at?: string | null
+          referral_code?: string | null
+          reseller_id?: string | null
           scheduled_orders_message?: string | null
           secondary_color?: string | null
           show_address_on_menu?: boolean | null
@@ -560,7 +569,15 @@ export type Database = {
           user_id?: string | null
           whatsapp?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "establishments_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
@@ -930,6 +947,134 @@ export type Database = {
           },
         ]
       }
+      reseller_activations: {
+        Row: {
+          activated_at: string | null
+          commission_paid_at: string | null
+          commission_percentage: number
+          commission_status: string | null
+          commission_value: number
+          created_at: string | null
+          days_activated: number
+          establishment_id: string
+          establishment_name: string | null
+          id: string
+          plan_price: number
+          plan_type: string
+          reseller_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          commission_paid_at?: string | null
+          commission_percentage?: number
+          commission_status?: string | null
+          commission_value?: number
+          created_at?: string | null
+          days_activated: number
+          establishment_id: string
+          establishment_name?: string | null
+          id?: string
+          plan_price: number
+          plan_type: string
+          reseller_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          commission_paid_at?: string | null
+          commission_percentage?: number
+          commission_status?: string | null
+          commission_value?: number
+          created_at?: string | null
+          days_activated?: number
+          establishment_id?: string
+          establishment_name?: string | null
+          id?: string
+          plan_price?: number
+          plan_type?: string
+          reseller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_activations_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resellers: {
+        Row: {
+          access_type: string
+          active_establishments: number | null
+          commission_percentage: number
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          is_master: boolean | null
+          last_activity_at: string | null
+          last_login_at: string | null
+          name: string
+          price_basic: number
+          price_pro: number
+          price_pro_plus: number
+          pricing_mode: string
+          referral_code: string
+          total_activations: number | null
+          total_establishments: number | null
+          updated_at: string | null
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          access_type?: string
+          active_establishments?: number | null
+          commission_percentage?: number
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          is_master?: boolean | null
+          last_activity_at?: string | null
+          last_login_at?: string | null
+          name: string
+          price_basic?: number
+          price_pro?: number
+          price_pro_plus?: number
+          pricing_mode?: string
+          referral_code: string
+          total_activations?: number | null
+          total_establishments?: number | null
+          updated_at?: string | null
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          access_type?: string
+          active_establishments?: number | null
+          commission_percentage?: number
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          is_master?: boolean | null
+          last_activity_at?: string | null
+          last_login_at?: string | null
+          name?: string
+          price_basic?: number
+          price_pro?: number
+          price_pro_plus?: number
+          pricing_mode?: string
+          referral_code?: string
+          total_activations?: number | null
+          total_establishments?: number | null
+          updated_at?: string | null
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       saved_addresses: {
         Row: {
           address: string
@@ -1213,6 +1358,17 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      get_reseller_by_code: {
+        Args: { code: string }
+        Returns: {
+          id: string
+          name: string
+          price_basic: number
+          price_pro: number
+          price_pro_plus: number
+          pricing_mode: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1222,7 +1378,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "reseller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1350,7 +1506,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "reseller"],
     },
   },
 } as const
