@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      automatic_promotions: {
+        Row: {
+          conditions: Json | null
+          created_at: string | null
+          days_of_week: number[] | null
+          discount_type: string
+          discount_value: number
+          end_time: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean | null
+          min_order_value: number | null
+          name: string
+          start_time: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string | null
+          days_of_week?: number[] | null
+          discount_type: string
+          discount_value: number
+          end_time?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean | null
+          min_order_value?: number | null
+          name: string
+          start_time?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string | null
+          days_of_week?: number[] | null
+          discount_type?: string
+          discount_value?: number
+          end_time?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean | null
+          min_order_value?: number | null
+          name?: string
+          start_time?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_hours: {
         Row: {
           closing_time: string | null
@@ -186,38 +252,50 @@ export type Database = {
       }
       customers: {
         Row: {
+          birthday: string | null
           complement: string | null
           created_at: string | null
           id: string
+          last_order_at: string | null
           name: string
           neighborhood: string | null
           number: string | null
+          order_count: number | null
           reference_point: string | null
           street: string | null
+          total_spent: number | null
           updated_at: string | null
           whatsapp: string
         }
         Insert: {
+          birthday?: string | null
           complement?: string | null
           created_at?: string | null
           id?: string
+          last_order_at?: string | null
           name: string
           neighborhood?: string | null
           number?: string | null
+          order_count?: number | null
           reference_point?: string | null
           street?: string | null
+          total_spent?: number | null
           updated_at?: string | null
           whatsapp: string
         }
         Update: {
+          birthday?: string | null
           complement?: string | null
           created_at?: string | null
           id?: string
+          last_order_at?: string | null
           name?: string
           neighborhood?: string | null
           number?: string | null
+          order_count?: number | null
           reference_point?: string | null
           street?: string | null
+          total_spent?: number | null
           updated_at?: string | null
           whatsapp?: string
         }
@@ -354,13 +432,18 @@ export type Database = {
       }
       establishments: {
         Row: {
+          accept_cash: boolean | null
+          accept_credit: boolean | null
+          accept_debit: boolean | null
           accept_pickup: boolean | null
+          accept_pix: boolean | null
           address_complement: string | null
           address_neighborhood: string | null
           address_number: string | null
           address_street: string | null
           allow_orders_when_closed: boolean | null
           allow_scheduling_when_open: boolean | null
+          cash_change_available: boolean | null
           city: string | null
           cpf_cnpj: string
           created_at: string
@@ -392,13 +475,18 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          accept_cash?: boolean | null
+          accept_credit?: boolean | null
+          accept_debit?: boolean | null
           accept_pickup?: boolean | null
+          accept_pix?: boolean | null
           address_complement?: string | null
           address_neighborhood?: string | null
           address_number?: string | null
           address_street?: string | null
           allow_orders_when_closed?: boolean | null
           allow_scheduling_when_open?: boolean | null
+          cash_change_available?: boolean | null
           city?: string | null
           cpf_cnpj: string
           created_at?: string
@@ -430,13 +518,18 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          accept_cash?: boolean | null
+          accept_credit?: boolean | null
+          accept_debit?: boolean | null
           accept_pickup?: boolean | null
+          accept_pix?: boolean | null
           address_complement?: string | null
           address_neighborhood?: string | null
           address_number?: string | null
           address_street?: string | null
           allow_orders_when_closed?: boolean | null
           allow_scheduling_when_open?: boolean | null
+          cash_change_available?: boolean | null
           city?: string | null
           cpf_cnpj?: string
           created_at?: string
@@ -963,8 +1056,78 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_templates: {
+        Row: {
+          created_at: string | null
+          establishment_id: string
+          id: string
+          message: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          establishment_id: string
+          id?: string
+          message: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          establishment_id?: string
+          id?: string
+          message?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
+      order_metrics: {
+        Row: {
+          avg_ticket: number | null
+          completed_orders: number | null
+          delivery_count: number | null
+          establishment_id: string | null
+          order_date: string | null
+          pickup_count: number | null
+          revenue: number | null
+          total_orders: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_establishments: {
         Row: {
           accept_pickup: boolean | null

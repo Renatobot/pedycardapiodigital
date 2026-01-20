@@ -8,29 +8,35 @@ import { Badge } from '@/components/ui/badge';
 
 // Recursos base disponíveis em TODOS os planos
 const baseFeatures = [
-  'Cardápio digital',
-  'Produtos ilimitados',
+  'Cardápio digital ilimitado',
   'Pedidos via WhatsApp',
   'Instalar como App (PWA)',
+  'Central de Pagamentos',
+  'Templates de resposta WhatsApp',
   'Sem taxa por pedido',
-  'Templates prontos por nicho',
 ];
 
 // Recursos exclusivos do Pro
 const proFeatures = [
-  'Painel de pedidos',
+  'Painel de pedidos em tempo real',
   'Notificações Push',
   'Cupons de desconto',
   'Taxas por bairro',
-  'Histórico de pedidos',
+  'Métricas básicas (faturamento, ticket médio)',
+  'Agendamento com loja aberta',
+  'Busca e filtro de pedidos',
+  'Impressão de pedidos',
+  'Pizzas até 2 sabores',
 ];
 
 // Recursos exclusivos do Pro+
 const proPlusFeatures = [
   'Pizzas 3-4 sabores (cobra pelo mais caro)',
-  'Combos complexos',
-  'Precificação avançada',
-  'Personalizações avançadas',
+  'Dashboard analítico avançado',
+  'CRM - Gestão de clientes',
+  'Promoções automáticas',
+  'Exportação de dados',
+  'Duplicar produto',
 ];
 
 interface Plan {
@@ -60,24 +66,24 @@ const plans: Plan[] = [
   },
   {
     name: 'PRO',
-    price: 57,
+    price: 59.90,
     icon: Crown,
     highlighted: true,
     badge: 'MAIS POPULAR',
     included: [...baseFeatures, ...proFeatures],
     excluded: proPlusFeatures,
-    message: 'Olá! Quero ativar o Plano Pro (R$ 57/mês).',
+    message: 'Olá! Quero ativar o Plano Pro (R$ 59,90/mês).',
     colorClass: 'text-primary',
     headerClass: 'bg-gradient-hero',
   },
   {
     name: 'PRO+',
-    price: 77,
+    price: 79.90,
     icon: Sparkles,
     highlighted: false,
     included: [...baseFeatures, ...proFeatures, ...proPlusFeatures],
     excluded: [],
-    message: 'Olá! Quero ativar o Plano Pro+ (R$ 77/mês).',
+    message: 'Olá! Quero ativar o Plano Pro+ (R$ 79,90/mês).',
     colorClass: 'text-amber-600',
     headerClass: 'bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20',
   },
@@ -110,7 +116,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
         </div>
         <div className={`flex items-baseline justify-center gap-1 ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
           <span className="text-sm">R$</span>
-          <span className="text-4xl font-bold">{plan.price}</span>
+          <span className="text-4xl font-bold">{plan.price.toFixed(2).replace('.', ',')}</span>
           <span className={plan.highlighted ? 'text-primary-foreground/80' : 'text-muted-foreground'}>/mês</span>
         </div>
       </div>
