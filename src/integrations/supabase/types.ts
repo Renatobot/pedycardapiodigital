@@ -78,6 +78,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "automatic_promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       business_hours: {
@@ -123,6 +130,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "business_hours_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       categories: {
@@ -160,6 +174,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -344,6 +365,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "delivery_zones_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       discount_codes: {
@@ -399,6 +427,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_codes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -686,6 +721,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_additions: {
@@ -897,6 +939,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       push_subscriptions: {
@@ -943,6 +992,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1130,6 +1186,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "saved_addresses_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       store_push_subscriptions: {
@@ -1176,6 +1239,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_push_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1241,6 +1311,13 @@ export type Database = {
             referencedRelation: "public_establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1269,6 +1346,13 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1347,6 +1431,53 @@ export type Database = {
           trial_end_date?: string | null
         }
         Relationships: []
+      }
+      reseller_establishments_view: {
+        Row: {
+          activated_by_reseller: boolean | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          plan_expires_at: string | null
+          plan_status: string | null
+          plan_type: string | null
+          reseller_id: string | null
+          trial_end_date: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          activated_by_reseller?: boolean | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          plan_expires_at?: string | null
+          plan_status?: string | null
+          plan_type?: string | null
+          reseller_id?: string | null
+          trial_end_date?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          activated_by_reseller?: boolean | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          plan_expires_at?: string | null
+          plan_status?: string | null
+          plan_type?: string | null
+          reseller_id?: string | null
+          trial_end_date?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishments_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

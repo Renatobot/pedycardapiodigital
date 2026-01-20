@@ -132,29 +132,50 @@ const AdminLoginPage = () => {
         return;
       }
 
-      const { data: roleData, error: roleError } = await supabase
+      // Check for admin role first
+      const { data: adminRoleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', authData.user.id)
         .eq('role', 'admin')
         .maybeSingle();
 
-      if (roleError || !roleData) {
-        await supabase.auth.signOut();
+      if (adminRoleData) {
         toast({
-          title: 'Acesso não autorizado',
-          description: 'Você não tem permissão para acessar o painel administrativo.',
-          variant: 'destructive',
+          title: 'Login realizado!',
+          description: 'Bem-vindo ao painel administrativo!',
         });
+        navigate('/admin/dashboard');
         setIsLoading(false);
         return;
       }
 
+      // Check for reseller role
+      const { data: resellerRoleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'reseller')
+        .maybeSingle();
+
+      if (resellerRoleData) {
+        toast({
+          title: 'Login realizado!',
+          description: 'Bem-vindo ao painel do revendedor!',
+        });
+        navigate('/revendedor');
+        setIsLoading(false);
+        return;
+      }
+
+      // No valid role found
+      await supabase.auth.signOut();
       toast({
-        title: 'Login realizado!',
-        description: 'Bem-vindo ao painel administrativo!',
+        title: 'Acesso não autorizado',
+        description: 'Você não tem permissão para acessar este painel.',
+        variant: 'destructive',
       });
-      navigate('/admin/dashboard');
+      setIsLoading(false);
     } catch (error) {
       console.error('Erro no login:', error);
       toast({
@@ -162,9 +183,8 @@ const AdminLoginPage = () => {
         description: 'Ocorreu um erro ao tentar fazer login.',
         variant: 'destructive',
       });
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const handlePasswordReset = async () => {

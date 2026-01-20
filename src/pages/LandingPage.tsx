@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,8 @@ import { NICHE_TEMPLATES } from '@/lib/nicheTemplates';
 import { AnimatedText } from '@/components/AnimatedText';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
+import { supabase } from '@/integrations/supabase/client';
+import { SUPPORT_WHATSAPP } from '@/lib/whatsapp';
 
 const features = [
   {
@@ -269,11 +272,50 @@ const FloatingIcons = () => (
   </div>
 );
 
+interface ResellerRefInfo {
+  id: string;
+  name: string;
+  pricing_mode: string;
+  whatsapp: string | null;
+}
+
 export default function LandingPage() {
+  const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
+  const [reseller, setReseller] = useState<ResellerRefInfo | null>(null);
+
+  // Fetch reseller info from referral code
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      fetchResellerInfo(refCode);
+    }
+  }, [searchParams]);
+
+  const fetchResellerInfo = async (code: string) => {
+    try {
+      // Get reseller by code
+      const { data: resellerData } = await supabase.rpc('get_reseller_by_code', { code });
+      
+      if (resellerData && resellerData.length > 0) {
+        // Fetch full reseller data including whatsapp
+        const { data: fullReseller } = await supabase
+          .from('resellers')
+          .select('id, name, pricing_mode, whatsapp')
+          .eq('id', resellerData[0].id)
+          .single();
+        
+        if (fullReseller) {
+          setReseller(fullReseller);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching reseller:', error);
+    }
+  };
 
   // Carousel slide tracking
   useEffect(() => {
@@ -286,6 +328,27 @@ export default function LandingPage() {
       setCurrentSlide(carouselApi.selectedScrollSnap());
     });
   }, [carouselApi]);
+
+  // Get the correct registration link (preserving ref code)
+  const getRegistrationLink = () => {
+    const refCode = searchParams.get('ref');
+    return refCode ? `/cadastro?ref=${refCode}` : '/cadastro';
+  };
+
+  // Handle CTA click - different behavior based on reseller mode
+  const handleCTAClick = () => {
+    // If reseller with custom_price mode and has whatsapp, redirect to their WhatsApp
+    if (reseller && reseller.pricing_mode === 'custom_price' && reseller.whatsapp) {
+      const cleanPhone = reseller.whatsapp.replace(/\D/g, '');
+      const message = encodeURIComponent('Olá! Vi o PEDY e quero saber mais sobre o cardápio digital para meu negócio.');
+      window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
+      return;
+    }
+    
+    // Otherwise, redirect to support WhatsApp
+    const message = encodeURIComponent('Olá! Quero saber mais sobre o PEDY.');
+    window.open(`https://wa.me/55${SUPPORT_WHATSAPP}?text=${message}`, '_blank');
+  };
   
   return (
     <div className="min-h-screen animated-gradient-bg relative">
@@ -339,7 +402,7 @@ export default function LandingPage() {
             
             <ScrollReveal delay={300}>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <Link to="/cadastro">
+                <Link to={getRegistrationLink()}>
                   <Button variant="hero" size="xl" className="w-full sm:w-auto group">
                     Criar cardápio grátis agora
                     <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
