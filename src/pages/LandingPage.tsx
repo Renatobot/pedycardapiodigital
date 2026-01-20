@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import Autoplay from 'embla-carousel-autoplay';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   ShoppingBag, 
   Smartphone, 
@@ -125,6 +133,7 @@ const testimonials = [
     name: 'Carlos Silva',
     business: 'Pizzaria Bella Napoli',
     city: 'São Paulo, SP',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos&backgroundColor=4A9BD9',
     text: 'Antes eu anotava tudo no papel e sempre dava confusão. Com o PEDY, os pedidos chegam certinhos no WhatsApp. Meus clientes adoram!',
     rating: 5,
   },
@@ -132,6 +141,7 @@ const testimonials = [
     name: 'Ana Paula Ferreira',
     business: 'Açaí da Praia',
     city: 'Rio de Janeiro, RJ',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AnaPaula&backgroundColor=4CAF50',
     text: 'Em uma semana já vi o resultado. Os clientes pedem sozinhos pelo cardápio e não preciso ficar respondendo um por um. Tempo é dinheiro!',
     rating: 5,
   },
@@ -139,6 +149,7 @@ const testimonials = [
     name: 'Roberto Mendes',
     business: 'Burger House',
     city: 'Belo Horizonte, MG',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto&backgroundColor=FF9800',
     text: 'O sistema de cupons e taxa por bairro me ajudou a organizar as entregas. Recomendo para qualquer lanchonete que quer crescer.',
     rating: 5,
   },
@@ -146,7 +157,24 @@ const testimonials = [
     name: 'Juliana Costa',
     business: 'Marmitaria Sabor Caseiro',
     city: 'Curitiba, PR',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juliana&backgroundColor=E91E63',
     text: 'Simples de usar e meus clientes aprenderam rápido. O QR Code na porta do restaurante traz pedidos todo dia!',
+    rating: 5,
+  },
+  {
+    name: 'Marcos Oliveira',
+    business: 'Pet Shop Amigo Fiel',
+    city: 'Brasília, DF',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcos&backgroundColor=9C27B0',
+    text: 'Nem imaginava que um pet shop poderia usar cardápio digital. Agora meus clientes pedem ração e produtos pelo celular. Revolucionou meu negócio!',
+    rating: 5,
+  },
+  {
+    name: 'Fernanda Lima',
+    business: 'Doceria Doce Mel',
+    city: 'Salvador, BA',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda&backgroundColor=F44336',
+    text: 'O suporte é incrível! Me ajudaram a configurar tudo em minutos. Agora recebo encomendas de bolos e doces organizadas direto no WhatsApp.',
     rating: 5,
   },
 ];
@@ -259,6 +287,21 @@ const FloatingIcons = () => (
 
 export default function LandingPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideCount, setSlideCount] = useState(0);
+
+  // Carousel slide tracking
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    setSlideCount(carouselApi.scrollSnapList().length);
+    setCurrentSlide(carouselApi.selectedScrollSnap());
+
+    carouselApi.on('select', () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap());
+    });
+  }, [carouselApi]);
   
   return (
     <div className="min-h-screen animated-gradient-bg relative">
@@ -522,7 +565,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 relative z-10">
+      <section className="py-16 relative z-10 overflow-hidden">
         <div className="container">
           <ScrollReveal>
             <div className="text-center mb-12">
@@ -539,27 +582,80 @@ export default function LandingPage() {
             </div>
           </ScrollReveal>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <ScrollReveal key={index} delay={index * 100}>
-                <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-border hover:shadow-xl transition-all duration-300 h-full">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-foreground mb-4 italic">
-                    "{testimonial.text}"
-                  </p>
-                  <div className="border-t border-border pt-4">
-                    <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="text-sm text-primary font-medium">{testimonial.business}</p>
-                    <p className="text-xs text-muted-foreground">{testimonial.city}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+          <ScrollReveal delay={200}>
+            <div className="max-w-5xl mx-auto">
+              <Carousel
+                setApi={setCarouselApi}
+                opts={{
+                  align: 'start',
+                  loop: true,
+                }}
+                plugins={[
+                  Autoplay({
+                    delay: 4000,
+                    stopOnInteraction: true,
+                  }),
+                ]}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-4">
+                  {testimonials.map((testimonial, index) => (
+                    <CarouselItem key={index} className="pl-4 md:basis-1/2">
+                      <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-border hover:shadow-xl transition-all duration-300 h-full group">
+                        {/* Quote icon decorative */}
+                        <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <Quote className="w-8 h-8 text-primary" />
+                        </div>
+                        
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 mb-4">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
+                        
+                        {/* Testimonial text */}
+                        <p className="text-foreground mb-6 italic leading-relaxed">
+                          "{testimonial.text}"
+                        </p>
+                        
+                        {/* Author info with avatar */}
+                        <div className="flex items-center gap-4 border-t border-border pt-4">
+                          <Avatar className="w-12 h-12 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                            <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                            <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                              {testimonial.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-foreground">{testimonial.name}</p>
+                            <p className="text-sm text-primary font-medium">{testimonial.business}</p>
+                            <p className="text-xs text-muted-foreground">{testimonial.city}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+
+              {/* Navigation dots */}
+              <div className="flex justify-center gap-2 mt-6">
+                {Array.from({ length: slideCount }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => carouselApi?.scrollTo(index)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      currentSlide === index 
+                        ? 'bg-primary w-8' 
+                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                    }`}
+                    aria-label={`Ir para depoimento ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </ScrollReveal>
           
           {/* CTA Intermediário após Depoimentos */}
           <ScrollReveal delay={400}>
