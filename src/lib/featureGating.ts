@@ -29,6 +29,8 @@ export const PRO_FEATURES = {
   SCHEDULING_WHEN_OPEN: 'scheduling_when_open',
   ORDER_SEARCH_FILTER: 'order_search_filter',
   ORDER_PRINTING: 'order_printing',
+  // Grupos de opções básicos (adicionais, até 2 sabores)
+  PRODUCT_OPTIONS: 'product_options',
 } as const;
 
 export type ProFeature = typeof PRO_FEATURES[keyof typeof PRO_FEATURES];
@@ -164,6 +166,7 @@ export const PRO_FEATURE_LABELS: Record<ProFeature, string> = {
   scheduling_when_open: 'Agendamento com loja aberta',
   order_search_filter: 'Busca e filtro de pedidos',
   order_printing: 'Impressão de pedidos',
+  product_options: 'Grupos de opções do produto',
 };
 
 // Labels in Portuguese for Pro+ features
