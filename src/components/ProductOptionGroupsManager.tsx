@@ -47,6 +47,7 @@ export interface ProductOptionGroup {
   min_selections: number;
   max_selections: number;
   sort_order: number;
+  price_rule?: 'highest' | 'average' | 'sum';
   options: ProductOption[];
 }
 
@@ -117,6 +118,7 @@ export function ProductOptionGroupsManager({
         const groupsWithOptions = groupsData.map(group => ({
           ...group,
           type: group.type as 'single' | 'multiple' | 'flavor',
+          price_rule: (group.price_rule as 'highest' | 'average' | 'sum') || 'highest',
           options: (optionsData || [])
             .filter(opt => opt.option_group_id === group.id)
             .map(opt => ({

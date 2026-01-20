@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { CartItem, Product, ProductAddition, SelectedProductOption } from '@/types';
+import { CartItem, Product, ProductAddition, SelectedProductOption, calculateGroupPrice } from '@/types';
 
 interface CartContextType {
   items: CartItem[];
@@ -74,7 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = items.reduce((sum, item) => {
     const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
     const optionsTotal = item.selectedOptions.reduce((optSum, group) => {
-      return optSum + group.options.reduce((oSum, opt) => oSum + opt.price, 0);
+      return optSum + calculateGroupPrice(group);
     }, 0);
     return sum + (item.product.price + additionsTotal + optionsTotal) * item.quantity;
   }, 0);

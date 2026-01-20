@@ -9,6 +9,8 @@ import { ProductOptionGroup, ProductOption } from './ProductOptionGroupsManager'
 interface SelectedOption {
   groupId: string;
   groupName: string;
+  groupType?: 'single' | 'multiple' | 'flavor';
+  priceRule?: 'highest' | 'average' | 'sum';
   options: { id: string; name: string; price: number }[];
 }
 
@@ -32,6 +34,8 @@ export function ProductOptionSelector({
     updated.push({
       groupId: group.id,
       groupName: group.name,
+      groupType: group.type,
+      priceRule: group.price_rule,
       options: [{ id: option.id, name: option.name, price: option.price }]
     });
     onSelectionChange(updated);
@@ -59,6 +63,8 @@ export function ProductOptionSelector({
       updated.push({
         groupId: group.id,
         groupName: group.name,
+        groupType: group.type,
+        priceRule: group.price_rule,
         options: newOptions
       });
     }
