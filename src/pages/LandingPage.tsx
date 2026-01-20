@@ -729,29 +729,48 @@ export default function LandingPage() {
                   <div className="font-semibold text-center text-muted-foreground">Plataformas tradicionais</div>
                 </div>
                 
-                {/* Table Body */}
+                {/* Table Body with staggered animations */}
                 {comparison.map((item, index) => (
                   <div 
                     key={index}
-                    className={`grid grid-cols-3 p-4 items-center ${index !== comparison.length - 1 ? 'border-b border-border' : ''}`}
+                    className={`grid grid-cols-3 p-4 items-center transition-all duration-500 hover:bg-secondary/5 group ${index !== comparison.length - 1 ? 'border-b border-border' : ''}`}
+                    style={{
+                      animation: `fade-in 0.4s ease-out ${300 + index * 100}ms both`
+                    }}
                   >
-                    <div className="text-foreground text-sm md:text-base">{item.feature}</div>
-                    <div className="text-center">
+                    <div className="text-foreground text-sm md:text-base group-hover:font-medium transition-all">{item.feature}</div>
+                    <div className="text-center relative">
                       {typeof item.pedy === 'boolean' ? (
-                        <Check className="w-6 h-6 text-secondary mx-auto" />
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-secondary/15 group-hover:bg-secondary/25 transition-all group-hover:scale-110">
+                          <Check className="w-5 h-5 text-secondary" />
+                        </div>
                       ) : (
-                        <span className="font-bold text-secondary">{item.pedy}</span>
+                        <span className="font-bold text-secondary group-hover:scale-105 inline-block transition-transform">{item.pedy}</span>
                       )}
                     </div>
                     <div className="text-center">
                       {typeof item.others === 'boolean' ? (
-                        <X className="w-6 h-6 text-destructive mx-auto" />
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-destructive/10 group-hover:bg-destructive/15 transition-all">
+                          <X className="w-5 h-5 text-destructive" />
+                        </div>
                       ) : (
-                        <span className="text-muted-foreground">{item.others}</span>
+                        <span className="text-muted-foreground line-through decoration-destructive/50">{item.others}</span>
                       )}
                     </div>
                   </div>
                 ))}
+              </div>
+              
+              {/* Highlight savings badge */}
+              <div className="flex justify-center mt-6">
+                <div 
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-secondary/20 to-primary/20 text-foreground px-6 py-3 rounded-full text-sm font-bold border border-secondary/30 shadow-lg"
+                  style={{ animation: 'fade-in 0.5s ease-out 1s both' }}
+                >
+                  <span className="text-secondary">💰</span>
+                  Economize até R$ 3.000/mês em taxas
+                  <span className="text-primary">🚀</span>
+                </div>
               </div>
               
               <p className="text-center text-sm text-muted-foreground mt-4">
