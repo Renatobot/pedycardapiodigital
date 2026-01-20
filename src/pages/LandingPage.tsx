@@ -266,12 +266,12 @@ export default function LandingPage() {
       <FloatingIcons />
       
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
         <div className="container flex items-center justify-between h-16">
           <img src={pedyLogo} alt="PEDY" className="h-20 md:h-24 object-contain" />
           <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-foreground">Entrar</Button>
             </Link>
             <Link to="/cadastro">
               <Button size="sm">Criar conta</Button>
