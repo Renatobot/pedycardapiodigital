@@ -43,8 +43,10 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [showMacSafariPrompt, setShowMacSafariPrompt] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
+  const [metaTagsReady, setMetaTagsReady] = useState(false);
 
   // Atualizar meta tags quando dados do estabelecimento chegarem
+  // e adicionar delay para garantir que iOS capture os novos valores
   useEffect(() => {
     if (establishmentName) {
       // Atualizar apple-mobile-web-app-title para iOS
@@ -60,6 +62,13 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
           appleIcon.setAttribute('href', establishmentLogo);
         }
       }
+      
+      // Delay para garantir que o iOS capturou os novos valores
+      // antes de mostrar o prompt de instalação
+      setTimeout(() => setMetaTagsReady(true), 500);
+    } else {
+      // Se não tem nome do estabelecimento, não bloquear o prompt
+      setMetaTagsReady(true);
     }
   }, [establishmentName, establishmentLogo]);
 
@@ -164,6 +173,9 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
       saveStartUrlToCacheAPI(currentPath);
     }
 
+    // Pequeno delay para garantir que o manifest dinâmico foi carregado
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
 
@@ -235,8 +247,8 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
     );
   }
 
-// Prompt para iOS
-  if (showIOSPrompt && !isInstalled) {
+// Prompt para iOS - só mostrar após meta tags estarem prontas
+  if (showIOSPrompt && metaTagsReady && !isInstalled) {
     // Salvar também no IndexedDB para persistência no iOS
     try {
       const currentPath = window.location.pathname;
@@ -260,15 +272,21 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
       // IndexedDB não disponível, ignorar
     }
 
+    const displayName = establishmentName || 'este Cardápio';
+
     return (
       <div className="fixed bottom-24 left-4 right-4 z-[60] animate-in slide-in-from-bottom-4 duration-300">
         <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
           <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Smartphone className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {establishmentLogo ? (
+                <img src={establishmentLogo} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <Smartphone className="h-6 w-6 text-primary" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm">Instalar este Cardápio</h3>
+              <h3 className="font-semibold text-sm">Instalar {displayName}</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 {isSafari ? (
                   <>
@@ -316,15 +334,21 @@ export function PWAInstallPrompt({ establishmentName, establishmentLogo }: PWAIn
     return null;
   }
 
+  const displayName = establishmentName || 'o PEDY';
+
   return (
     <div className="fixed bottom-24 left-4 right-4 z-[60] animate-in slide-in-from-bottom-4 duration-300">
       <div className="bg-card border rounded-xl shadow-lg p-4 mx-auto max-w-md">
         <div className="flex items-start gap-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Smartphone className="h-6 w-6 text-primary" />
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {establishmentLogo ? (
+              <img src={establishmentLogo} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <Smartphone className="h-6 w-6 text-primary" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm">Instalar o PEDY</h3>
+            <h3 className="font-semibold text-sm">Instalar {displayName}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Adicione à tela inicial para acesso rápido e receber notificações
             </p>
