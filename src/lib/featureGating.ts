@@ -3,9 +3,17 @@
 // Preços dos planos
 export const PLAN_PRICES = {
   BASIC: 37,
-  PRO: 57,
-  PRO_PLUS: 77,
+  PRO: 59.90,
+  PRO_PLUS: 79.90,
 } as const;
+
+// Recursos disponíveis em TODOS os planos (incluindo Básico)
+export const BASE_FEATURES = {
+  PAYMENT_CENTER: 'payment_center',
+  WHATSAPP_TEMPLATES: 'whatsapp_templates',
+} as const;
+
+export type BaseFeature = typeof BASE_FEATURES[keyof typeof BASE_FEATURES];
 
 // Recursos exclusivos do Plano Pro (não disponíveis no Básico)
 export const PRO_FEATURES = {
@@ -16,6 +24,11 @@ export const PRO_FEATURES = {
   BUSINESS_HOURS_CONFIG: 'business_hours_config',
   APPEARANCE_SETTINGS: 'appearance_settings',
   ORDER_HISTORY: 'order_history',
+  // Novos recursos Pro
+  BASIC_METRICS: 'basic_metrics',
+  SCHEDULING_WHEN_OPEN: 'scheduling_when_open',
+  ORDER_SEARCH_FILTER: 'order_search_filter',
+  ORDER_PRINTING: 'order_printing',
 } as const;
 
 export type ProFeature = typeof PRO_FEATURES[keyof typeof PRO_FEATURES];
@@ -28,6 +41,12 @@ export const PRO_PLUS_FEATURES = {
   COMPLEX_COMBOS: 'complex_combos',
   OPTION_DEPENDENCIES: 'option_dependencies',
   PRODUCT_CUSTOMIZATION: 'product_customization',
+  // Novos recursos Pro+
+  ADVANCED_ANALYTICS: 'advanced_analytics',
+  CRM: 'crm',
+  AUTOMATIC_PROMOTIONS: 'automatic_promotions',
+  DATA_EXPORT: 'data_export',
+  DUPLICATE_PRODUCT: 'duplicate_product',
 } as const;
 
 export type ProPlusFeature = typeof PRO_PLUS_FEATURES[keyof typeof PRO_PLUS_FEATURES];
@@ -125,6 +144,12 @@ export function requiresProPlusForFlavors(maxFlavors: number): boolean {
   return maxFlavors > 2;
 }
 
+// Labels in Portuguese for Base features
+export const BASE_FEATURE_LABELS: Record<BaseFeature, string> = {
+  payment_center: 'Central de Pagamentos',
+  whatsapp_templates: 'Templates de Resposta WhatsApp',
+};
+
 // Labels in Portuguese for Pro features
 export const PRO_FEATURE_LABELS: Record<ProFeature, string> = {
   dashboard: 'Painel de pedidos',
@@ -134,6 +159,10 @@ export const PRO_FEATURE_LABELS: Record<ProFeature, string> = {
   business_hours_config: 'Configuração de horários',
   appearance_settings: 'Personalização de aparência',
   order_history: 'Histórico de pedidos',
+  basic_metrics: 'Métricas básicas',
+  scheduling_when_open: 'Agendamento com loja aberta',
+  order_search_filter: 'Busca e filtro de pedidos',
+  order_printing: 'Impressão de pedidos',
 };
 
 // Labels in Portuguese for Pro+ features
@@ -144,6 +173,11 @@ export const FEATURE_LABELS: Record<ProPlusFeature, string> = {
   complex_combos: 'Combos complexos (açaí, etc.)',
   option_dependencies: 'Dependências entre opções',
   product_customization: 'Personalização avançada de produtos',
+  advanced_analytics: 'Dashboard analítico avançado',
+  crm: 'CRM - Gestão de clientes',
+  automatic_promotions: 'Promoções automáticas',
+  data_export: 'Exportação de dados',
+  duplicate_product: 'Duplicar produto',
 };
 
 // Descriptions for Pro+ features
@@ -154,18 +188,23 @@ export const FEATURE_DESCRIPTIONS: Record<ProPlusFeature, string> = {
   complex_combos: 'Monte combos complexos com itens grátis e pagos',
   option_dependencies: 'Mostre opções baseadas em seleções anteriores',
   product_customization: 'Configure grupos de opções personalizáveis para seus produtos',
+  advanced_analytics: 'Gráficos detalhados de faturamento, tendências e produtos mais vendidos',
+  crm: 'Gerencie clientes, histórico de pedidos e identifique clientes VIP',
+  automatic_promotions: 'Configure Happy Hour, desconto primeira compra e mais',
+  data_export: 'Exporte pedidos, clientes e produtos para CSV/Excel',
+  duplicate_product: 'Duplique produtos rapidamente com todos os adicionais',
 };
 
 /**
  * Generate WhatsApp message for Pro upgrade inquiry
  */
 export function generateProUpgradeMessage(): string {
-  return 'Olá! Quero fazer upgrade para o Plano Pro (R$ 57/mês).';
+  return 'Olá! Quero fazer upgrade para o Plano Pro (R$ 59,90/mês).';
 }
 
 /**
  * Generate WhatsApp message for Pro+ upgrade inquiry
  */
 export function generateProPlusUpgradeMessage(featureName?: string): string {
-  return 'Olá! Quero fazer upgrade para o Plano Pro+ (R$ 77/mês).';
+  return 'Olá! Quero fazer upgrade para o Plano Pro+ (R$ 79,90/mês).';
 }
