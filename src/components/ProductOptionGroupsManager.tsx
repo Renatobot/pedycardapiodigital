@@ -78,6 +78,10 @@ export function ProductOptionGroupsManager({
   const proPlusAccess = checkFeatureAccess(establishment, PRO_PLUS_FEATURES.PIZZA_3_4_FLAVORS);
   const canUseFlavors3Plus = proPlusAccess.hasAccess;
 
+  // Check Pro+ access for automatic pizza pricing (highest/average/sum)
+  const autoPricingAccess = checkFeatureAccess(establishment, PRO_PLUS_FEATURES.AUTOMATIC_PIZZA_PRICING);
+  const canUseAutoPricing = autoPricingAccess.hasAccess;
+
   // Fetch existing option groups
   useEffect(() => {
     if (productId && !productId.startsWith('temp-')) {
@@ -485,6 +489,34 @@ export function ProductOptionGroupsManager({
                           </Select>
                           {!canUseFlavors3Plus && (
                             <ProPlusLockBadge feature={PRO_PLUS_FEATURES.PIZZA_3_4_FLAVORS} />
+                          )}
+                        </div>
+                      )}
+
+                      {/* Price Rule Selector - Only visible for flavor type */}
+                      {group.type === 'flavor' && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Regra de preço:</Label>
+                          <Select
+                            value={canUseAutoPricing ? (group.price_rule || 'highest') : 'sum'}
+                            onValueChange={(value: 'highest' | 'average' | 'sum') => {
+                              if (canUseAutoPricing) {
+                                updateGroup(group.id, { price_rule: value });
+                              }
+                            }}
+                            disabled={!canUseAutoPricing}
+                          >
+                            <SelectTrigger className={`h-7 w-32 text-xs ${!canUseAutoPricing ? 'opacity-50' : ''}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="highest">Mais caro</SelectItem>
+                              <SelectItem value="average">Média</SelectItem>
+                              <SelectItem value="sum">Soma</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!canUseAutoPricing && (
+                            <ProPlusLockBadge feature={PRO_PLUS_FEATURES.AUTOMATIC_PIZZA_PRICING} />
                           )}
                         </div>
                       )}

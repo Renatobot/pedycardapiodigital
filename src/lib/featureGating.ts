@@ -36,6 +36,7 @@ export type ProFeature = typeof PRO_FEATURES[keyof typeof PRO_FEATURES];
 // Recursos exclusivos do Plano Pro+
 export const PRO_PLUS_FEATURES = {
   PIZZA_3_4_FLAVORS: 'pizza_3_4_flavors',
+  AUTOMATIC_PIZZA_PRICING: 'automatic_pizza_pricing', // Precificação automática (pelo mais caro, média, etc.)
   DYNAMIC_SELECTION_LIMITS: 'dynamic_selection_limits',
   ADVANCED_PRICING: 'advanced_pricing',
   COMPLEX_COMBOS: 'complex_combos',
@@ -168,6 +169,7 @@ export const PRO_FEATURE_LABELS: Record<ProFeature, string> = {
 // Labels in Portuguese for Pro+ features
 export const FEATURE_LABELS: Record<ProPlusFeature, string> = {
   pizza_3_4_flavors: 'Pizza com 3 ou 4 sabores',
+  automatic_pizza_pricing: 'Precificação automática de pizza',
   dynamic_selection_limits: 'Limites de seleção dinâmicos',
   advanced_pricing: 'Precificação avançada',
   complex_combos: 'Combos complexos (açaí, etc.)',
@@ -183,6 +185,7 @@ export const FEATURE_LABELS: Record<ProPlusFeature, string> = {
 // Descriptions for Pro+ features
 export const FEATURE_DESCRIPTIONS: Record<ProPlusFeature, string> = {
   pizza_3_4_flavors: 'Permite que seus clientes escolham até 4 sabores por pizza',
+  automatic_pizza_pricing: 'Sistema cobra automaticamente pelo sabor mais caro, média ou soma',
   dynamic_selection_limits: 'Configure limites de seleção baseados em outras escolhas',
   advanced_pricing: 'Regras avançadas de precificação como "cobrar pelo maior valor"',
   complex_combos: 'Monte combos complexos com itens grátis e pagos',

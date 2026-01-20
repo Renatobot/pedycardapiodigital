@@ -26,12 +26,13 @@ const proFeatures = [
   'Agendamento com loja aberta',
   'Busca e filtro de pedidos',
   'Impressão de pedidos',
-  'Pizzas até 2 sabores',
+  'Pizzas até 2 sabores (preço manual)',
 ];
 
 // Recursos exclusivos do Pro+
 const proPlusFeatures = [
-  'Pizzas 3-4 sabores (cobra pelo mais caro)',
+  'Pizzas 3-4 sabores',
+  'Precificação automática (cobra pelo mais caro)',
   'Dashboard analítico avançado',
   'CRM - Gestão de clientes',
   'Promoções automáticas',
@@ -196,8 +197,9 @@ export default function UpgradePage() {
               <p className="flex items-start gap-2">
                 <span>🍕</span>
                 <span>
-                  <strong className="text-foreground">Pizzas com vários sabores</strong> cobram 
-                  automaticamente pelo sabor mais caro - sem cálculo manual!
+                  <strong className="text-foreground">No Pro:</strong> Pizzas de 2 sabores com preço definido manualmente por você.
+                  <br />
+                  <strong className="text-foreground">No Pro+:</strong> Sistema cobra automaticamente pelo sabor mais caro - sem cálculo manual!
                 </span>
               </p>
               
