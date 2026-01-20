@@ -18,6 +18,7 @@ import UpgradePage from "./pages/UpgradePage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminEstablishmentDashboard from "./pages/AdminEstablishmentDashboard";
+import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +44,7 @@ const App = () => (
                 <Route path="/:slug" element={<MenuPage />} />
                 <Route path="/:slug/checkout" element={<CheckoutPage />} />
                 <Route path="/upgrade" element={<UpgradePage />} />
-                <Route path="/demo" element={<MenuPage />} />
+                <Route path="/demo" element={<DemoPage />} />
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLoginPage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
