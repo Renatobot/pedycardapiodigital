@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,8 @@ import {
   UtensilsCrossed,
   X,
   Check,
-  Folder
+  Folder,
+  LogIn
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NICHE_TEMPLATES } from '@/lib/nicheTemplates';
@@ -63,6 +64,13 @@ import { ScrollReveal } from '@/components/ScrollReveal';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORT_WHATSAPP } from '@/lib/whatsapp';
+
+// Detect if running as PWA (standalone mode)
+const isPWAMode = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         (window.navigator as any).standalone === true;
+};
 
 const features = [
   {
@@ -279,13 +287,91 @@ interface ResellerRefInfo {
   whatsapp: string | null;
 }
 
+// PWA Entry Screen - Clean app entry without marketing content
+function PWAEntryScreen() {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="flex flex-col items-center text-center max-w-sm">
+        {/* Logo */}
+        <img 
+          src={pedyLogo} 
+          alt="PEDY" 
+          className="h-32 md:h-40 object-contain mb-8" 
+        />
+        
+        {/* Welcome text */}
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Bem-vindo ao Pedy
+        </h1>
+        <p className="text-muted-foreground mb-8">
+          Cardápio digital que vende mais
+        </p>
+        
+        {/* Login button */}
+        <Button 
+          size="lg" 
+          className="w-full max-w-xs"
+          onClick={() => navigate('/login')}
+        >
+          <LogIn className="w-5 h-5 mr-2" />
+          Entrar na minha conta
+        </Button>
+        
+        {/* Create account link */}
+        <p className="text-sm text-muted-foreground mt-6">
+          Ainda não tem conta?{' '}
+          <Link to="/cadastro" className="text-primary font-medium hover:underline">
+            Criar conta grátis
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
   const [reseller, setReseller] = useState<ResellerRefInfo | null>(null);
+  const [isPWA, setIsPWA] = useState(false);
+  const [pwaCheckComplete, setPwaCheckComplete] = useState(false);
+
+  // Check PWA mode and handle redirects
+  useEffect(() => {
+    const checkPWAAndRedirect = async () => {
+      const isStandalone = isPWAMode();
+      setIsPWA(isStandalone);
+      
+      if (isStandalone) {
+        // Priority 1: Check for active Supabase session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+        
+        // Priority 2: Check for last visited menu
+        const lastMenu = localStorage.getItem('pwa-start-url') || 
+                         localStorage.getItem('last_visited_menu');
+        if (lastMenu && lastMenu !== '/') {
+          navigate(lastMenu, { replace: true });
+          return;
+        }
+        
+        // Priority 3: Show PWA entry screen (handled by render)
+      }
+      
+      setPwaCheckComplete(true);
+    };
+    
+    checkPWAAndRedirect();
+  }, [navigate]);
 
   // Fetch reseller info from referral code
   useEffect(() => {
@@ -349,6 +435,22 @@ export default function LandingPage() {
     const message = encodeURIComponent('Olá! Quero saber mais sobre o PEDY.');
     window.open(`https://wa.me/55${SUPPORT_WHATSAPP}?text=${message}`, '_blank');
   };
+
+  // Show loading while checking PWA status
+  if (!pwaCheckComplete) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <img src={pedyLogo} alt="PEDY" className="h-24 animate-pulse" />
+      </div>
+    );
+  }
+
+  // If PWA mode, show clean entry screen (without marketing)
+  if (isPWA) {
+    return <PWAEntryScreen />;
+  }
+
+  // Normal browser mode - show full landing page
   
   return (
     <div className="min-h-screen animated-gradient-bg relative">
