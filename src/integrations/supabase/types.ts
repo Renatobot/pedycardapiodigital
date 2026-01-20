@@ -252,6 +252,7 @@ export type Database = {
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
+          plan_type: string | null
           primary_color: string | null
           pro_plus_activated_at: string | null
           scheduled_orders_message: string | null
@@ -288,6 +289,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          plan_type?: string | null
           primary_color?: string | null
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null
@@ -324,6 +326,7 @@ export type Database = {
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
+          plan_type?: string | null
           primary_color?: string | null
           pro_plus_activated_at?: string | null
           scheduled_orders_message?: string | null

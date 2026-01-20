@@ -1,5 +1,26 @@
-// Feature-Gating System for Pro+ Features
+// Feature-Gating System for Plan Tiers
 
+// Preços dos planos
+export const PLAN_PRICES = {
+  BASIC: 37,
+  PRO: 57,
+  PRO_PLUS: 77,
+} as const;
+
+// Recursos exclusivos do Plano Pro (não disponíveis no Básico)
+export const PRO_FEATURES = {
+  DASHBOARD: 'dashboard',
+  PUSH_NOTIFICATIONS: 'push_notifications',
+  COUPONS: 'coupons',
+  DELIVERY_ZONES: 'delivery_zones',
+  BUSINESS_HOURS_CONFIG: 'business_hours_config',
+  APPEARANCE_SETTINGS: 'appearance_settings',
+  ORDER_HISTORY: 'order_history',
+} as const;
+
+export type ProFeature = typeof PRO_FEATURES[keyof typeof PRO_FEATURES];
+
+// Recursos exclusivos do Plano Pro+
 export const PRO_PLUS_FEATURES = {
   PIZZA_3_4_FLAVORS: 'pizza_3_4_flavors',
   DYNAMIC_SELECTION_LIMITS: 'dynamic_selection_limits',
@@ -11,24 +32,60 @@ export const PRO_PLUS_FEATURES = {
 
 export type ProPlusFeature = typeof PRO_PLUS_FEATURES[keyof typeof PRO_PLUS_FEATURES];
 
-// Preço do Pro+
-export const PRO_PLUS_PRICE = 57; // R$ 57,00/mês
-
 export interface FeatureAccess {
   hasAccess: boolean;
-  reason: 'trial' | 'pro_plus' | 'locked';
+  reason: 'trial' | 'basic' | 'pro' | 'pro_plus' | 'locked';
 }
 
 export interface EstablishmentForGating {
   plan_status: string;
+  plan_type?: string | null;
   trial_end_date?: string | null;
   has_pro_plus?: boolean;
 }
 
 /**
+ * Check if an establishment has access to a Pro feature.
+ * During trial, ALL features are unlocked.
+ * Basic plan = only base features (cardápio + WhatsApp)
+ * Pro plan = base + pro features
+ * Pro+ plan = everything
+ */
+export function checkProFeatureAccess(
+  establishment: EstablishmentForGating | null,
+  feature: ProFeature
+): FeatureAccess {
+  if (!establishment) {
+    return { hasAccess: false, reason: 'locked' };
+  }
+
+  const now = new Date();
+  
+  // During trial, ALL features are unlocked
+  if (establishment.plan_status === 'trial') {
+    const trialEnd = establishment.trial_end_date 
+      ? new Date(establishment.trial_end_date) 
+      : null;
+    if (!trialEnd || trialEnd > now) {
+      return { hasAccess: true, reason: 'trial' };
+    }
+  }
+  
+  // Check plan type
+  const planType = establishment.plan_type || 'basic';
+  
+  if (planType === 'pro' || planType === 'pro_plus') {
+    return { hasAccess: true, reason: planType as 'pro' | 'pro_plus' };
+  }
+  
+  // Basic plan doesn't have Pro features
+  return { hasAccess: false, reason: 'locked' };
+}
+
+/**
  * Check if an establishment has access to a Pro+ feature.
  * During trial, ALL features are unlocked.
- * After trial, Pro+ features require has_pro_plus = true.
+ * After trial, Pro+ features require plan_type = 'pro_plus' or has_pro_plus = true.
  */
 export function checkFeatureAccess(
   establishment: EstablishmentForGating | null,
@@ -50,8 +107,10 @@ export function checkFeatureAccess(
     }
   }
   
-  // If has Pro+, advanced features are unlocked
-  if (establishment.has_pro_plus) {
+  // Check plan type or legacy has_pro_plus flag
+  const planType = establishment.plan_type || 'basic';
+  
+  if (planType === 'pro_plus' || establishment.has_pro_plus) {
     return { hasAccess: true, reason: 'pro_plus' };
   }
   
@@ -66,7 +125,18 @@ export function requiresProPlusForFlavors(maxFlavors: number): boolean {
   return maxFlavors > 2;
 }
 
-// Labels in Portuguese for each feature
+// Labels in Portuguese for Pro features
+export const PRO_FEATURE_LABELS: Record<ProFeature, string> = {
+  dashboard: 'Painel de pedidos',
+  push_notifications: 'Notificações Push',
+  coupons: 'Cupons de desconto',
+  delivery_zones: 'Taxas por bairro',
+  business_hours_config: 'Configuração de horários',
+  appearance_settings: 'Personalização de aparência',
+  order_history: 'Histórico de pedidos',
+};
+
+// Labels in Portuguese for Pro+ features
 export const FEATURE_LABELS: Record<ProPlusFeature, string> = {
   pizza_3_4_flavors: 'Pizza com 3 ou 4 sabores',
   dynamic_selection_limits: 'Limites de seleção dinâmicos',
@@ -87,8 +157,15 @@ export const FEATURE_DESCRIPTIONS: Record<ProPlusFeature, string> = {
 };
 
 /**
+ * Generate WhatsApp message for Pro upgrade inquiry
+ */
+export function generateProUpgradeMessage(): string {
+  return 'Olá! Quero fazer upgrade para o Plano Pro (R$ 57/mês).';
+}
+
+/**
  * Generate WhatsApp message for Pro+ upgrade inquiry
  */
 export function generateProPlusUpgradeMessage(featureName?: string): string {
-  return 'Quero atualizar para o plano Pro+';
+  return 'Olá! Quero fazer upgrade para o Plano Pro+ (R$ 77/mês).';
 }

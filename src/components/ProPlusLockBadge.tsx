@@ -5,7 +5,7 @@ import {
   PRO_PLUS_FEATURES, 
   ProPlusFeature, 
   FEATURE_LABELS,
-  PRO_PLUS_PRICE,
+  PLAN_PRICES,
   generateProPlusUpgradeMessage 
 } from '@/lib/featureGating';
 import { openWhatsApp, SUPPORT_WHATSAPP } from '@/lib/whatsapp';
@@ -106,7 +106,7 @@ export function ProPlusUpgradeCard({ feature }: ProPlusUpgradeCardProps) {
         <div className="bg-primary/5 rounded-lg p-3 mb-4">
           <p className="text-xs text-muted-foreground">Plano Pro+</p>
           <p className="text-2xl font-bold text-primary">
-            R$ {PRO_PLUS_PRICE},00<span className="text-sm font-normal text-muted-foreground">/mês</span>
+            R$ {PLAN_PRICES.PRO_PLUS},00<span className="text-sm font-normal text-muted-foreground">/mês</span>
           </p>
         </div>
         
