@@ -176,16 +176,28 @@
   }
 
   /* Animated gradient background for landing page */
-  .animated-gradient-bg {
-    background: linear-gradient(-45deg, 
-      hsl(210 20% 98%),
-      hsl(201 58% 96%),
-      hsl(142 43% 96%),
-      hsl(210 20% 98%)
-    );
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-  }
+.animated-gradient-bg {
+  background: linear-gradient(-45deg, 
+    hsl(210 20% 98%),
+    hsl(201 58% 96%),
+    hsl(142 43% 96%),
+    hsl(210 20% 98%)
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* Dark mode support for animated gradient */
+.dark .animated-gradient-bg {
+  background: linear-gradient(-45deg, 
+    hsl(215 25% 10%),
+    hsl(201 40% 12%),
+    hsl(142 30% 11%),
+    hsl(215 25% 10%)
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
 
   /* Floating icon animation for background */
   .floating-icon {
