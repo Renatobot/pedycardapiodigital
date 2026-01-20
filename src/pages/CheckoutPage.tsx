@@ -23,6 +23,7 @@ import { isEstablishmentActive } from '@/lib/utils';
 import { BusinessHour, BusinessStatus, checkBusinessStatus, getScheduledOrderMessage, getAvailableScheduleSlots, ScheduleSlot } from '@/lib/businessHours';
 import { hexToHsl } from '@/lib/colors';
 import { CustomerPushPrompt } from '@/components/CustomerPushPrompt';
+import { PostOrderPrompt } from '@/components/PostOrderPrompt';
 import { useCustomer } from '@/hooks/useCustomer';
 
 interface PublicEstablishment {
@@ -93,6 +94,15 @@ function CheckoutContent() {
   // Push notification prompt state
   const [showPushPrompt, setShowPushPrompt] = useState(false);
   const [orderEstablishmentId, setOrderEstablishmentId] = useState('');
+  
+  // Post order prompt state
+  const [showPostOrderPrompt, setShowPostOrderPrompt] = useState(false);
+  
+  // Registration info for the order
+  const [orderRegistrationInfo, setOrderRegistrationInfo] = useState({
+    isRegistered: false,
+    orderCount: 0,
+  });
   
   const [formData, setFormData] = useState({
     customerName: '',
@@ -546,6 +556,27 @@ function CheckoutContent() {
         }
       }
       
+      // Calcular se cliente está cadastrado e quantos pedidos anteriores tem
+      const isRegisteredCustomer = !!customer?.id;
+      let customerOrderCount = 0;
+      
+      if (isRegisteredCustomer && customer?.id) {
+        // Buscar contagem de pedidos anteriores deste cliente
+        const { count } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('customer_id', customer.id)
+          .eq('establishment_id', establishment.id);
+        
+        customerOrderCount = count || 0;
+      }
+      
+      // Salvar info para o prompt e mensagem
+      setOrderRegistrationInfo({
+        isRegistered: isRegisteredCustomer,
+        orderCount: customerOrderCount,
+      });
+      
       const { error } = await supabase
         .from('orders')
         .insert({
@@ -569,6 +600,8 @@ function CheckoutContent() {
           scheduled_date: scheduledDate,
           scheduled_time: scheduledTime,
           customer_id: customer?.id || null,
+          is_registered_customer: isRegisteredCustomer,
+          customer_order_count: customerOrderCount,
         });
 
       if (error) {
@@ -635,20 +668,38 @@ function CheckoutContent() {
       formData.observations,
       isScheduledOrderFinal,
       scheduledMessage || undefined,
-      scheduledDateTimeForMessage
+      scheduledDateTimeForMessage,
+      orderRegistrationInfo.isRegistered,
+      orderRegistrationInfo.orderCount
     );
 
     openWhatsApp(contact.whatsapp, message);
     clearCart();
+    
+    // Incrementar contador de pedidos no localStorage (para banner no carrinho)
+    const normalizedPhone = formData.customerPhone.replace(/\D/g, '') || 'anonymous';
+    const orderCountKey = `pedy_order_count_${establishment.id}_${normalizedPhone}`;
+    const currentCount = parseInt(localStorage.getItem(orderCountKey) || '0', 10);
+    localStorage.setItem(orderCountKey, String(currentCount + 1));
     
     toast({
       title: 'Pedido enviado!',
       description: 'Seu pedido foi enviado para o WhatsApp do estabelecimento.',
     });
 
-    // Show push notification prompt after successful order
-    if (formData.customerPhone && establishment) {
+    // Show post order prompt
+    if (establishment) {
       setOrderEstablishmentId(establishment.id);
+      setShowPostOrderPrompt(true);
+    } else {
+      navigate(`/${slug || id}`);
+    }
+  };
+
+  const handlePostOrderClose = () => {
+    setShowPostOrderPrompt(false);
+    // Se tem telefone, mostrar push prompt; caso contrário, voltar
+    if (formData.customerPhone && orderEstablishmentId) {
       setShowPushPrompt(true);
     } else {
       navigate(`/${slug || id}`);
@@ -1302,6 +1353,21 @@ function CheckoutContent() {
           </Button>
         )}
       </div>
+
+      {/* Post Order Prompt */}
+      <PostOrderPrompt
+        isOpen={showPostOrderPrompt}
+        onClose={handlePostOrderClose}
+        isRegistered={orderRegistrationInfo.isRegistered}
+        onRegister={() => {
+          setShowPostOrderPrompt(false);
+          navigate(`/${slug || id}?register=true`);
+        }}
+        onViewOrders={() => {
+          setShowPostOrderPrompt(false);
+          navigate(`/${slug || id}?profile=true`);
+        }}
+      />
 
       {/* Push Notification Prompt */}
       <CustomerPushPrompt

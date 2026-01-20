@@ -51,6 +51,8 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { FavoritesSection } from '@/components/FavoritesSection';
 import CustomerProfileModal from '@/components/CustomerProfileModal';
 import CustomerIdentificationModal from '@/components/CustomerIdentificationModal';
+import { WelcomeRegistrationPrompt } from '@/components/WelcomeRegistrationPrompt';
+import { CartRegistrationBanner } from '@/components/CartRegistrationBanner';
 
 interface PublicEstablishment {
   id: string;
@@ -620,6 +622,8 @@ function ProductDetailSheet({
 function CartSheet({ isAnimating }: { isAnimating: boolean }) {
   const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { id, slug } = useParams();
+  const { customer, isLoggedIn } = useCustomer();
+  const [showIdentificationModal, setShowIdentificationModal] = useState(false);
 
   // Dynamic height based on item count
   const getSheetHeight = () => {
@@ -627,6 +631,10 @@ function CartSheet({ isAnimating }: { isAnimating: boolean }) {
     if (itemCount <= 2) return 'h-[55vh]';
     if (itemCount <= 4) return 'h-[70vh]';
     return 'h-[85vh]';
+  };
+
+  const handleRegisterFromCart = () => {
+    setShowIdentificationModal(true);
   };
 
   return (
@@ -674,6 +682,14 @@ function CartSheet({ isAnimating }: { isAnimating: boolean }) {
           </div>
         ) : (
           <>
+            {/* Banner de incentivo ao cadastro - aparece a partir da 2ª compra */}
+            <CartRegistrationBanner
+              establishmentId={id || ''}
+              customerPhone=""
+              isLoggedIn={isLoggedIn}
+              onRegister={handleRegisterFromCart}
+            />
+            
             <div className="space-y-4 overflow-auto max-h-[calc(85vh-200px)]">
               {items.map((item, index) => {
                 const additionsTotal = item.selectedAdditions.reduce((a, b) => a + b.price, 0);
@@ -779,6 +795,13 @@ function CartSheet({ isAnimating }: { isAnimating: boolean }) {
           </>
         )}
       </SheetContent>
+      
+      {/* Modal de identificação quando clica no banner */}
+      <CustomerIdentificationModal
+        open={showIdentificationModal}
+        onOpenChange={setShowIdentificationModal}
+        establishmentName=""
+      />
     </Sheet>
   );
 }
@@ -1440,6 +1463,16 @@ function MenuContent() {
         onOpenChange={setShowIdentificationModal}
         establishmentName={establishment?.name || ''}
       />
+      
+      {/* Welcome Registration Prompt - 1ª visita */}
+      {establishment?.id && (
+        <WelcomeRegistrationPrompt
+          establishmentId={establishment.id}
+          isLoggedIn={isLoggedIn}
+          onRegister={() => setShowIdentificationModal(true)}
+          onSkip={() => {}}
+        />
+      )}
     </div>
   );
 }

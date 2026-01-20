@@ -72,6 +72,8 @@ interface Order {
   items: OrderItem[];
   created_at: string;
   delivery_type?: string;
+  is_registered_customer?: boolean;
+  customer_order_count?: number;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -602,10 +604,22 @@ export function OrderManagement({ establishmentId, establishmentName, notifyCust
               </div>
               {/* Customer info */}
               {order.customer_name && (
-                <p className="text-sm font-medium text-foreground flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  {order.customer_name}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {order.customer_name}
+                  </p>
+                  {/* Badge de cliente cadastrado/não cadastrado */}
+                  {order.is_registered_customer ? (
+                    <Badge className="bg-green-100 text-green-700 border-green-200 text-xs px-1.5 py-0">
+                      🟢 Cadastrado {order.customer_order_count ? `(${order.customer_order_count})` : ''}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground border-muted text-xs px-1.5 py-0">
+                      Sem cadastro
+                    </Badge>
+                  )}
+                </div>
               )}
               {order.customer_phone && (
                 <div className="flex items-center gap-1">

@@ -24,11 +24,20 @@ export function generateOrderMessage(
   observations?: string,
   isScheduledOrder: boolean = false,
   scheduledOrderMessage?: string,
-  scheduledDateTime?: { date: string; time: string }
+  scheduledDateTime?: { date: string; time: string },
+  isRegisteredCustomer: boolean = false,
+  customerOrderCount: number = 0
 ): string {
   const total = subtotal + deliveryFee - discountValue;
   
   let message = `🛒 *NOVO PEDIDO - ${establishmentName}*\n\n`;
+  
+  // Indicador de cliente cadastrado
+  if (isRegisteredCustomer) {
+    message += `🟢 *Cliente cadastrado* (${customerOrderCount} ${customerOrderCount === 1 ? 'pedido anterior' : 'pedidos anteriores'})\n\n`;
+  } else {
+    message += `🔴 *Cliente sem cadastro*\n\n`;
+  }
   message += `👤 *Cliente:* ${customerName}\n`;
   
   if (deliveryType === 'pickup') {
