@@ -898,6 +898,24 @@ function MenuContent() {
     backgroundColor: '#ffffff'
   } : null);
 
+  // Atualizar meta tags do iOS imediatamente quando dados do estabelecimento chegarem
+  // Isso garante que as meta tags estejam prontas ANTES do PWAInstallPrompt montar
+  useEffect(() => {
+    if (establishment?.name) {
+      const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appleTitle) {
+        appleTitle.setAttribute('content', establishment.name);
+      }
+      
+      if (establishment.logo_url) {
+        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleIcon) {
+          appleIcon.setAttribute('href', establishment.logo_url);
+        }
+      }
+    }
+  }, [establishment?.name, establishment?.logo_url]);
+
   // Avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
@@ -1443,10 +1461,13 @@ function MenuContent() {
       </main>
       
       <CartSheet isAnimating={cartAnimating} />
-      <PWAInstallPrompt 
-        establishmentName={establishment?.name}
-        establishmentLogo={establishment?.logo_url}
-      />
+      {/* Só renderizar PWAInstallPrompt após establishment carregar */}
+      {establishment?.name && (
+        <PWAInstallPrompt 
+          establishmentName={establishment.name}
+          establishmentLogo={establishment.logo_url}
+        />
+      )}
       
       {/* Customer Profile Modal */}
       <CustomerProfileModal
