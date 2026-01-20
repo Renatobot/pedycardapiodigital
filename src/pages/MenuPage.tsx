@@ -49,6 +49,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useCustomer } from '@/hooks/useCustomer';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { FavoritesSection } from '@/components/FavoritesSection';
+import CustomerProfileModal from '@/components/CustomerProfileModal';
 import CustomerIdentificationModal from '@/components/CustomerIdentificationModal';
 
 interface PublicEstablishment {
@@ -801,6 +802,11 @@ function MenuContent() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cartAnimating, setCartAnimating] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showIdentificationModal, setShowIdentificationModal] = useState(false);
+  
+  // Customer hook for profile access
+  const { customer, isLoggedIn } = useCustomer();
   
   // Refs for intersection observer
   const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -1145,8 +1151,32 @@ function MenuContent() {
       {/* Header - Redesigned */}
       <div className="bg-menu-gradient text-white p-4 pb-6">
         <div className="container">
-          {/* Theme Toggle in top right */}
-          <div className="flex justify-end">
+          {/* Top bar with theme toggle and profile */}
+          <div className="flex justify-between items-center">
+            {/* Profile button */}
+            {isLoggedIn ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowProfileModal(true)}
+                className="text-white hover:bg-white/20 gap-2"
+              >
+                <User className="h-5 w-5" />
+                <span className="text-sm max-w-[100px] truncate">{customer?.name?.split(' ')[0]}</span>
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowIdentificationModal(true)}
+                className="text-white hover:bg-white/20 gap-1"
+              >
+                <User className="h-4 w-4" />
+                <span className="text-sm">Entrar</span>
+              </Button>
+            )}
+            
+            {/* Theme toggle */}
             {mounted && (
               <Button
                 variant="ghost"
@@ -1394,6 +1424,20 @@ function MenuContent() {
       <PWAInstallPrompt 
         establishmentName={establishment?.name}
         establishmentLogo={establishment?.logo_url}
+      />
+      
+      {/* Customer Profile Modal */}
+      <CustomerProfileModal
+        open={showProfileModal}
+        onOpenChange={setShowProfileModal}
+        establishmentId={establishment?.id}
+      />
+      
+      {/* Customer Identification Modal */}
+      <CustomerIdentificationModal
+        open={showIdentificationModal}
+        onOpenChange={setShowIdentificationModal}
+        establishmentName={establishment?.name || ''}
       />
     </div>
   );
