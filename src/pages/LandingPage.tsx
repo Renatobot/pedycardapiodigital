@@ -133,7 +133,6 @@ const testimonials = [
     name: 'Carlos Silva',
     business: 'Pizzaria Bella Napoli',
     city: 'São Paulo, SP',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos&backgroundColor=4A9BD9',
     text: 'Antes eu anotava tudo no papel e sempre dava confusão. Com o PEDY, os pedidos chegam certinhos no WhatsApp. Meus clientes adoram!',
     rating: 5,
   },
@@ -141,7 +140,6 @@ const testimonials = [
     name: 'Ana Paula Ferreira',
     business: 'Açaí da Praia',
     city: 'Rio de Janeiro, RJ',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AnaPaula&backgroundColor=4CAF50',
     text: 'Em uma semana já vi o resultado. Os clientes pedem sozinhos pelo cardápio e não preciso ficar respondendo um por um. Tempo é dinheiro!',
     rating: 5,
   },
@@ -149,7 +147,6 @@ const testimonials = [
     name: 'Roberto Mendes',
     business: 'Burger House',
     city: 'Belo Horizonte, MG',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto&backgroundColor=FF9800',
     text: 'O sistema de cupons e taxa por bairro me ajudou a organizar as entregas. Recomendo para qualquer lanchonete que quer crescer.',
     rating: 5,
   },
@@ -157,7 +154,6 @@ const testimonials = [
     name: 'Juliana Costa',
     business: 'Marmitaria Sabor Caseiro',
     city: 'Curitiba, PR',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Juliana&backgroundColor=E91E63',
     text: 'Simples de usar e meus clientes aprenderam rápido. O QR Code na porta do restaurante traz pedidos todo dia!',
     rating: 5,
   },
@@ -165,7 +161,6 @@ const testimonials = [
     name: 'Marcos Oliveira',
     business: 'Pet Shop Amigo Fiel',
     city: 'Brasília, DF',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcos&backgroundColor=9C27B0',
     text: 'Nem imaginava que um pet shop poderia usar cardápio digital. Agora meus clientes pedem ração e produtos pelo celular. Revolucionou meu negócio!',
     rating: 5,
   },
@@ -173,7 +168,6 @@ const testimonials = [
     name: 'Fernanda Lima',
     business: 'Doceria Doce Mel',
     city: 'Salvador, BA',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Fernanda&backgroundColor=F44336',
     text: 'O suporte é incrível! Me ajudaram a configurar tudo em minutos. Agora recebo encomendas de bolos e doces organizadas direto no WhatsApp.',
     rating: 5,
   },
@@ -601,11 +595,16 @@ export default function LandingPage() {
                 <CarouselContent className="-ml-4">
                   {testimonials.map((testimonial, index) => (
                     <CarouselItem key={index} className="pl-4 md:basis-1/2">
-                      <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-border hover:shadow-xl transition-all duration-300 h-full group">
-                        {/* Quote icon decorative */}
-                        <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                          <Quote className="w-8 h-8 text-primary" />
+                      <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-border hover:shadow-xl transition-all duration-300 h-full group relative">
+                        {/* Quote icon decorative - large */}
+                        <div className="text-primary/20 text-5xl font-serif leading-none mb-2 group-hover:text-primary/30 transition-colors">
+                          ❝
                         </div>
+                        
+                        {/* Testimonial text */}
+                        <p className="text-foreground mb-4 italic leading-relaxed">
+                          "{testimonial.text}"
+                        </p>
                         
                         {/* Rating */}
                         <div className="flex items-center gap-1 mb-4">
@@ -614,24 +613,11 @@ export default function LandingPage() {
                           ))}
                         </div>
                         
-                        {/* Testimonial text */}
-                        <p className="text-foreground mb-6 italic leading-relaxed">
-                          "{testimonial.text}"
-                        </p>
-                        
-                        {/* Author info with avatar */}
-                        <div className="flex items-center gap-4 border-t border-border pt-4">
-                          <Avatar className="w-12 h-12 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
-                            <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                            <AvatarFallback className="bg-primary/20 text-primary font-semibold">
-                              {testimonial.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold text-foreground">{testimonial.name}</p>
-                            <p className="text-sm text-primary font-medium">{testimonial.business}</p>
-                            <p className="text-xs text-muted-foreground">{testimonial.city}</p>
-                          </div>
+                        {/* Author info - text only */}
+                        <div className="border-t border-border pt-4">
+                          <p className="font-bold text-foreground">{testimonial.name}</p>
+                          <p className="text-sm text-primary font-medium">{testimonial.business}</p>
+                          <p className="text-xs text-muted-foreground">{testimonial.city}</p>
                         </div>
                       </div>
                     </CarouselItem>
