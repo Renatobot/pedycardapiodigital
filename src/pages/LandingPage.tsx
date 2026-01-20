@@ -159,7 +159,7 @@ const segments = [
 
 const comparison = [
   { feature: 'Taxa por pedido', pedy: 'R$ 0,00', others: '12% a 27%' },
-  { feature: 'Mensalidade', pedy: 'R$ 37,00', others: 'R$ 100+' },
+  { feature: 'Mensalidade', pedy: 'Planos acessíveis', others: 'R$ 100+' },
   { feature: 'Pedidos ilimitados', pedy: true, others: false },
   { feature: 'Contato direto com cliente', pedy: true, others: false },
   { feature: 'Cardápio personalizado', pedy: true, others: false },
@@ -185,7 +185,7 @@ const faqs = [
   },
   {
     question: 'O que acontece após os 7 dias de teste?',
-    answer: 'Você pode escolher assinar o plano PRO por R$ 37/mês ou seu cardápio será pausado.',
+    answer: 'Você escolhe o plano ideal para seu negócio ou seu cardápio será pausado até a ativação.',
   },
   {
     question: 'Posso cancelar a qualquer momento?',
@@ -252,6 +252,21 @@ export default function LandingPage() {
             <p className="text-sm text-muted-foreground">
               ✓ 7 dias grátis • ✓ Sem cartão de crédito • ✓ Cancele quando quiser
             </p>
+            
+            <div className="flex flex-wrap justify-center gap-3 mt-4">
+              {[
+                'Sem taxa por pedido',
+                'Planos acessíveis', 
+                'Templates prontos por nicho',
+              ].map((badge, index) => (
+                <span 
+                  key={index}
+                  className="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-medium"
+                >
+                  ✓ {badge}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -548,43 +563,45 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Por que escolher o PEDY */}
       <section className="py-16 bg-card">
         <div className="container">
-          <div className="max-w-md mx-auto">
-            <div className="bg-background rounded-3xl shadow-xl overflow-hidden border border-border">
-              <div className="bg-gradient-hero p-6 text-center">
-                <h3 className="text-2xl font-bold text-primary-foreground mb-1">Plano Pro</h3>
-                <p className="text-primary-foreground/80 text-sm">Tudo incluso. Sem taxas escondidas. Sem surpresas.</p>
-              </div>
-              
-              <div className="p-6">
-                <div className="text-center mb-6">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-sm text-muted-foreground">R$</span>
-                    <span className="text-5xl font-bold text-foreground">37</span>
-                    <span className="text-muted-foreground">/mês</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Teste grátis por 7 dias. Sem cartão.
-                  </p>
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Por que escolher o PEDY?
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Tudo que você precisa para vender mais, sem complicação
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { icon: '💰', text: 'Sem taxa por pedido' },
+                { icon: '📱', text: 'Planos acessíveis' },
+                { icon: '🎁', text: '7 dias grátis' },
+                { icon: '💳', text: 'Sem cartão no teste' },
+                { icon: '❌', text: 'Cancele quando quiser' },
+                { icon: '📋', text: 'Templates prontos por nicho' },
+              ].map((item, index) => (
+                <div 
+                  key={index}
+                  className="bg-background rounded-xl p-4 text-center border border-border shadow-soft hover:shadow-lg transition-all duration-300"
+                >
+                  <span className="text-2xl mb-2 block">{item.icon}</span>
+                  <span className="text-sm font-medium text-foreground">{item.text}</span>
                 </div>
-                
-                <ul className="space-y-3 mb-6">
-                  {benefits.map((benefit, index) => (
-                    <li key={index} className="flex items-center gap-3 text-foreground">
-                      <CheckCircle2 className="w-5 h-5 text-secondary flex-shrink-0" />
-                      <span>{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link to="/cadastro" className="block">
-                  <Button variant="hero" size="lg" className="w-full">
-                    Criar meu cardápio grátis
-                  </Button>
-                </Link>
-              </div>
+              ))}
+            </div>
+            
+            <div className="text-center">
+              <Link to="/cadastro">
+                <Button variant="hero" size="xl">
+                  Criar meu cardápio grátis agora
+                  <ArrowRight className="w-5 h-5 ml-1" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
