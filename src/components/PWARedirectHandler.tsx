@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 // Helper para ler do Cache API (compartilhado Safari <-> PWA no iOS)
 const getStartUrlFromCacheAPI = async (): Promise<string | null> => {
@@ -97,6 +98,57 @@ const getStartUrlFromIndexedDB = (): Promise<string | null> => {
   });
 };
 
+// Detectar tipo de usuário autenticado
+const detectUserType = async (userId: string): Promise<'admin' | 'reseller' | 'merchant' | null> => {
+  try {
+    // Verificar se é admin ou reseller via user_roles
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (userRole?.role === 'admin') {
+      console.log('[PWA Redirect] User is admin');
+      return 'admin';
+    }
+    
+    if (userRole?.role === 'reseller') {
+      console.log('[PWA Redirect] User is reseller');
+      return 'reseller';
+    }
+    
+    // Verificar se é reseller pela tabela resellers
+    const { data: reseller } = await supabase
+      .from('resellers')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (reseller) {
+      console.log('[PWA Redirect] User is reseller (from resellers table)');
+      return 'reseller';
+    }
+    
+    // Verificar se é lojista pela tabela establishments
+    const { data: establishment } = await supabase
+      .from('establishments')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (establishment) {
+      console.log('[PWA Redirect] User is merchant');
+      return 'merchant';
+    }
+    
+    return null;
+  } catch (e) {
+    console.log('[PWA Redirect] Error detecting user type:', e);
+    return null;
+  }
+};
+
 export function PWARedirectHandler() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -109,21 +161,56 @@ export function PWARedirectHandler() {
       
       console.log('[PWA Redirect] Checking... standalone:', isStandalone, 'path:', location.pathname);
       
-      // Só redirecionar se estiver em standalone E na raiz
+      // Só processar se estiver em standalone E na raiz
       if (!isStandalone || location.pathname !== '/') {
         return;
       }
 
+      // PRIORIDADE 1: Verificar sessão ativa e redirecionar por tipo de usuário
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const userType = await detectUserType(session.user.id);
+          
+          if (userType === 'admin') {
+            console.log('[PWA Redirect] Redirecting admin to /admin/dashboard');
+            navigate('/admin/dashboard', { replace: true });
+            return;
+          }
+          
+          if (userType === 'reseller') {
+            console.log('[PWA Redirect] Redirecting reseller to /revendedor');
+            navigate('/revendedor', { replace: true });
+            return;
+          }
+          
+          if (userType === 'merchant') {
+            console.log('[PWA Redirect] Redirecting merchant to /dashboard');
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+          
+          // Usuário autenticado mas sem role específico - vai pro dashboard
+          console.log('[PWA Redirect] Authenticated user without specific role, going to /dashboard');
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      } catch (e) {
+        console.log('[PWA Redirect] Error checking session:', e);
+      }
+
+      // PRIORIDADE 2: Buscar URL salva (para clientes acessando cardápios)
       let redirectUrl: string | null = null;
       let source = '';
 
-      // 1. Tentar localStorage primeiro (funciona bem em Android/Desktop)
+      // 2.1 Tentar localStorage primeiro (funciona bem em Android/Desktop)
       redirectUrl = localStorage.getItem('pwa-start-url');
       if (redirectUrl && redirectUrl !== '/') {
         source = 'localStorage';
       }
 
-      // 2. Verificar se há um parâmetro na URL (fallback)
+      // 2.2 Verificar se há um parâmetro na URL (fallback)
       if (!redirectUrl) {
         const urlParams = new URLSearchParams(window.location.search);
         const returnTo = urlParams.get('returnTo');
@@ -133,7 +220,7 @@ export function PWARedirectHandler() {
         }
       }
 
-      // 3. Verificar sessionStorage como fallback
+      // 2.3 Verificar sessionStorage como fallback
       if (!redirectUrl) {
         const sessionUrl = sessionStorage.getItem('pwa-last-menu');
         if (sessionUrl && sessionUrl !== '/') {
@@ -142,7 +229,7 @@ export function PWARedirectHandler() {
         }
       }
 
-      // 4. IMPORTANTE: Tentar Cache API (compartilhado entre Safari e PWA no iOS)
+      // 2.4 Tentar Cache API (compartilhado entre Safari e PWA no iOS)
       if (!redirectUrl) {
         redirectUrl = await getStartUrlFromCacheAPI();
         if (redirectUrl) {
@@ -150,7 +237,7 @@ export function PWARedirectHandler() {
         }
       }
 
-      // 5. Tentar via Service Worker message
+      // 2.5 Tentar via Service Worker message
       if (!redirectUrl) {
         redirectUrl = await getStartUrlFromServiceWorker();
         if (redirectUrl) {
@@ -158,7 +245,7 @@ export function PWARedirectHandler() {
         }
       }
 
-      // 6. Último fallback: IndexedDB
+      // 2.6 Último fallback: IndexedDB
       if (!redirectUrl) {
         redirectUrl = await getStartUrlFromIndexedDB();
         if (redirectUrl) {
@@ -170,9 +257,12 @@ export function PWARedirectHandler() {
       if (redirectUrl && redirectUrl !== '/' && redirectUrl !== location.pathname) {
         console.log('[PWA Redirect] Redirecting to:', redirectUrl, 'from:', source);
         navigate(redirectUrl, { replace: true });
-      } else {
-        console.log('[PWA Redirect] No valid redirect URL found');
+        return;
       }
+
+      // PRIORIDADE 3: Sem sessão e sem URL salva - sinalizar para mostrar PWAEntryScreen
+      console.log('[PWA Redirect] No session or saved URL, setting PWA entry flag');
+      localStorage.setItem('pwa-show-entry-screen', 'true');
     };
 
     performRedirect();
