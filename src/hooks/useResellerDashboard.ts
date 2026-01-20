@@ -93,7 +93,7 @@ export function useResellerDashboard() {
         .from('resellers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (resellerError || !resellerData) {
         setError('Você não é um revendedor registrado');

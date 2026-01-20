@@ -139,8 +139,11 @@ Deno.serve(async (req) => {
 
     if (action === 'update_reseller') {
       const { reseller_id, ...updates } = body;
-      const { data, error } = await supabaseAdmin.from('resellers').update(updates).eq('id', reseller_id).select().single();
+      const { data, error } = await supabaseAdmin.from('resellers').update(updates).eq('id', reseller_id).select().maybeSingle();
       if (error) throw error;
+      if (!data) {
+        return new Response(JSON.stringify({ error: 'Revendedor não encontrado' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       return new Response(JSON.stringify({ success: true, reseller: data }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

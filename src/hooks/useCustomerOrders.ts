@@ -106,7 +106,7 @@ export function useCustomerOrders(customerId?: string, establishmentId?: string)
           .from('products')
           .select('id, name, price, available, image_url, description, category_id, establishment_id')
           .eq('id', item.product.id)
-          .single();
+          .maybeSingle();
 
         if (!product || !product.available) {
           toast({

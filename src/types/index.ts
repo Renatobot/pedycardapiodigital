@@ -38,6 +38,10 @@ export interface Product {
   image?: string;
   additions: ProductAddition[];
   available: boolean;
+  is_promotional?: boolean;
+  original_price?: number;
+  promotional_price?: number;
+  subject_to_availability?: boolean;
 }
 
 export interface SelectedProductOption {

@@ -162,9 +162,10 @@ export function CouponManagement({ establishmentId }: CouponManagementProps) {
           .from('discount_codes')
           .insert(couponData)
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error('Falha ao criar cupom');
         setCoupons(prev => [data as DiscountCode, ...prev]);
         toast({ title: 'Cupom criado!' });
       }
