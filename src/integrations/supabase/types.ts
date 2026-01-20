@@ -530,6 +530,88 @@ export type Database = {
         }
         Relationships: []
       }
+      establishment_referrals: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          credit_applied_at: string | null
+          credit_status: string | null
+          id: string
+          plan_type: string
+          plan_value: number
+          referred_id: string
+          referred_name: string | null
+          referrer_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          credit_applied_at?: string | null
+          credit_status?: string | null
+          id?: string
+          plan_type: string
+          plan_value: number
+          referred_id: string
+          referred_name?: string | null
+          referrer_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          credit_applied_at?: string | null
+          credit_status?: string | null
+          id?: string
+          plan_type?: string
+          plan_value?: number
+          referred_id?: string
+          referred_name?: string | null
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           accept_cash: boolean | null
@@ -559,6 +641,7 @@ export type Database = {
           min_order_value: number | null
           name: string
           notify_customer_on_status_change: boolean | null
+          own_referral_code: string | null
           pix_key: string | null
           plan_expires_at: string | null
           plan_status: string
@@ -566,6 +649,8 @@ export type Database = {
           primary_color: string | null
           pro_plus_activated_at: string | null
           referral_code: string | null
+          referral_credit: number | null
+          referred_by_establishment_id: string | null
           reseller_id: string | null
           scheduled_orders_message: string | null
           secondary_color: string | null
@@ -605,6 +690,7 @@ export type Database = {
           min_order_value?: number | null
           name: string
           notify_customer_on_status_change?: boolean | null
+          own_referral_code?: string | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
@@ -612,6 +698,8 @@ export type Database = {
           primary_color?: string | null
           pro_plus_activated_at?: string | null
           referral_code?: string | null
+          referral_credit?: number | null
+          referred_by_establishment_id?: string | null
           reseller_id?: string | null
           scheduled_orders_message?: string | null
           secondary_color?: string | null
@@ -651,6 +739,7 @@ export type Database = {
           min_order_value?: number | null
           name?: string
           notify_customer_on_status_change?: boolean | null
+          own_referral_code?: string | null
           pix_key?: string | null
           plan_expires_at?: string | null
           plan_status?: string
@@ -658,6 +747,8 @@ export type Database = {
           primary_color?: string | null
           pro_plus_activated_at?: string | null
           referral_code?: string | null
+          referral_credit?: number | null
+          referred_by_establishment_id?: string | null
           reseller_id?: string | null
           scheduled_orders_message?: string | null
           secondary_color?: string | null
@@ -670,6 +761,27 @@ export type Database = {
           whatsapp?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "establishments_referred_by_establishment_id_fkey"
+            columns: ["referred_by_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_referred_by_establishment_id_fkey"
+            columns: ["referred_by_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "public_establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_referred_by_establishment_id_fkey"
+            columns: ["referred_by_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_establishments_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "establishments_reseller_id_fkey"
             columns: ["reseller_id"]
@@ -1568,6 +1680,14 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_verifications: { Args: never; Returns: undefined }
+      get_establishment_by_referral_code: {
+        Args: { code: string }
+        Returns: {
+          id: string
+          name: string
+          plan_status: string
+        }[]
+      }
       get_establishment_contact: {
         Args: { establishment_id: string }
         Returns: {
