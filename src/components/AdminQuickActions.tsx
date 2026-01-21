@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Download, RefreshCw, Calendar } from 'lucide-react';
+import { AlertTriangle, Download, RefreshCw, Calendar, Archive, Loader2 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import JSZip from 'jszip';
 
 interface Establishment {
   id: string;
@@ -22,9 +24,52 @@ interface AdminQuickActionsProps {
   lastUpdate: Date | null;
 }
 
+const BACKUP_TABLES = [
+  { name: 'establishments', label: 'Estabelecimentos' },
+  { name: 'categories', label: 'Categorias' },
+  { name: 'products', label: 'Produtos' },
+  { name: 'product_additions', label: 'Adicionais' },
+  { name: 'product_option_groups', label: 'Grupos de Opções' },
+  { name: 'product_options', label: 'Opções' },
+  { name: 'orders', label: 'Pedidos' },
+  { name: 'customers', label: 'Clientes' },
+  { name: 'customer_addresses', label: 'Endereços de Clientes' },
+  { name: 'resellers', label: 'Revendedores' },
+  { name: 'reseller_activations', label: 'Ativações de Revendedores' },
+  { name: 'delivery_zones', label: 'Zonas de Entrega' },
+  { name: 'discount_codes', label: 'Cupons de Desconto' },
+  { name: 'business_hours', label: 'Horários de Funcionamento' },
+  { name: 'automatic_promotions', label: 'Promoções Automáticas' },
+  { name: 'establishment_referrals', label: 'Indicações' },
+];
+
+function convertToCSV(data: Record<string, unknown>[]): string {
+  if (!data || data.length === 0) return '';
+  
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(',')];
+  
+  for (const row of data) {
+    const values = headers.map(header => {
+      const value = row[header];
+      if (value === null || value === undefined) return '';
+      if (typeof value === 'object') return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+      const stringValue = String(value);
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    });
+    csvRows.push(values.join(','));
+  }
+  
+  return csvRows.join('\n');
+}
+
 export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: AdminQuickActionsProps) {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
 
   // Calculate trials expiring soon (within 3 days)
   const expiringTrials = establishments.filter(est => {
@@ -89,6 +134,84 @@ export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: Adm
     });
   };
 
+  const exportFullBackup = async () => {
+    setIsExportingBackup(true);
+    
+    try {
+      const zip = new JSZip();
+      const dateStr = new Date().toISOString().split('T')[0];
+      const folder = zip.folder(`backup_pedy_${dateStr}`);
+      
+      if (!folder) {
+        throw new Error('Erro ao criar pasta do backup');
+      }
+
+      let totalRecords = 0;
+      const results: { table: string; count: number }[] = [];
+
+      for (const table of BACKUP_TABLES) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (supabase as any)
+            .from(table.name)
+            .select('*')
+            .limit(10000);
+
+          if (error) {
+            console.warn(`Erro ao exportar ${table.name}:`, error.message);
+            results.push({ table: table.label, count: 0 });
+            continue;
+          }
+
+          if (data && data.length > 0) {
+            const csv = convertToCSV(data as Record<string, unknown>[]);
+            folder.file(`${table.name}.csv`, csv);
+            totalRecords += data.length;
+            results.push({ table: table.label, count: data.length });
+          } else {
+            folder.file(`${table.name}.csv`, '');
+            results.push({ table: table.label, count: 0 });
+          }
+        } catch (err) {
+          console.warn(`Erro ao processar ${table.name}:`, err);
+          results.push({ table: table.label, count: 0 });
+        }
+      }
+
+      // Generate summary file
+      const summary = [
+        `Backup PEDY - ${dateStr}`,
+        `Total de registros: ${totalRecords}`,
+        '',
+        'Detalhes por tabela:',
+        ...results.map(r => `- ${r.table}: ${r.count} registros`)
+      ].join('\n');
+      
+      folder.file('_resumo.txt', summary);
+
+      // Generate and download ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `backup_pedy_${dateStr}.zip`;
+      link.click();
+
+      toast({
+        title: 'Backup completo!',
+        description: `${totalRecords} registros exportados de ${BACKUP_TABLES.length} tabelas.`,
+      });
+    } catch (error) {
+      console.error('Erro ao gerar backup:', error);
+      toast({
+        title: 'Erro no backup',
+        description: 'Não foi possível gerar o backup completo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingBackup(false);
+    }
+  };
+
   const totalAlerts = expiringTrials.length + expiringPlans.length;
 
   return (
@@ -130,6 +253,21 @@ export function AdminQuickActions({ establishments, onRefresh, lastUpdate }: Adm
               Atualizado: {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportFullBackup}
+            disabled={isExportingBackup}
+            className="border-emerald-600 text-emerald-300 hover:bg-emerald-700/30 flex-1 sm:flex-none"
+          >
+            {isExportingBackup ? (
+              <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+            ) : (
+              <Archive className="w-4 h-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">{isExportingBackup ? 'Gerando...' : 'Backup Completo'}</span>
+          </Button>
           
           <Button
             variant="outline"
