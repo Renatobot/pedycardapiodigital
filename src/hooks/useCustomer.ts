@@ -29,11 +29,23 @@ function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+function mapCustomer(data: any): Customer {
+  return {
+    id: data.id,
+    whatsapp: data.whatsapp,
+    name: data.name,
+    street: data.street || undefined,
+    number: data.number || undefined,
+    complement: data.complement || undefined,
+    neighborhood: data.neighborhood || undefined,
+    reference_point: data.reference_point || undefined,
+  };
+}
+
 export function useCustomer() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load from localStorage on init
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -46,121 +58,70 @@ export function useCustomer() {
     setLoading(false);
   }, []);
 
-  // Login by WhatsApp
-  const login = useCallback(async (whatsapp: string): Promise<{ success: boolean; customer?: Customer; error?: string }> => {
+  const login = useCallback(async (whatsapp: string) => {
     const normalizedPhone = normalizePhone(whatsapp);
-    
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('whatsapp', normalizedPhone)
-      .maybeSingle();
-
-    if (error) {
-      return { success: false, error: 'Erro ao buscar cadastro' };
-    }
-
-    if (data) {
-      const customerData: Customer = {
-        id: data.id,
-        whatsapp: data.whatsapp,
-        name: data.name,
-        street: data.street || undefined,
-        number: data.number || undefined,
-        complement: data.complement || undefined,
-        neighborhood: data.neighborhood || undefined,
-        reference_point: data.reference_point || undefined,
-      };
+    const { data, error } = await (supabase as any).rpc('customer_login', { _whatsapp: normalizedPhone });
+    if (error) return { success: false, error: 'Erro ao buscar cadastro' };
+    if (data && data.length > 0) {
+      const customerData = mapCustomer(data[0]);
       setCustomer(customerData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customerData));
       return { success: true, customer: customerData };
     }
-    
     return { success: false, error: 'Cadastro não encontrado. Verifique o número ou crie um novo cadastro.' };
   }, []);
 
-  // Register new customer
-  const register = useCallback(async (data: Omit<Customer, 'id'>): Promise<{ success: boolean; customer?: Customer; error?: string }> => {
+  const register = useCallback(async (data: Omit<Customer, 'id'>) => {
     const normalizedPhone = normalizePhone(data.whatsapp);
-    
-    const { data: newCustomer, error } = await supabase
-      .from('customers')
-      .insert({
-        whatsapp: normalizedPhone,
-        name: data.name,
-        street: data.street || null,
-        number: data.number || null,
-        complement: data.complement || null,
-        neighborhood: data.neighborhood || null,
-        reference_point: data.reference_point || null,
-      })
-      .select()
-      .single();
-
+    const { data: result, error } = await (supabase as any).rpc('customer_register', {
+      _whatsapp: normalizedPhone,
+      _name: data.name,
+      _street: data.street || null,
+      _number: data.number || null,
+      _complement: data.complement || null,
+      _neighborhood: data.neighborhood || null,
+      _reference_point: data.reference_point || null,
+    });
     if (error) {
-      if (error.code === '23505') { // Unique constraint violation
-        return { success: false, error: 'Este WhatsApp já está cadastrado. Tente fazer login.' };
-      }
+      if (error.code === '23505') return { success: false, error: 'Este WhatsApp já está cadastrado. Tente fazer login.' };
       return { success: false, error: 'Erro ao criar cadastro' };
     }
-
-    if (newCustomer) {
-      const customerData: Customer = {
-        id: newCustomer.id,
-        whatsapp: newCustomer.whatsapp,
-        name: newCustomer.name,
-        street: newCustomer.street || undefined,
-        number: newCustomer.number || undefined,
-        complement: newCustomer.complement || undefined,
-        neighborhood: newCustomer.neighborhood || undefined,
-        reference_point: newCustomer.reference_point || undefined,
-      };
+    if (result && result.length > 0) {
+      const customerData = mapCustomer(result[0]);
       setCustomer(customerData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customerData));
       return { success: true, customer: customerData };
     }
-    
     return { success: false, error: 'Erro desconhecido' };
   }, []);
 
-  // Update customer data
-  const updateCustomer = useCallback(async (updates: Partial<Omit<Customer, 'id' | 'whatsapp'>>): Promise<{ success: boolean; error?: string }> => {
-    if (!customer) {
-      return { success: false, error: 'Nenhum cliente logado' };
-    }
-
-    const { error } = await supabase
-      .from('customers')
-      .update(updates)
-      .eq('id', customer.id);
-
-    if (error) {
-      return { success: false, error: 'Erro ao atualizar cadastro' };
-    }
-
+  const updateCustomer = useCallback(async (updates: Partial<Omit<Customer, 'id' | 'whatsapp'>>) => {
+    if (!customer) return { success: false, error: 'Nenhum cliente logado' };
+    const { error } = await (supabase as any).rpc('customer_update', {
+      _id: customer.id,
+      _whatsapp: customer.whatsapp,
+      _name: updates.name ?? null,
+      _street: updates.street ?? null,
+      _number: updates.number ?? null,
+      _complement: updates.complement ?? null,
+      _neighborhood: updates.neighborhood ?? null,
+      _reference_point: updates.reference_point ?? null,
+    });
+    if (error) return { success: false, error: 'Erro ao atualizar cadastro' };
     const updatedCustomer = { ...customer, ...updates };
     setCustomer(updatedCustomer);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCustomer));
     return { success: true };
   }, [customer]);
 
-  // Get customer addresses
   const getAddresses = useCallback(async (): Promise<CustomerAddress[]> => {
     if (!customer) return [];
-
-    const { data, error } = await supabase
-      .from('customer_addresses')
-      .select('*')
-      .eq('customer_id', customer.id)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching addresses:', error);
-      return [];
-    }
-
-    return data.map(addr => ({
+    const { data, error } = await (supabase as any).rpc('get_customer_addresses', {
+      _customer_id: customer.id,
+      _whatsapp: customer.whatsapp,
+    });
+    if (error || !data) return [];
+    return data.map((addr: any) => ({
       id: addr.id,
       label: addr.label || 'Casa',
       street: addr.street,
@@ -172,39 +133,20 @@ export function useCustomer() {
     }));
   }, [customer]);
 
-  // Add new address
-  const addAddress = useCallback(async (address: Omit<CustomerAddress, 'id' | 'is_default'> & { is_default?: boolean }): Promise<{ success: boolean; address?: CustomerAddress; error?: string }> => {
-    if (!customer) {
-      return { success: false, error: 'Nenhum cliente logado' };
-    }
-
-    // If this is set as default, unset other defaults first
-    if (address.is_default) {
-      await supabase
-        .from('customer_addresses')
-        .update({ is_default: false })
-        .eq('customer_id', customer.id);
-    }
-
-    const { data, error } = await supabase
-      .from('customer_addresses')
-      .insert({
-        customer_id: customer.id,
-        label: address.label,
-        street: address.street,
-        number: address.number,
-        complement: address.complement || null,
-        neighborhood: address.neighborhood || null,
-        reference_point: address.reference_point || null,
-        is_default: address.is_default || false,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return { success: false, error: 'Erro ao adicionar endereço' };
-    }
-
+  const addAddress = useCallback(async (address: Omit<CustomerAddress, 'id' | 'is_default'> & { is_default?: boolean }) => {
+    if (!customer) return { success: false, error: 'Nenhum cliente logado' };
+    const { data, error } = await (supabase as any).rpc('add_customer_address', {
+      _customer_id: customer.id,
+      _whatsapp: customer.whatsapp,
+      _label: address.label,
+      _street: address.street,
+      _number: address.number,
+      _complement: address.complement || null,
+      _neighborhood: address.neighborhood || null,
+      _reference_point: address.reference_point || null,
+      _is_default: address.is_default || false,
+    });
+    if (error || !data) return { success: false, error: 'Erro ao adicionar endereço' };
     return {
       success: true,
       address: {
@@ -220,53 +162,35 @@ export function useCustomer() {
     };
   }, [customer]);
 
-  // Update address
-  const updateAddress = useCallback(async (addressId: string, updates: Partial<Omit<CustomerAddress, 'id'>>): Promise<{ success: boolean; error?: string }> => {
-    if (!customer) {
-      return { success: false, error: 'Nenhum cliente logado' };
-    }
-
-    // If setting as default, unset other defaults first
-    if (updates.is_default) {
-      await supabase
-        .from('customer_addresses')
-        .update({ is_default: false })
-        .eq('customer_id', customer.id);
-    }
-
-    const { error } = await supabase
-      .from('customer_addresses')
-      .update(updates)
-      .eq('id', addressId)
-      .eq('customer_id', customer.id);
-
-    if (error) {
-      return { success: false, error: 'Erro ao atualizar endereço' };
-    }
-
+  const updateAddress = useCallback(async (addressId: string, updates: Partial<Omit<CustomerAddress, 'id'>>) => {
+    if (!customer) return { success: false, error: 'Nenhum cliente logado' };
+    const { error } = await (supabase as any).rpc('update_customer_address', {
+      _address_id: addressId,
+      _customer_id: customer.id,
+      _whatsapp: customer.whatsapp,
+      _label: updates.label ?? null,
+      _street: updates.street ?? null,
+      _number: updates.number ?? null,
+      _complement: updates.complement ?? null,
+      _neighborhood: updates.neighborhood ?? null,
+      _reference_point: updates.reference_point ?? null,
+      _is_default: updates.is_default ?? null,
+    });
+    if (error) return { success: false, error: 'Erro ao atualizar endereço' };
     return { success: true };
   }, [customer]);
 
-  // Delete address
-  const deleteAddress = useCallback(async (addressId: string): Promise<{ success: boolean; error?: string }> => {
-    if (!customer) {
-      return { success: false, error: 'Nenhum cliente logado' };
-    }
-
-    const { error } = await supabase
-      .from('customer_addresses')
-      .delete()
-      .eq('id', addressId)
-      .eq('customer_id', customer.id);
-
-    if (error) {
-      return { success: false, error: 'Erro ao remover endereço' };
-    }
-
+  const deleteAddress = useCallback(async (addressId: string) => {
+    if (!customer) return { success: false, error: 'Nenhum cliente logado' };
+    const { error } = await (supabase as any).rpc('delete_customer_address', {
+      _address_id: addressId,
+      _customer_id: customer.id,
+      _whatsapp: customer.whatsapp,
+    });
+    if (error) return { success: false, error: 'Erro ao remover endereço' };
     return { success: true };
   }, [customer]);
 
-  // Logout
   const logout = useCallback(() => {
     setCustomer(null);
     localStorage.removeItem(STORAGE_KEY);

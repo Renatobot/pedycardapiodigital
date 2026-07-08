@@ -1679,7 +1679,128 @@ export type Database = {
       }
     }
     Functions: {
+      add_customer_address: {
+        Args: {
+          _complement?: string
+          _customer_id: string
+          _is_default?: boolean
+          _label: string
+          _neighborhood?: string
+          _number: string
+          _reference_point?: string
+          _street: string
+          _whatsapp: string
+        }
+        Returns: {
+          complement: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          is_default: boolean | null
+          label: string | null
+          neighborhood: string | null
+          number: string
+          reference_point: string | null
+          street: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_addresses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cleanup_expired_verifications: { Args: never; Returns: undefined }
+      clear_customer_favorites: {
+        Args: {
+          _customer_id: string
+          _establishment_id: string
+          _whatsapp: string
+        }
+        Returns: boolean
+      }
+      customer_login: {
+        Args: { _whatsapp: string }
+        Returns: {
+          complement: string
+          id: string
+          name: string
+          neighborhood: string
+          number: string
+          reference_point: string
+          street: string
+          whatsapp: string
+        }[]
+      }
+      customer_register: {
+        Args: {
+          _complement?: string
+          _name: string
+          _neighborhood?: string
+          _number?: string
+          _reference_point?: string
+          _street?: string
+          _whatsapp: string
+        }
+        Returns: {
+          complement: string
+          id: string
+          name: string
+          neighborhood: string
+          number: string
+          reference_point: string
+          street: string
+          whatsapp: string
+        }[]
+      }
+      customer_update: {
+        Args: {
+          _complement?: string
+          _id: string
+          _name?: string
+          _neighborhood?: string
+          _number?: string
+          _reference_point?: string
+          _street?: string
+          _whatsapp: string
+        }
+        Returns: boolean
+      }
+      delete_customer_address: {
+        Args: { _address_id: string; _customer_id: string; _whatsapp: string }
+        Returns: boolean
+      }
+      get_customer_addresses: {
+        Args: { _customer_id: string; _whatsapp: string }
+        Returns: {
+          complement: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          is_default: boolean | null
+          label: string | null
+          neighborhood: string | null
+          number: string
+          reference_point: string | null
+          street: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "customer_addresses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_customer_favorites: {
+        Args: {
+          _customer_id: string
+          _establishment_id: string
+          _whatsapp: string
+        }
+        Returns: {
+          product_id: string
+        }[]
+      }
       get_establishment_by_referral_code: {
         Args: { code: string }
         Returns: {
@@ -1706,10 +1827,79 @@ export type Database = {
           pricing_mode: string
         }[]
       }
+      get_saved_addresses: {
+        Args: { _establishment_id: string; _whatsapp: string }
+        Returns: {
+          address: string
+          complement: string | null
+          created_at: string | null
+          establishment_id: string
+          id: string
+          is_default: boolean | null
+          neighborhood: string | null
+          number: string | null
+          reference_point: string | null
+          street: string | null
+          whatsapp: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "saved_addresses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      migrate_customer_favorites: {
+        Args: {
+          _customer_id: string
+          _establishment_id: string
+          _product_ids: string[]
+          _whatsapp: string
+        }
+        Returns: boolean
+      }
+      save_customer_address: {
+        Args: {
+          _address: string
+          _complement?: string
+          _establishment_id: string
+          _neighborhood?: string
+          _number?: string
+          _reference_point?: string
+          _street?: string
+          _whatsapp: string
+        }
+        Returns: string
+      }
+      toggle_customer_favorite: {
+        Args: {
+          _add: boolean
+          _customer_id: string
+          _establishment_id: string
+          _product_id: string
+          _whatsapp: string
+        }
+        Returns: boolean
+      }
+      update_customer_address: {
+        Args: {
+          _address_id: string
+          _complement?: string
+          _customer_id: string
+          _is_default?: boolean
+          _label?: string
+          _neighborhood?: string
+          _number?: string
+          _reference_point?: string
+          _street?: string
+          _whatsapp: string
         }
         Returns: boolean
       }

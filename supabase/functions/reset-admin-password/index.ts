@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,17 +14,51 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // Verify the caller is an authenticated admin
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const requesterId = claimsData.claims.sub;
+
+    const { data: requesterRole } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', requesterId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!requesterRole) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado. Apenas administradores podem redefinir senhas.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { email, new_password } = await req.json();
 
-    // Validate inputs
     if (!email || !new_password) {
       return new Response(
         JSON.stringify({ error: 'Email e nova senha são obrigatórios' }),
@@ -33,7 +66,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate password strength
     if (new_password.length < 6) {
       return new Response(
         JSON.stringify({ error: 'A senha deve ter no mínimo 6 caracteres' }),
@@ -41,13 +73,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Attempting password reset for email:', email);
-
-    // Find user by email using auth admin API
     const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-
     if (listError) {
-      console.error('Error listing users:', listError);
       return new Response(
         JSON.stringify({ error: 'Erro ao buscar usuários' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -55,54 +82,40 @@ Deno.serve(async (req) => {
     }
 
     const user = usersData.users.find(u => u.email === email);
-
     if (!user) {
-      console.log('User not found:', email);
       return new Response(
         JSON.stringify({ error: 'Usuário não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if user has admin role
-    const { data: roleData, error: roleError } = await supabaseAdmin
+    const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('role', 'admin')
       .maybeSingle();
 
-    if (roleError) {
-      console.error('Error checking admin role:', roleError);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao verificar permissões' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     if (!roleData) {
-      console.log('User is not an admin:', email);
       return new Response(
         JSON.stringify({ error: 'Este email não pertence a um administrador' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
       { password: new_password }
     );
 
     if (updateError) {
-      console.error('Error updating password:', updateError);
       return new Response(
         JSON.stringify({ error: 'Erro ao atualizar a senha' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Password reset successful for:', email);
+    console.log(`Admin ${requesterId} reset password for admin ${user.id}`);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Senha redefinida com sucesso' }),

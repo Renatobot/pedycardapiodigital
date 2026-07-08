@@ -241,14 +241,10 @@ function CheckoutContent() {
     const loadSavedAddresses = async () => {
       if (formData.customerPhone.length >= 10 && establishment) {
         const normalizedPhone = formData.customerPhone.replace(/\D/g, '');
-        const { data } = await supabase
-          .from('saved_addresses')
-          .select('*')
-          .eq('whatsapp', normalizedPhone)
-          .eq('establishment_id', establishment.id)
-          .order('created_at', { ascending: false })
-          .limit(3);
-        
+        const { data } = await (supabase as any).rpc('get_saved_addresses', {
+          _whatsapp: normalizedPhone,
+          _establishment_id: establishment.id,
+        });
         if (data) {
           setSavedAddresses(data);
         }
@@ -497,23 +493,15 @@ function CheckoutContent() {
     const fullAddress = getFullAddress();
     if (formData.saveAddress && formData.customerPhone && fullAddress) {
       const normalizedPhone = formData.customerPhone.replace(/\D/g, '');
-      
-      // Check if we already have 3 addresses
-      if (savedAddresses.length >= 3) {
-        // Delete oldest
-        const oldest = savedAddresses[savedAddresses.length - 1];
-        await supabase.from('saved_addresses').delete().eq('id', oldest.id);
-      }
-
-      await supabase.from('saved_addresses').insert({
-        whatsapp: normalizedPhone,
-        establishment_id: establishment.id,
-        address: fullAddress,
-        street: formData.street || null,
-        number: formData.number || null,
-        complement: formData.complement || null,
-        neighborhood: formData.neighborhood || null,
-        reference_point: formData.referencePoint || null,
+      await (supabase as any).rpc('save_customer_address', {
+        _whatsapp: normalizedPhone,
+        _establishment_id: establishment.id,
+        _address: fullAddress,
+        _street: formData.street || null,
+        _number: formData.number || null,
+        _complement: formData.complement || null,
+        _neighborhood: formData.neighborhood || null,
+        _reference_point: formData.referencePoint || null,
       });
     }
 
