@@ -85,14 +85,13 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const p256dh = subscriptionData.keys?.p256dh || '';
       const auth = subscriptionData.keys?.auth || '';
 
-      // Salvar no Supabase (incluindo customer_id se disponível)
+      // Salvar no Supabase
       const { error } = await supabase
         .from('push_subscriptions')
         .upsert(
           {
             establishment_id: establishmentId,
             customer_phone: customerPhone,
-            customer_id: customerId || null,
             endpoint,
             p256dh,
             auth,
