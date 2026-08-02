@@ -462,10 +462,10 @@ export default function LandingPage() {
             <ScrollReveal delay={100}>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Venda mais pelo WhatsApp{' '}
-                <span className="text-primary font-extrabold">
+                <span className="text-yellow-500 font-extrabold">
                   <AnimatedText 
                     words={['sem pagar taxa', 'sem comissão', 'sem burocracia', 'com mais lucro']}
-                    className="text-primary"
+                    className="text-yellow-500"
                   />
                 </span>
               </h1>
