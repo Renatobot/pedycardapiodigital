@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import pedyLogo from '@/assets/logo_pedy.png';
+import rdgLogo from '@/assets/logo-rdg.png';
 
 interface SplashScreenProps {
   establishmentName?: string;
