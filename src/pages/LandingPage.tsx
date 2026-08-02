@@ -1152,7 +1152,19 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
+
+          <div className="mt-8 pt-6 border-t border-border flex flex-col items-center gap-2">
+            <p className="text-xs text-muted-foreground">desenvolvido por</p>
+            <img
+              src={rdgLogo}
+              alt="RDG Soluções Digitais"
+              className="h-12 md:h-14 w-auto rounded-lg"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         </div>
+
       </footer>
     </div>
   );
