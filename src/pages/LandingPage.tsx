@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
+import rdgLogo from '@/assets/logo-rdg.png';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
