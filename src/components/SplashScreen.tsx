@@ -39,13 +39,18 @@ export function SplashScreen({
         />
         
         {/* Texto "Desenvolvido por" */}
-        <p className="text-sm text-muted-foreground mb-1">
+        <p className="text-sm text-muted-foreground mb-2">
           desenvolvido por
         </p>
-        
-        <h1 className="text-2xl font-bold text-primary">
-          PEDY
-        </h1>
+
+        <img
+          src={rdgLogo}
+          alt="RDG Soluções Digitais"
+          className="h-14 md:h-16 w-auto rounded-lg"
+          loading="eager"
+          decoding="async"
+        />
+
         
         {/* Nome do estabelecimento (opcional) */}
         {establishmentName && (
