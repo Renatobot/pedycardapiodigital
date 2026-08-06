@@ -1160,7 +1160,7 @@ export default function LandingPage() {
               href="https://www.rdgdigital.com.br"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl bg-[hsl(215_35%_8%)] px-6 py-3 shadow-md transition-transform hover:scale-105"
+              className="transition-transform hover:scale-105"
             >
               <img
                 src={rdgLogoAsset.url}
