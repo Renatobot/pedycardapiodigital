@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
-import rdgLogoAsset from '@/assets/logo_rdg_transparente.png.asset.json';
+import rdgLogoAsset from '@/assets/logo_rdg_crop.png.asset.json';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -1154,16 +1154,24 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-border flex flex-col items-center gap-2">
+          <div className="mt-8 pt-6 border-t border-border flex flex-col items-center gap-3">
             <p className="text-xs text-muted-foreground">desenvolvido por</p>
-            <img
-              src={rdgLogoAsset.url}
-              alt="RDG Soluções Digitais"
-              className="h-14 md:h-16 w-auto"
-              loading="lazy"
-              decoding="async"
-            />
+            <a
+              href="https://www.rdgdigital.com.br"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl bg-[hsl(215_35%_8%)] px-6 py-3 shadow-md transition-transform hover:scale-105"
+            >
+              <img
+                src={rdgLogoAsset.url}
+                alt="RDG Soluções Digitais"
+                className="h-12 md:h-14 w-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
           </div>
+
         </div>
 
       </footer>
