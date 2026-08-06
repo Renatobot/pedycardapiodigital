@@ -1159,7 +1159,7 @@ export default function LandingPage() {
             <img
               src={rdgLogoAsset.url}
               alt="RDG Soluções Digitais"
-              className="h-12 md:h-14 w-auto brightness-0 invert"
+              className="h-14 md:h-16 w-auto"
               loading="lazy"
               decoding="async"
             />
