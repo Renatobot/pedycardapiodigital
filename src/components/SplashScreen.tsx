@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import pedyLogo from '@/assets/logo_pedy.png';
-import rdgLogo from '@/assets/logo-rdg.png';
+import rdgLogoAsset from '@/assets/logo_RDG_com_site.png.asset.json';
 
 interface SplashScreenProps {
   establishmentName?: string;
@@ -44,9 +44,9 @@ export function SplashScreen({
         </p>
 
         <img
-          src={rdgLogo}
+          src={rdgLogoAsset.url}
           alt="RDG Soluções Digitais"
-          className="h-14 md:h-16 w-auto rounded-lg"
+          className="h-14 md:h-16 w-auto brightness-0 invert"
           loading="eager"
           decoding="async"
         />
