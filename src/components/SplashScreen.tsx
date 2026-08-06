@@ -43,15 +43,13 @@ export function SplashScreen({
           desenvolvido por
         </p>
 
-        <div className="rounded-xl bg-[hsl(215_35%_8%)] px-6 py-3 shadow-md">
-          <img
-            src={rdgLogoAsset.url}
-            alt="RDG Soluções Digitais"
-            className="h-12 md:h-14 w-auto"
-            loading="eager"
-            decoding="async"
-          />
-        </div>
+        <img
+          src={rdgLogoAsset.url}
+          alt="RDG Soluções Digitais"
+          className="h-12 md:h-14 w-auto"
+          loading="eager"
+          decoding="async"
+        />
 
         
         {/* Nome do estabelecimento (opcional) */}
