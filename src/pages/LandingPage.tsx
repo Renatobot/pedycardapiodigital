@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import pedyLogo from '@/assets/logo_pedy.png';
-import rdgLogo from '@/assets/logo-rdg.png';
+import rdgLogoAsset from '@/assets/logo_RDG_com_site.png.asset.json';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -1157,9 +1157,9 @@ export default function LandingPage() {
           <div className="mt-8 pt-6 border-t border-border flex flex-col items-center gap-2">
             <p className="text-xs text-muted-foreground">desenvolvido por</p>
             <img
-              src={rdgLogo}
+              src={rdgLogoAsset.url}
               alt="RDG Soluções Digitais"
-              className="h-12 md:h-14 w-auto rounded-lg"
+              className="h-12 md:h-14 w-auto brightness-0 invert"
               loading="lazy"
               decoding="async"
             />
